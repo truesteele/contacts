@@ -683,9 +683,14 @@ function ProspectModal({ prospect, onClose, onUpdate }) {
     const handleSave = async () => {
         try {
             setSaving(true);
+            // Convert empty strings to null for date fields (PostgreSQL rejects empty strings for date type)
+            const dataToSave = {
+                ...editedData,
+                next_touchpoint_date: editedData.next_touchpoint_date || null
+            };
             const { error } = await supabase
                 .from('contacts')
-                .update(editedData)
+                .update(dataToSave)
                 .eq('id', prospect.id);
 
             if (error) throw error;
