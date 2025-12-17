@@ -138,14 +138,36 @@ function AuthenticatedApp() {
     const fetchProspects = async () => {
         try {
             setLoading(true);
-            const { data, error } = await supabase
-                .from('contacts')
-                .select('*')
-                .not('cultivation_notes', 'is', null)
-                .order('personal_connection_strength', { ascending: false });
 
-            if (error) throw error;
-            setProspects(data || []);
+            // Fetch all contacts using pagination (Supabase defaults to 1000 row limit)
+            const pageSize = 1000;
+            let allData = [];
+            let page = 0;
+            let hasMore = true;
+
+            while (hasMore) {
+                const from = page * pageSize;
+                const to = from + pageSize - 1;
+
+                const { data, error } = await supabase
+                    .from('contacts')
+                    .select('*')
+                    .not('cultivation_notes', 'is', null)
+                    .order('personal_connection_strength', { ascending: false })
+                    .range(from, to);
+
+                if (error) throw error;
+
+                if (data && data.length > 0) {
+                    allData = [...allData, ...data];
+                    hasMore = data.length === pageSize;
+                    page++;
+                } else {
+                    hasMore = false;
+                }
+            }
+
+            setProspects(allData);
         } catch (error) {
             console.error('Error fetching prospects:', error);
         } finally {
