@@ -1,0 +1,7 @@
+openai>=1.0.0
+argparse>=1.4.0
+python-dotenv
+supabase>=1.0.3
+requests>=2.31.0
+psycopg2-binary>=2.9.0
+resend>=0.7.0 

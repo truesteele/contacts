@@ -1,0 +1,20 @@
+{
+  "name": "outdoorithm-donor-prospects",
+  "version": "1.0.0",
+  "description": "Donor prospect management interface for Outdoorithm Collective",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx serve -l 8080",
+    "start": "npm run dev",
+    "deploy": "vercel --prod"
+  },
+  "keywords": [
+    "donor-management",
+    "crm",
+    "nonprofit",
+    "outdoorithm"
+  ],
+  "author": "Justin Steele",
+  "license": "MIT",
+  "devDependencies": {}
+}

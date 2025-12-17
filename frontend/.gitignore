@@ -1,0 +1,14 @@
+# Vercel
+.vercel
+.vercel.json
+
+# Local development
+.DS_Store
+*.log
+*.pyc
+__pycache__/
+
+# Environment
+.env
+.env.local
+.env.production

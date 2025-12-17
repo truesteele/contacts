@@ -1,0 +1,44 @@
+# Secrets and environment variables
+.env
+.env.local
+.env.*.local
+.mcp.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Build outputs
+dist/
+build/
+*.egg-info/
+
+# Data files (if they contain sensitive info)
+data/
+outputs/
+archive/
+
+# Vercel
+.vercel

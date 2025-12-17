@@ -1,0 +1,21 @@
+# LinkedIn News Scraper Dependencies
+# Pinned versions for reproducibility
+
+# RSS Parsing
+feedparser==6.0.11
+
+# HTTP requests with proper TLS and retries
+requests==2.32.3
+urllib3==2.2.3
+
+# OpenAI API
+openai==1.57.0
+
+# SendGrid Email
+sendgrid==6.11.0
+
+# Environment variables
+python-dotenv==1.0.1
+
+# Testing
+pytest==8.3.4

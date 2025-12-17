@@ -1,0 +1,359 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily News Digest</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            border-bottom: 3px solid #2563eb;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            margin: 0;
+            color: #1e40af;
+            font-size: 24px;
+        }
+        .header .date {
+            color: #6b7280;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .header .count {
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+            margin-top: 10px;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .section-title.reach {
+            color: #dc2626;
+        }
+        .section-title.engagement {
+            color: #059669;
+        }
+        .story {
+            margin-bottom: 25px;
+            padding: 15px;
+            background: #fafafa;
+            border-radius: 6px;
+            border-left: 4px solid #e5e7eb;
+        }
+        .story.high-reach {
+            border-left-color: #dc2626;
+        }
+        .story.high-engagement {
+            border-left-color: #059669;
+        }
+        .story-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+        .story-meta {
+            font-size: 11px;
+            color: #6b7280;
+        }
+        .story-meta .source {
+            font-weight: 600;
+        }
+        .story-meta .time {
+            color: #9ca3af;
+        }
+        .story-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #111827;
+            margin: 8px 0;
+            line-height: 1.4;
+        }
+        .story-title a {
+            color: #111827;
+            text-decoration: none;
+        }
+        .story-title a:hover {
+            color: #2563eb;
+        }
+        .story-summary {
+            font-size: 13px;
+            color: #4b5563;
+            margin: 10px 0;
+        }
+        .scores {
+            display: flex;
+            gap: 20px;
+            margin: 12px 0;
+            font-size: 12px;
+        }
+        .score {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .score-label {
+            color: #6b7280;
+            font-weight: 500;
+        }
+        .score-value {
+            font-weight: 700;
+            color: #111827;
+        }
+        .score-value.high {
+            color: #059669;
+        }
+        .voice-tag {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .voice-tag.prophet {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .voice-tag.builder {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .voice-tag.teacher {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .angle {
+            margin-top: 12px;
+            padding: 10px;
+            background: #eff6ff;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #1e40af;
+        }
+        .angle-label {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .anchors {
+            margin-top: 8px;
+            font-size: 11px;
+        }
+        .anchors .label {
+            color: #6b7280;
+        }
+        .anchors .names {
+            color: #111827;
+            font-weight: 500;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            font-size: 11px;
+            color: #9ca3af;
+            text-align: center;
+        }
+        .quick-stats {
+            display: flex;
+            gap: 15px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+        .stat {
+            background: #f3f4f6;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .stat-value {
+            font-weight: 700;
+            color: #111827;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📰 Daily News Digest</h1>
+            <div class="date">Sunday, December 14, 2025</div>
+            <div class="count">4 stories curated for your LinkedIn</div>
+        </div>
+
+        <div class="quick-stats">
+            <div class="stat">🔥 High Reach: <span class="stat-value">3</span></div>
+            <div class="stat">💬 High Engagement: <span class="stat-value">1</span></div>
+            <div class="stat">📣 Prophet: <span class="stat-value">3</span></div>
+            <div class="stat">🏗️ Builder: <span class="stat-value">1</span></div>
+        </div>
+
+        <div class="section">
+            <div class="section-title reach">🔥 HIGH REACH OPPORTUNITIES</div>
+        
+        <div class="story high-reach">
+            <div class="story-meta">
+                <span class="source">New York Times</span>
+                <span class="time"> · 0h ago</span>
+                <span> · Social Commentary</span>
+            </div>
+            <div class="story-title">
+                <a href="https://nytimes.com/example" target="_blank">Meta Announces End to Workplace DEI Initiatives</a>
+            </div>
+            <div class="story-summary">Meta will discontinue its diversity, equity, and inclusion programs affecting hiring and supplier diversity, joining other tech companies in scaling back such efforts amid political pressure.</div>
+            <div class="scores">
+                <div class="score">
+                    <span class="score-label">Reach:</span>
+                    <span class="score-value high">9/10</span>
+                </div>
+                <div class="score">
+                    <span class="score-label">Engagement:</span>
+                    <span class="score-value ">5/10</span>
+                </div>
+                <span class="voice-tag prophet">📣 Prophet</span>
+            </div>
+            
+            <div class="anchors">
+                <span class="label">Anchors:</span>
+                <span class="names">Meta, Zuckerberg</span>
+            </div>
+            
+            <div class="angle">
+                <div class="angle-label">💡 Your Angle:</div>
+                This continues the corporate retreat pattern you identified in your viral Meta DEI post. Your unique angle: you&#x27;ve seen this from the inside at Google.
+            </div>
+        </div>
+        
+        <div class="story high-reach">
+            <div class="story-meta">
+                <span class="source">TechCrunch</span>
+                <span class="time"> · 0h ago</span>
+                <span> · AI Building</span>
+            </div>
+            <div class="story-title">
+                <a href="https://techcrunch.com/example" target="_blank">OpenAI Foundation Launches $500M Initiative for AI Education</a>
+            </div>
+            <div class="story-summary">The newly formed OpenAI Foundation announced a major philanthropic push to bring AI literacy to underserved schools across America.</div>
+            <div class="scores">
+                <div class="score">
+                    <span class="score-label">Reach:</span>
+                    <span class="score-value high">8/10</span>
+                </div>
+                <div class="score">
+                    <span class="score-label">Engagement:</span>
+                    <span class="score-value ">6/10</span>
+                </div>
+                <span class="voice-tag prophet">📣 Prophet</span>
+            </div>
+            
+            <div class="anchors">
+                <span class="label">Anchors:</span>
+                <span class="names">OpenAI</span>
+            </div>
+            
+            <div class="angle">
+                <div class="angle-label">💡 Your Angle:</div>
+                Follow up to your OpenAI Foundation critique. Question whether this is genuine impact or &#x27;redemptive philanthropy&#x27; after extraction.
+            </div>
+        </div>
+        
+        <div class="story high-reach">
+            <div class="story-meta">
+                <span class="source">Chronicle of Higher Education</span>
+                <span class="time"> · 0h ago</span>
+                <span> · Education</span>
+            </div>
+            <div class="story-title">
+                <a href="https://chronicle.com/example" target="_blank">Harvard Receives Record $3B Gift for Financial Aid</a>
+            </div>
+            <div class="story-summary">An anonymous donor has given Harvard University its largest gift ever, earmarked entirely for expanding financial aid to low-income students.</div>
+            <div class="scores">
+                <div class="score">
+                    <span class="score-label">Reach:</span>
+                    <span class="score-value high">7/10</span>
+                </div>
+                <div class="score">
+                    <span class="score-label">Engagement:</span>
+                    <span class="score-value high">7/10</span>
+                </div>
+                <span class="voice-tag prophet">📣 Prophet</span>
+            </div>
+            
+            <div class="anchors">
+                <span class="label">Anchors:</span>
+                <span class="names">Harvard</span>
+            </div>
+            
+            <div class="angle">
+                <div class="angle-label">💡 Your Angle:</div>
+                Your Harvard connection + philanthropy expertise. Question: does this address root causes or just redistribute access to elite institutions?
+            </div>
+        </div>
+        </div>
+        <div class="section">
+            <div class="section-title engagement">💬 HIGH ENGAGEMENT OPPORTUNITIES</div>
+        
+        <div class="story high-engagement">
+            <div class="story-meta">
+                <span class="source">Outside Magazine</span>
+                <span class="time"> · 0h ago</span>
+                <span> · Outdoor</span>
+            </div>
+            <div class="story-title">
+                <a href="https://outside.com/example" target="_blank">Black Outdoor Leaders Form National Coalition for Public Lands Access</a>
+            </div>
+            <div class="story-summary">More than 50 Black-led outdoor organizations announced a new coalition to advocate for equitable access to national parks and public lands.</div>
+            <div class="scores">
+                <div class="score">
+                    <span class="score-label">Reach:</span>
+                    <span class="score-value ">5/10</span>
+                </div>
+                <div class="score">
+                    <span class="score-label">Engagement:</span>
+                    <span class="score-value high">9/10</span>
+                </div>
+                <span class="voice-tag builder">🏗️ Builder</span>
+            </div>
+            
+            <div class="angle">
+                <div class="angle-label">💡 Your Angle:</div>
+                Direct connection to Outdoorithm Collective&#x27;s mission. Share your story of building in this space and name specific leaders you&#x27;ve worked with.
+            </div>
+        </div>
+        </div>
+        <div class="footer">
+            Generated by your LinkedIn News Scraper<br>
+            Based on your Performance Framework | Pillars: Social Commentary, AI, Philanthropy, Education, Outdoor
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,2474 @@
+🎯 Enriching Today's Updates
+============================================================
+Found 278 new contacts
+Found 175 contacts with company changes
+Total unique contacts to enrich: 453
+✓ Connected to Supabase
+
+🚀 Starting enrichment of 453 contacts...
+============================================================
+
+[1/453] Gail Gilman, MNA
+  LinkedIn: https://www.linkedin.com/in/gail-gilmansf
+  ✓ Updated 17 fields
+    💼 Headline: Principal @ Antarim | Ecosystem Change Management...
+    🏢 Company: Antarim Advisors 
+
+[2/453] Alicia M. Highland
+  LinkedIn: https://www.linkedin.com/in/amhd
+  ✓ Updated 24 fields
+    💼 Headline: Educator, Leader, Advocate...
+    🏢 Company: Tiny Green Learning
+    👔 Position: Program Manager
+
+[3/453] Dela Wilson, JD, MPA
+  LinkedIn: https://www.linkedin.com/in/deloriswilson
+  ✓ Updated 23 fields
+    💼 Headline: Cultural Producer - Organizational Strategist - Experience +...
+
+[4/453] Sabrina W. Horton
+  LinkedIn: https://www.linkedin.com/in/sabrina-w-horton
+  ⚠ Profile not found: https://www.linkedin.com/in/sabrina-w-horton
+
+[5/453] ZION GARCIA ⚡️
+  LinkedIn: https://www.linkedin.com/in/ziongarcia
+  ✓ Updated 7 fields
+
+[6/453] Sebastian Johnson
+  LinkedIn: https://www.linkedin.com/in/sebastian-johnson-7209a87a
+  ✓ Updated 12 fields
+    💼 Headline: Philanthropic Strategist and Nonprofit Executive...
+
+[7/453] Mindelyn Anderson
+  LinkedIn: https://www.linkedin.com/in/mindelyn-anderson
+  ✓ Updated 16 fields
+    💼 Headline: Research | Evaluation | Training | Consulting...
+
+[8/453] Sedale Turbovsky
+  LinkedIn: https://www.linkedin.com/in/sedaleturbovsky
+  ✓ Updated 19 fields
+    💼 Headline: CEO. Strategic Funding Specialist. Professional Human Being....
+
+[9/453] Alexandria Medina
+  LinkedIn: https://www.linkedin.com/in/alexandria-medina-703a8171
+  ✓ Updated 17 fields
+    💼 Headline: Chief Executive Officer at Oakland Public Education Fund...
+
+[10/453] Suzanne Massey
+  LinkedIn: https://www.linkedin.com/in/suzannemassey
+  ✓ Updated 15 fields
+    💼 Headline: Social Impact Executive | Corporate Social Responsibility | ...
+
+  → Progress: 10/453 processed...
+
+[11/453] Jody Giles, CPA, CFP®, CAP®
+  LinkedIn: https://www.linkedin.com/in/jodydgiles
+  ✓ Updated 14 fields
+    💼 Headline: Philanthropic strategist | Advocate | Author | Connector | P...
+
+[12/453] Todd Trappe
+  LinkedIn: https://www.linkedin.com/in/todd-trappe
+  ✓ Updated 19 fields
+    💼 Headline: CPTO | 10M -> 100M B2B2C |  Turning chaos into strategic gro...
+    🏢 Company: TrappeWorks
+    👔 Position: Product + Tech Leadership
+
+[13/453] Jim E. Lee
+  LinkedIn: https://www.linkedin.com/in/jimelee
+  ✓ Updated 17 fields
+    💼 Headline: President at CrunchLabs, and the Mark Rober YouTube channel...
+
+[14/453] Elizabeth Beresford Vidal
+  LinkedIn: https://www.linkedin.com/in/elizabeth-beresford-vidal-31994524
+  ✓ Updated 12 fields
+    💼 Headline: Strategy | Brand | Impact | Crisis...
+
+[15/453] Grayson Wiles
+  LinkedIn: https://www.linkedin.com/in/graysonwiles
+  ✓ Updated 19 fields
+    💼 Headline: Strategy & Impact at Flourish Fund...
+    🏢 Company: Flourish Fund
+    👔 Position: Manager
+
+[16/453] Mariana Fagnilli, JD, LLM
+  LinkedIn: https://www.linkedin.com/in/mariana-fagnilli
+  ✓ Updated 11 fields
+    💼 Headline: Award-Winning Global Executive & Best-Selling Author | Archi...
+
+[17/453] Ryan Hamilton
+  LinkedIn: https://www.linkedin.com/in/ryan-hamilton-93004b4
+  ✓ Updated 12 fields
+    💼 Headline: CEO at Far Bank Enterprises...
+
+[18/453] Laura Schaffer
+  LinkedIn: https://www.linkedin.com/in/lauragschaffer
+  ✓ Updated 15 fields
+    💼 Headline: Orvis VP Marketing & Impact | Nature Lover | Community Advoc...
+
+[19/453] Cordell Carter, Esq. 🌎
+  LinkedIn: https://www.linkedin.com/in/cordellcarterii
+  ✓ Updated 26 fields
+    💼 Headline: Civic Architect | Founder | Convenor...
+    🏢 Company: Carson Scholars Fund, Inc.
+    👔 Position: Chief Executive Officer
+
+[20/453] Derek Slater
+  LinkedIn: https://www.linkedin.com/in/derekslater
+  ✓ Updated 14 fields
+    💼 Headline: Policy Strategist...
+
+  → Progress: 20/453 processed...
+
+[21/453] Lena Young
+  LinkedIn: https://www.linkedin.com/in/lena-mcafee
+  ✓ Updated 16 fields
+    💼 Headline: Talent Engagement & Strategy Leader | Board member | Certifi...
+
+[22/453] Catherine Howard
+  LinkedIn: https://www.linkedin.com/in/catherineahoward
+  ⚠ Profile not found: https://www.linkedin.com/in/catherineahoward
+
+[23/453] Selena Wilson
+  LinkedIn: https://www.linkedin.com/in/selena-wilson-5b045b24
+  ✓ Updated 12 fields
+    💼 Headline: Community-centered collectivist stewarding learning + growth...
+
+[24/453] Maria del Rocio Galarza
+  LinkedIn: https://www.linkedin.com/in/rociogalarza
+  ✓ Updated 13 fields
+    💼 Headline: VP @ Sesame Workshop | Accomplished Social Impact Leader...
+
+[25/453] Simran Kaur
+  LinkedIn: https://www.linkedin.com/in/simrankaurbadwal
+  ✓ Updated 18 fields
+    💼 Headline: Columbia University & UC Berkeley Alumna | Health Admin | Ed...
+    🏢 Company: Northwell Health
+
+[26/453] Judy Huang
+  LinkedIn: https://www.linkedin.com/in/judyyh
+  ✓ Updated 15 fields
+    💼 Headline: Executive Coach | Strategy Advisor | Experienced People Lead...
+
+[27/453] Manny Almonte
+  LinkedIn: https://www.linkedin.com/in/manny-almonte
+  ✓ Updated 13 fields
+    💼 Headline: Founder & CEO | Speaker | Producer, Award-Winning Film | 202...
+
+[28/453] Gina Mariko Rosales
+  LinkedIn: https://www.linkedin.com/in/ginamariko
+  ✓ Updated 17 fields
+    💼 Headline: CEO | Event Producer & Social Entrepreneur...
+
+[29/453] Anna Park Moon
+  LinkedIn: https://www.linkedin.com/in/moonanna
+  ✓ Updated 15 fields
+    💼 Headline: Renewable Energy - Business Development and Strategy...
+    🏢 Company: Wind Power Consulting LLC
+
+[30/453] Regi Young
+  LinkedIn: https://www.linkedin.com/in/regi-young-21725416
+  ✓ Updated 7 fields
+
+  → Progress: 30/453 processed...
+
+[31/453] Victoria Brown
+  LinkedIn: https://www.linkedin.com/in/victoriacbrown
+  ✓ Updated 10 fields
+    💼 Headline: Senior Director, Strive USA | Impact-first, multi-sector lea...
+
+[32/453] Jens Weisflog
+  LinkedIn: https://www.linkedin.com/in/jens-weisflog
+  ✓ Updated 12 fields
+    💼 Headline: Partner at Rios Partners...
+
+[33/453] Nicole Rawlinson
+  LinkedIn: https://www.linkedin.com/in/nicolerawlinson
+  ✓ Updated 12 fields
+    💼 Headline: Sr Program Manager at National Park Foundation 🏞️...
+
+[34/453] Lise Aangeenbrug
+  LinkedIn: https://www.linkedin.com/in/lise-aangeenbrug-3221486
+  ✓ Updated 13 fields
+    💼 Headline: Chief Program Officer @ National Park Foundation...
+
+[35/453] Shantel Wilkins
+  LinkedIn: https://www.linkedin.com/in/shantel-wilkins-a1141815
+  ✓ Updated 18 fields
+    💼 Headline: Working Mom | Justice Advocate | Entrepreneur | Human-Center...
+
+[36/453] Danny Navarro
+  LinkedIn: https://www.linkedin.com/in/dnavarro688
+  ✓ Updated 17 fields
+    💼 Headline: Google for Startups...
+
+[37/453] Cecilia Conrad
+  LinkedIn: https://www.linkedin.com/in/cecilia-conrad
+  ✓ Updated 19 fields
+    💼 Headline: Chief Executive Officer at Lever for Change...
+
+[38/453] Alexandria Cooley
+  LinkedIn: https://www.linkedin.com/in/alexandria-cooley
+  ✓ Updated 13 fields
+    💼 Headline: Philanthropic and Civic Leader | Champion for Community Well...
+
+[39/453] Evonne Silva
+  LinkedIn: https://www.linkedin.com/in/evonnemsilva
+  ✓ Updated 17 fields
+    💼 Headline: Designing Innovative Strategies, Programs and Partnerships f...
+
+[40/453] Carla Keener
+  LinkedIn: https://www.linkedin.com/in/carla-keener-453453
+  ✓ Updated 10 fields
+    💼 Headline: Experienced leader and thought partner committed to making a...
+
+  → Progress: 40/453 processed...
+
+[41/453] Kalimah Priforce
+  LinkedIn: https://www.linkedin.com/in/priforce
+  ✓ Updated 19 fields
+    💼 Headline: People's Councilmember in Emeryville (CA) | Neighborhood Hac...
+
+[42/453] Nancy Nadel
+  LinkedIn: https://www.linkedin.com/in/nancy-nadel-8b536bb
+  ✓ Updated 13 fields
+    💼 Headline: The Oakland Chocolate Company - Founder, Manager, Chocolatie...
+
+[43/453] Calvin Williams
+  LinkedIn: https://www.linkedin.com/in/calvinwilliams3
+  ✓ Updated 13 fields
+    💼 Headline: Activating hearts and minds to dream of just, joyful futures...
+
+[44/453] Terrence Riley
+  LinkedIn: https://www.linkedin.com/in/theterrenceriley
+  ✓ Updated 19 fields
+    💼 Headline: Executive Director | Educational & Nonprofit Leader...
+    🏢 Company: Spark Decks
+    👔 Position: Emerging Leaders Facilitator
+
+[45/453] Keisha Browder
+  LinkedIn: https://www.linkedin.com/in/keishabrowder
+  ✓ Updated 17 fields
+    💼 Headline: Chief Executive Officer, United Way Bay Area...
+
+[46/453] Carolyn Johnson
+  LinkedIn: https://www.linkedin.com/in/carolynejohnson
+  ✓ Updated 7 fields
+    💼 Headline: Chief Executive Officer at Black Cultural Zone...
+
+[47/453] Louis Caditz-Peck
+  LinkedIn: https://www.linkedin.com/in/louiscaditzpeck
+  ✓ Updated 14 fields
+    💼 Headline: Advocating for Responsible Innovation in Finance...
+
+[48/453] Audrey Bediako
+  LinkedIn: https://www.linkedin.com/in/audreybediako
+  ✓ Updated 17 fields
+    💼 Headline: Computer Science Student @ UVA SEAS | Student Trainee @ NAVS...
+
+[49/453] Liz Cortez
+  LinkedIn: https://www.linkedin.com/in/liz-cortez
+  ✓ Updated 12 fields
+    💼 Headline: Vice President of Collective Impact...
+
+[50/453] Jan Morrison
+  LinkedIn: https://www.linkedin.com/in/jan-morrison-82b5538
+  ✓ Updated 11 fields
+    💼 Headline: Founder and CEO, TIES
+Design and Engineer Career Connected L...
+
+  → Progress: 50/453 processed...
+
+[51/453] Renee Rubin Ross Ph.D
+  LinkedIn: https://www.linkedin.com/in/reneerubinross
+  ✓ Updated 20 fields
+    💼 Headline: Inclusive nonprofit strategic, scenario and succession plann...
+
+[52/453] Nicole McAllister Vermeer, M.A., MBA
+  LinkedIn: https://www.linkedin.com/in/nicole-mcallister-vermeer-m-a-mba-8b43b41
+  ✓ Updated 19 fields
+    💼 Headline: Board Director, Social Innovation, Impact Capital, Sustainab...
+    🏢 Company: UCLA Anderson School of Management, Ziman Center for Real Estate
+    👔 Position: Senior Director, Advancement and Corporate Impact
+
+[53/453] Tom Silverman
+  LinkedIn: https://www.linkedin.com/in/tomsilverman
+  ✓ Updated 16 fields
+    💼 Headline: Chief Development Officer at The Junior State of America Fou...
+    🏢 Company: buildOn
+
+[54/453] Tiffany Manuel
+  LinkedIn: https://www.linkedin.com/in/tiffanymanuel
+  ✓ Updated 18 fields
+    💼 Headline: President & Founder of TheCaseMade. We're on a mission to he...
+
+[55/453] Shiree Teng
+  LinkedIn: https://www.linkedin.com/in/shiree-teng-24628511
+  ✓ Updated 17 fields
+    💼 Headline: Radical Love. Courageous Strategy....
+
+[56/453] Val Chapman
+  LinkedIn: https://www.linkedin.com/in/valchapman
+  ✓ Updated 7 fields
+    💼 Headline: Leading Early Financial Education Initiatives | Community Co...
+
+[57/453] Michael H. Levine
+  LinkedIn: https://www.linkedin.com/in/michael-h-levine
+  ✓ Updated 22 fields
+    💼 Headline: Founder|EdTech + Impact Venture Advisor|Children’s Learning,...
+
+[58/453] David Allen
+  LinkedIn: https://www.linkedin.com/in/david-a-77b0283
+  ✓ Updated 8 fields
+
+[59/453] Eric Payne
+  LinkedIn: https://www.linkedin.com/in/eric-payne-2b352727
+  ✓ Updated 15 fields
+    💼 Headline: Executive Director | Climate Finance | Community Transformat...
+
+[60/453] Gillian Marcelle, PhD
+  LinkedIn: https://www.linkedin.com/in/gillianmarcelle
+  ✓ Updated 14 fields
+    💼 Headline: CEO and Founder, Resilience Capital Ventures LLC...
+
+  → Progress: 60/453 processed...
+
+[61/453] Erin Relford
+  LinkedIn: https://www.linkedin.com/in/erinrelford
+  ✓ Updated 20 fields
+    💼 Headline: Senior Privacy Engineer at Google | Tech Ethics & Transparen...
+    👔 Position: Privacy Engineer
+
+[62/453] Joe Scantlebury
+  LinkedIn: https://www.linkedin.com/in/joe-scantlebury-ba5bb67
+  ✓ Updated 13 fields
+    💼 Headline: President & CEO, Living Cities: Advancing Racial & Economic ...
+
+[63/453] Marc Alexander
+  LinkedIn: https://www.linkedin.com/in/marc-alexander-52ba616
+  ✓ Updated 11 fields
+    💼 Headline: Finance | Digital Transformation | Social Impact...
+
+[64/453] Jim Shelton
+  LinkedIn: https://www.linkedin.com/in/sheltonjim
+  ✓ Updated 14 fields
+    💼 Headline: Trisector investor and operator...
+
+[65/453] Bulbul Gupta
+  LinkedIn: https://www.linkedin.com/in/guptabulbul
+  ✓ Updated 18 fields
+    💼 Headline: President & CEO at Pacific Community Ventures | Inclusive En...
+
+[66/453] Carol Hood
+  LinkedIn: https://www.linkedin.com/in/carol-hood-72004650
+  ✓ Updated 14 fields
+    💼 Headline: VP, Executive Creative Director | Harvard Business School | ...
+
+[67/453] Alfredo Mathew III
+  LinkedIn: https://www.linkedin.com/in/alfredomathew
+  ✓ Updated 17 fields
+    💼 Headline: 4X Founder, Educator, CEO...
+
+[68/453] Melanie Moore
+  LinkedIn: https://www.linkedin.com/in/melanie-moore-6808677
+  ✓ Updated 12 fields
+    💼 Headline: CEO | Nonprofit Board President | Proven Revenue Generator |...
+
+[69/453] Jarvis Williams
+  LinkedIn: https://www.linkedin.com/in/jarvisfwilliams
+  ✓ Updated 15 fields
+    💼 Headline: Former Director for Race and Democracy...
+
+[70/453] Bernard Boudreaux
+  LinkedIn: https://www.linkedin.com/in/bernard-boudreaux-5b041b
+  ✓ Updated 5 fields
+
+  → Progress: 70/453 processed...
+
+[71/453] Marcus Byrd
+  LinkedIn: https://www.linkedin.com/in/marcus-byrd-783b1068
+  ✓ Updated 15 fields
+    💼 Headline: SXSW Recognized / Shorty Award Nominated Brand Marketer - Fo...
+
+[72/453] Travis Loop
+  LinkedIn: https://www.linkedin.com/in/travisloop
+  ✓ Updated 13 fields
+    💼 Headline: Founder of waterloop, a nonprofit news outlet exploring solu...
+
+[73/453] Majo Acosta Robayo
+  LinkedIn: https://www.linkedin.com/in/majo-acosta-robayo
+  ✓ Updated 15 fields
+    💼 Headline: Social Impact Consultant | Delivery Associates...
+
+[74/453] K. Corley Kenna
+  LinkedIn: https://www.linkedin.com/in/k-corley-kenna-16789237
+  ✓ Updated 12 fields
+    💼 Headline: Patagonia's Chief Impact and Communications Officer...
+
+[75/453] Carlos Quezada
+  LinkedIn: https://www.linkedin.com/in/cquezada
+  ⚠ Profile not found: https://www.linkedin.com/in/cquezada
+
+[76/453] September Hargrove
+  LinkedIn: https://www.linkedin.com/in/september-hargrove
+  ✓ Updated 13 fields
+    💼 Headline: Industry Executive, Government Banking at JPMorganChase...
+
+[77/453] Meryl Stone
+  LinkedIn: https://www.linkedin.com/in/merylstone
+  ✓ Updated 15 fields
+    💼 Headline: Director, Product Partnerships - Gemini & Google Deep Mind...
+    👔 Position: Director, Product Partnerships - Gemini & Assistant
+
+[78/453] Kate Frankfurt
+  LinkedIn: https://www.linkedin.com/in/kate-frankfurt-5815575
+  ✓ Updated 15 fields
+    💼 Headline: Executive Leadership Coach and Fundraising Consultant@Good W...
+
+[79/453] Susan Viscon
+  LinkedIn: https://www.linkedin.com/in/susan-viscon
+  ✓ Updated 7 fields
+    💼 Headline: REI Executive | New Ventures | Chief Merchant | Investor | B...
+
+[80/453] John Cunningham
+  LinkedIn: https://www.linkedin.com/in/john-cunningham-b7468a90
+  ✓ Updated 14 fields
+    💼 Headline: Director, Public Engagement...
+
+  → Progress: 80/453 processed...
+
+[81/453] Janak Padhiar
+  LinkedIn: https://www.linkedin.com/in/padhiarj
+  ⚠ Profile not found: https://www.linkedin.com/in/padhiarj
+
+[82/453] Robert Gordon IV
+  LinkedIn: https://www.linkedin.com/in/robertgordoniv
+  ✓ Updated 20 fields
+    💼 Headline: Championing Black Advancement in VC • Community Catalyst • B...
+
+[83/453] Carrie Maultsby-Lute (she/her)
+  LinkedIn: https://www.linkedin.com/in/cmaultsbylute
+  ✓ Updated 17 fields
+    💼 Headline: Partnership Builder | Professor of Practice | Belonging Advo...
+
+[84/453] Kyle Walcott
+  LinkedIn: https://www.linkedin.com/in/kylewalcott
+  ✓ Updated 16 fields
+    💼 Headline: Dir. of Advancement, Coca-Cola Scholars Foundation | Past Pr...
+
+[85/453] Tessa Kaneene
+  LinkedIn: https://www.linkedin.com/in/tessakaneene
+  ✓ Updated 13 fields
+    💼 Headline: Senior Policy Advisor at Harvard University  |  White House ...
+
+[86/453] Sid Espinosa
+  LinkedIn: https://www.linkedin.com/in/sid-espinosa-650344121
+  ✓ Updated 12 fields
+    💼 Headline: Head of Social Impact at GitHub...
+
+[87/453] Kim Moore Bailey
+  LinkedIn: https://www.linkedin.com/in/kim-moore-bailey-6b981a11
+  ✓ Updated 4 fields
+
+[88/453] Dexter Mason
+  LinkedIn: https://www.linkedin.com/in/dextercmason
+  ✓ Updated 16 fields
+    💼 Headline: Executive Director @ Change Collective I Sports + Tech Impac...
+
+[89/453] Bob Giannino
+  LinkedIn: https://www.linkedin.com/in/bgiannino
+  ✓ Updated 14 fields
+    💼 Headline: Nonprofit Change Agent and Partner to Growing & Thriving Org...
+
+[90/453] Aparna Rae
+  LinkedIn: https://www.linkedin.com/in/aparnarae
+  ✓ Updated 21 fields
+    💼 Headline: Speaker & Strategist | Future of Work & Data for Inclusive C...
+    🏢 Company: Future of Work
+    👔 Position: Strategist, Speaker & Author
+
+  → Progress: 90/453 processed...
+
+[91/453] Frances Liu
+  LinkedIn: https://www.linkedin.com/in/frances-liu-3878854
+  ✓ Updated 12 fields
+    💼 Headline: Senior Director at Blue Meridian Partners...
+
+[92/453] Naria Santa Lucia
+  LinkedIn: https://www.linkedin.com/in/nariasantalucia
+  ✓ Updated 21 fields
+    💼 Headline: General Manager, Skills for Social Impact | Microsoft Philan...
+    👔 Position: General Manager, Skills for Social Impact, Microsoft Philanthropies
+
+[93/453] LaVanya Hardin Wright
+  LinkedIn: https://www.linkedin.com/in/lavanyahardinwright
+  ✓ Updated 12 fields
+    💼 Headline: Head of Giving and Social Impact, Genentech, a member of the...
+
+[94/453] April Alvarez
+  LinkedIn: https://www.linkedin.com/in/alvarezapril
+  ✓ Updated 18 fields
+    💼 Headline: Head of Experience and Engagement at Google...
+
+[95/453] Patrick O'Steen
+  LinkedIn: https://www.linkedin.com/in/patrick-o-steen-b99199b8
+  ✓ Updated 13 fields
+    💼 Headline: Director, Learner Programs, Microsoft Philanthropies...
+
+[96/453] Brent J. Cohen
+  LinkedIn: https://www.linkedin.com/in/brentjcohen
+  ✓ Updated 21 fields
+    💼 Headline: Experienced senior leader. Strategic decision-maker. Youth b...
+    🏢 Company: U.S. Department of Justice, Office of Justice Programs (OJP)
+    👔 Position: Acting Assistant Attorney General
+
+[97/453] Aimee Sargent
+  LinkedIn: https://www.linkedin.com/in/aimee-sargent-a945027
+  ✓ Updated 12 fields
+    💼 Headline: Managing Director, Development...
+
+[98/453] Jaya Adapa
+  LinkedIn: https://www.linkedin.com/in/jayaadapa
+  ✓ Updated 5 fields
+
+[99/453] Brit Kelleher
+  LinkedIn: https://www.linkedin.com/in/brit-kelleher
+  ✓ Updated 10 fields
+    💼 Headline: Community Impact | ESG | Corporate Social Responsibility | P...
+
+[100/453] Vanessa Ramirez, MPP, SHRM-SCP
+  LinkedIn: https://www.linkedin.com/in/vanessamramirez
+  ✓ Updated 14 fields
+    💼 Headline: Currently Hiring | BIPOC Career Coach | Diversity Equity Inc...
+
+  → Progress: 100/453 processed...
+
+[101/453] Caitlin Morelli
+  LinkedIn: https://www.linkedin.com/in/caitlinmorelli
+  ✓ Updated 11 fields
+    💼 Headline: Co-Founder, Worthmore...
+
+[102/453] Taison D. Bell, MD, MBA
+  LinkedIn: https://www.linkedin.com/in/taison-d-bell-md-mba-59289514
+  ✓ Updated 15 fields
+    💼 Headline: Acting Chair of Medicine at the University of Virginia...
+    👔 Position: Acting Chair, Department of Medicine
+
+[103/453] Kristina Francis
+  LinkedIn: https://www.linkedin.com/in/kristinaharrisonfrancis
+  ✓ Updated 13 fields
+    💼 Headline: My Steps are Ordered | Helping people live in their genius a...
+
+[104/453] Alana Ramo
+  LinkedIn: https://www.linkedin.com/in/alanaramo
+  ✓ Updated 25 fields
+    💼 Headline: Social Impact Leader | Philanthropy | Tech for Good...
+    🏢 Company: Zendesk
+    👔 Position: Director, Tech for Good
+
+[105/453] Jackie Kiernan
+  LinkedIn: https://www.linkedin.com/in/jackie-kiernan-147809153
+  ✓ Updated 14 fields
+    💼 Headline: Senior Project Director at EDC (Education Development Center...
+
+[106/453] Byron Auguste
+  LinkedIn: https://www.linkedin.com/in/byronauguste
+  ✓ Updated 20 fields
+    💼 Headline: CEO & Co-founder at Opportunity@Work | Forbes Future of Work...
+
+[107/453] Luke Stockstill
+  LinkedIn: https://www.linkedin.com/in/luke-stockstill
+  ✓ Updated 19 fields
+    💼 Headline: Analyst at The Flourish Fund and a Falls Church Fellow...
+    🏢 Company: Flourish Fund
+    👔 Position: Strategy & Impact Analyst
+
+[108/453] Audrey Kim
+  LinkedIn: https://www.linkedin.com/in/audreyhkim93
+  ✓ Updated 21 fields
+    💼 Headline: Strategic Grantmaking & Economic Mobility Specialist...
+
+[109/453] Irina Anghel Enescu
+  LinkedIn: https://www.linkedin.com/in/irinaanghel
+  ✓ Updated 14 fields
+    💼 Headline: Connecting people, ideas and projects // Advisor @ MIT & Oxf...
+
+[110/453] Terri Chen
+  LinkedIn: https://www.linkedin.com/in/terri-chen-a9431a50
+  ✓ Updated 7 fields
+    💼 Headline: Legal Director at Google...
+
+  → Progress: 110/453 processed...
+
+[111/453] Matt Zieger
+  LinkedIn: https://www.linkedin.com/in/mattzieger
+  ✓ Updated 18 fields
+    💼 Headline: Investing in economic mobility for all....
+
+[112/453] Jemima Lefevre
+  LinkedIn: https://www.linkedin.com/in/jemima-lefevre-06123a29
+  ✓ Updated 12 fields
+    💼 Headline: Vice President, People Advisory...
+
+[113/453] McKenna Quint
+  LinkedIn: https://www.linkedin.com/in/mckenna-quint
+  ✓ Updated 9 fields
+    💼 Headline: A reluctant People person...
+
+[114/453] Allie Barr
+  LinkedIn: https://www.linkedin.com/in/alliebarr
+  ✓ Updated 10 fields
+
+[115/453] Crystal Barnes
+  LinkedIn: https://www.linkedin.com/in/crystal-barnes-0259b95
+  ✓ Updated 21 fields
+    💼 Headline: Executive Vice President, Social Impact & Environmental Soci...
+
+[116/453] Frances Messano
+  LinkedIn: https://www.linkedin.com/in/frances-messano
+  ✓ Updated 16 fields
+    💼 Headline: CEO at NewSchools Venture Fund...
+
+[117/453] David Hanson, Ph.D.
+  LinkedIn: https://www.linkedin.com/in/davidhanson-phd
+  ✓ Updated 25 fields
+    💼 Headline: Evaluation | Environmental Social Science | Afro-Futurism...
+    🏢 Company: Cause IMPACTS
+    👔 Position: Director of Evaluation and Social Equity
+
+[118/453] Edward T. Rhodes, Jr.
+  LinkedIn: https://www.linkedin.com/in/edwardt1
+  ✓ Updated 17 fields
+    💼 Headline: Value Creator, Consultant and Private Equity Investor...
+
+[119/453] Andrea Cohan
+  LinkedIn: https://www.linkedin.com/in/acohan
+  ✓ Updated 10 fields
+
+[120/453] Kevin Nazemi
+  LinkedIn: https://www.linkedin.com/in/nazemi
+  ✓ Updated 10 fields
+    💼 Headline: Co-Founder & CEO Charlie...
+
+  → Progress: 120/453 processed...
+
+[121/453] Leah Hunt-Hendrix
+  LinkedIn: https://www.linkedin.com/in/leah-hunt-hendrix-b9537156
+  ✓ Updated 11 fields
+    💼 Headline: Co-founder at Solidaire and Way to Win, Senior Advisor at De...
+
+[122/453] Onika Abraham
+  LinkedIn: https://www.linkedin.com/in/onikaabraham
+  ✓ Updated 15 fields
+    💼 Headline: Executive Director, Blue Sky Funders Forum...
+
+[123/453] Jaime Touchstone
+  LinkedIn: https://www.linkedin.com/in/jaime-touchstone-7420973
+  ✓ Updated 17 fields
+    💼 Headline: Employment Law Advice, Counsel and Litigation Partner at Fut...
+
+[124/453] Amy Omand
+  LinkedIn: https://www.linkedin.com/in/amyomand
+  ⚠ Profile not found: https://www.linkedin.com/in/amyomand
+
+[125/453] Mary Nguyen Barry
+  LinkedIn: https://www.linkedin.com/in/mary-nguyen-barry-b7320a16
+  ✓ Updated 16 fields
+    💼 Headline: Senior Program Officer, Policy and Finance at Bill & Melinda...
+
+[126/453] Derrick Young Jr.
+  LinkedIn: https://www.linkedin.com/in/derrickyoungjr
+  ✓ Updated 16 fields
+    💼 Headline: Innovator | Executive Director l Philanthropist...
+
+[127/453] Jonathan L. Allen
+  LinkedIn: https://www.linkedin.com/in/jlallen8
+  ✓ Updated 17 fields
+    💼 Headline: Co-founder & Director of Development at Leadership Brainery...
+
+[128/453] Dominique Reese
+  LinkedIn: https://www.linkedin.com/in/dominique-reese-aa9698172
+  ✓ Updated 17 fields
+    💼 Headline: Building the next generation of entrepreneurs...
+    🏢 Company: Plug and Play Foundation
+
+[129/453] Candace Winfield, Realtor
+  LinkedIn: https://www.linkedin.com/in/candace-winfield-realtor
+  ✓ Updated 13 fields
+    💼 Headline: Realtor & Associate Director; Alumni Engagement at Year Up I...
+
+[130/453] Leah Toeniskoetter
+  LinkedIn: https://www.linkedin.com/in/leah-toeniskoetter
+  ✓ Updated 19 fields
+    💼 Headline: I bring community impact ideas to life...
+    🏢 Company: Deloitte
+    👔 Position: Senior Manager, Social Impact Activation Lead
+
+  → Progress: 130/453 processed...
+
+[131/453] Marcia Quiñones, MPA
+  LinkedIn: https://www.linkedin.com/in/marciaquinones
+  ✓ Updated 18 fields
+    💼 Headline: Leader in Philanthropy, Program Director, Grantmaker and str...
+    🏢 Company: Marin Community Foundation
+    👔 Position: Program Director, Education
+
+[132/453] Wilneida Negrón
+  LinkedIn: https://www.linkedin.com/in/wilneidanegron
+  ✓ Updated 17 fields
+
+[133/453] Jaime-Alexis Fowler
+  LinkedIn: https://www.linkedin.com/in/jaimealexisfowler
+  ✓ Updated 20 fields
+    💼 Headline: Building healthier, more equitable workplaces | Founder & CE...
+
+[134/453] Megan Wolle
+  LinkedIn: https://www.linkedin.com/in/meganwolle
+  ✓ Updated 10 fields
+    💼 Headline: Sr. Director of Stewardship, CHS Inc....
+
+[135/453] Wade Crowfoot
+  LinkedIn: https://www.linkedin.com/in/wade-crowfoot-6b866a6
+  ✓ Updated 15 fields
+    💼 Headline: California Secretary for Natural Resources...
+
+[136/453] Michelle Austin
+  LinkedIn: https://www.linkedin.com/in/michelle-austin-15380b178
+  ✓ Updated 12 fields
+    💼 Headline: Membership & Fitness Coordinator...
+
+[137/453] Ripal Patel
+  LinkedIn: https://www.linkedin.com/in/ripal-patel20
+  ✓ Updated 14 fields
+    💼 Headline: Founder | Tech Entrepreneur | Real-Estate Investor | Co-Foun...
+    👔 Position: Founder | Tech Entrepreneur | Real-Estate Investor | Co-Founder
+
+[138/453] Dana Stephenson
+  LinkedIn: https://www.linkedin.com/in/danarstephenson
+  ✓ Updated 19 fields
+    💼 Headline: Co-Founder, CEO @ Riipen | Bringing Real World Experience in...
+
+[139/453] Lindsay Strouse
+  LinkedIn: https://www.linkedin.com/in/lindsaystrouse
+  ✓ Updated 19 fields
+    💼 Headline: Head of Partnerships, Digital Skills and Inclusion at Tony B...
+
+[140/453] Simon Morfit
+  LinkedIn: https://www.linkedin.com/in/simon-morfit
+  ✓ Updated 19 fields
+    💼 Headline: Strategist | Researcher | Thought Leader | Tech-for-Good Ent...
+
+  → Progress: 140/453 processed...
+
+[141/453] Gloria Schoch
+  LinkedIn: https://www.linkedin.com/in/gloria-schoch-118a2b5
+  ✓ Updated 17 fields
+    💼 Headline: Senior Director of Global Impact at VF Corporation & Executi...
+
+[142/453] Amoretta Morris
+  LinkedIn: https://www.linkedin.com/in/amorettamorris
+  ✓ Updated 16 fields
+    💼 Headline: President at Borealis Philanthropy...
+
+[143/453] Haider Iqbal
+  LinkedIn: https://www.linkedin.com/in/haider-iqbal
+  ✓ Updated 13 fields
+    💼 Headline: Founder & CEO at GrabProspect | Open Networker 7K+...
+
+[144/453] Ashley Kuhlmann
+  LinkedIn: https://www.linkedin.com/in/ashley-kuhlmann-51380a87
+  ✓ Updated 17 fields
+    💼 Headline: Manager of Investor Relations, Flourish Fund...
+
+[145/453] Kat Gabrielle
+  LinkedIn: https://www.linkedin.com/in/katgabrielle
+  ✓ Updated 11 fields
+    💼 Headline: Founder of The Well Work | Fractional Chief Growth Officer a...
+
+[146/453] Karla Torres
+  LinkedIn: https://www.linkedin.com/in/karlatorres03
+  ✓ Updated 18 fields
+    💼 Headline: Mother | Head of Community Engagement | Tech Social Impact...
+
+[147/453] Ay'Anna Moody
+  LinkedIn: https://www.linkedin.com/in/ayannalmoody
+  ✓ Updated 19 fields
+    💼 Headline: Executive Director, Golden State Community Foundation...
+    👔 Position: Senior Director, Social Impact
+
+[148/453] Sean W. Couch
+  LinkedIn: https://www.linkedin.com/in/seancouch
+  ✓ Updated 12 fields
+    💼 Headline: Social Entrepreneur & Philanthropist...
+
+[149/453] Emily White
+  LinkedIn: https://www.linkedin.com/in/emilywhitesanfrancisco
+  ✓ Updated 12 fields
+
+[150/453] Brandi Howard
+  LinkedIn: https://www.linkedin.com/in/howardbrandi
+  ✓ Updated 11 fields
+    💼 Headline: President and CEO at East Bay Community Foundation...
+
+  → Progress: 150/453 processed...
+
+[151/453] Peter Bratt
+  LinkedIn: https://www.linkedin.com/in/peter-bratt-a243554
+  ✓ Updated 7 fields
+    💼 Headline: Owner, 5 STICK FILMS...
+
+[152/453] Bob Hamer
+  LinkedIn: https://www.linkedin.com/in/bob-hamer
+  ✓ Updated 17 fields
+    💼 Headline: Non Profit & Community Leader | Sales Exec | Mental Health A...
+    👔 Position: Executive Director, Cardinals Foundation
+
+[153/453] Nikki Neff
+  LinkedIn: https://www.linkedin.com/in/nikki-neff-08b82093
+  ✓ Updated 18 fields
+    💼 Headline: Fractional Social Impact Executive | Strategic Project and C...
+
+[154/453] Will Jawando
+  LinkedIn: https://www.linkedin.com/in/will-jawando-4658a55
+  ✓ Updated 13 fields
+    💼 Headline: Vice President, Montgomery County Council...
+
+[155/453] Sugeni Pérez-Sadler, Ed.D.
+  LinkedIn: https://www.linkedin.com/in/sugeniperezsadler
+  ✓ Updated 17 fields
+    💼 Headline: Social Impact Leader| Policy & Systems Change| Economic Mobi...
+
+[156/453] Andrew Firestone
+  LinkedIn: https://www.linkedin.com/in/arfirestone
+  ✓ Updated 18 fields
+    💼 Headline: CEO @ Mermaid...
+
+[157/453] Karin Tuxen-Bettman
+  LinkedIn: https://www.linkedin.com/in/karin-tuxen-bettman
+  ✓ Updated 15 fields
+    💼 Headline: Senior Program Manager at Google...
+    🏢 Company: Google
+    👔 Position: Senior Program Manager
+
+[158/453] Katia Williams
+  LinkedIn: https://www.linkedin.com/in/katia-williams
+  ✓ Updated 17 fields
+    💼 Headline: Mission-Driven Data Scientist...
+
+[159/453] Michael Bzdak
+  LinkedIn: https://www.linkedin.com/in/michael-bzdak-92950436
+  ✓ Updated 13 fields
+    💼 Headline: (Retired) Global Health Equity Johnson & Johnson...
+
+[160/453] Erika Radhansson
+  LinkedIn: https://www.linkedin.com/in/erikajohansson
+  ⚠ Profile not found: https://www.linkedin.com/in/erikajohansson
+
+[161/453] Moryah Jackson
+  LinkedIn: https://www.linkedin.com/in/moryahjackson
+  ✓ Updated 12 fields
+    💼 Headline: Community Impact + Leadership Development...
+
+[162/453] Elizabeth Pishny
+  LinkedIn: https://www.linkedin.com/in/elizabethpishny
+  ✓ Updated 17 fields
+    💼 Headline: Tech Policy | Government Affairs...
+
+[163/453] Nishita Gupte
+  LinkedIn: https://www.linkedin.com/in/nishitagupte
+  ✓ Updated 10 fields
+
+[164/453] Heather Venard
+  LinkedIn: https://www.linkedin.com/in/heathervenard
+  ✓ Updated 18 fields
+    💼 Headline: VP of Corporate Responsibility @ Smartsheet | Ex-Bumble, Sil...
+
+[165/453] Christina Chao
+  LinkedIn: https://www.linkedin.com/in/christinalchao
+  ✓ Updated 13 fields
+    💼 Headline: Leading Corporate Social Responsibility & Social Impact @ So...
+
+[166/453] Marcus Thompson
+  LinkedIn: https://www.linkedin.com/in/marcusthompson--
+  ✓ Updated 15 fields
+    💼 Headline: Senior Programs Manager at Fast Forward...
+
+[167/453] Balaji Ganapathy
+  LinkedIn: https://www.linkedin.com/in/balajiganapathy
+  ✓ Updated 18 fields
+    💼 Headline: 🌏 Global Social Impact Executive 💎30M+ Lives Empowered🌀Board...
+
+[168/453] Marcus Martin
+  LinkedIn: https://www.linkedin.com/in/marcus-martin-a8983665
+  ✓ Updated 14 fields
+    💼 Headline: CEO, Homium | CIO & Managing Partner, MPact Capital...
+
+[169/453] Palak Shah
+  LinkedIn: https://www.linkedin.com/in/palak-shah-67b638
+  ✓ Updated 11 fields
+    💼 Headline: Senior Fellow @ MIT | Building AI | Founder & Executive Dire...
+
+[170/453] Christina Ward
+  LinkedIn: https://www.linkedin.com/in/christinaward1
+  ✓ Updated 21 fields
+    💼 Headline: Strategy & Operations Lead at YouTube (Google), Advisor at A...
+
+  → Progress: 170/453 processed...
+
+[171/453] Thomas Harwell
+  LinkedIn: https://www.linkedin.com/in/thomasharwell
+  ✓ Updated 11 fields
+    💼 Headline: Head of Talent Engagement, EMEA, Google | Aspen UK Fellow...
+
+[172/453] Matthew Ganz
+  LinkedIn: https://www.linkedin.com/in/ndjamena
+  ✓ Updated 9 fields
+
+[173/453] Vivian Wan
+  LinkedIn: https://www.linkedin.com/in/viviancwan
+  ✓ Updated 12 fields
+    💼 Headline: CEO, Abode Services...
+
+[174/453] Neal Stewart
+  LinkedIn: https://www.linkedin.com/in/nealtstewart
+  ✓ Updated 12 fields
+    💼 Headline: Engagement Manager @ McKinsey & Company...
+
+[175/453] Katherine Wheatle
+  LinkedIn: https://www.linkedin.com/in/kwheatle
+  ✓ Updated 17 fields
+    💼 Headline: Racial equity policy scholar working in philanthropy...
+    🏢 Company: William and Flora Hewlett Foundation
+
+[176/453] Niena Drake
+  LinkedIn: https://www.linkedin.com/in/nienadrake
+  ✓ Updated 19 fields
+    💼 Headline: Emmy Award-Winning Exec. Producer | Career Coach + Strategis...
+
+[177/453] Jeremy Barnicle
+  LinkedIn: https://www.linkedin.com/in/jeremy-barnicle-4164651
+  ✓ Updated 9 fields
+
+[178/453] idris brewster
+  LinkedIn: https://www.linkedin.com/in/idrisb
+  ✓ Updated 15 fields
+    💼 Headline: Founder at Kinfolk | Forbes 30 Under 30...
+
+[179/453] Charlaé Washington
+  LinkedIn: https://www.linkedin.com/in/charlae
+  ✓ Updated 7 fields
+    💼 Headline: I build with love and data ❤️📊 | People Strategy (HR), Progr...
+
+[180/453] Jessica Nowlan
+  LinkedIn: https://www.linkedin.com/in/jessicanowlan
+  ✓ Updated 14 fields
+    💼 Headline: President,  ReImagine Freedom...
+
+  → Progress: 180/453 processed...
+
+[181/453] Kent Shaffer
+  LinkedIn: https://www.linkedin.com/in/kentshaffer
+  ✓ Updated 12 fields
+    💼 Headline: Cofounder @ Create Good | Big data for collective impact...
+
+[182/453] Corey Marshall
+  LinkedIn: https://www.linkedin.com/in/coreymarshall
+  ✓ Updated 14 fields
+    💼 Headline: Executive Leader | Impact Led Growth Strategist | Driving In...
+
+[183/453] Sara Eckhouse
+  LinkedIn: https://www.linkedin.com/in/saraeckhouse
+  ✓ Updated 14 fields
+    💼 Headline: Former Founding Executive Director at FoodShot Global...
+
+[184/453] Grace Seow
+  LinkedIn: https://www.linkedin.com/in/graceseow
+  ✓ Updated 13 fields
+    💼 Headline: Social Impact I Development I Philanthropy I  Advocacy Commu...
+
+[185/453] Evan Shy
+  LinkedIn: https://www.linkedin.com/in/evanshy25
+  ✓ Updated 15 fields
+    💼 Headline: Founder & CEO | Transforming Workforces | TechStars NYC Alum...
+
+[186/453] Jill Kunishima
+  LinkedIn: https://www.linkedin.com/in/jmkunishima
+  ✓ Updated 20 fields
+    💼 Headline: Mobilizing resources and funds for mission-driven organizati...
+
+[187/453] Jake Edwards
+  LinkedIn: https://www.linkedin.com/in/jake-edwards-592aa726
+  ✓ Updated 12 fields
+    💼 Headline: Vice President of Impact Investing at Social Finance...
+
+[188/453] Miguel Albarran Fernandez
+  LinkedIn: https://www.linkedin.com/in/miguel-af
+  ✓ Updated 16 fields
+    💼 Headline: Facilitator, Grant maker, Fundraiser, and Soul Rebel...
+
+[189/453] Aaron Everett
+  LinkedIn: https://www.linkedin.com/in/aaron-everett-704a66a2
+  ✓ Updated 14 fields
+    💼 Headline: Helps purpose-driven organizations solve their toughest prob...
+
+[190/453] Mistique Cano
+  LinkedIn: https://www.linkedin.com/in/mistiquecano
+  ✓ Updated 5 fields
+
+  → Progress: 190/453 processed...
+
+[191/453] Jason Saul
+  LinkedIn: https://www.linkedin.com/in/thejasonsaul
+  ✓ Updated 18 fields
+    💼 Headline: Founder, Impact Genome | UChicago Center for Impact Sciences...
+
+[192/453] Berit Ashla
+  LinkedIn: https://www.linkedin.com/in/berit-ashla-40937339
+  ✓ Updated 17 fields
+    💼 Headline: Integrated Philanthropy...
+    👔 Position: Director of Philanthropy
+
+[193/453] Rohini Krishnapura
+  LinkedIn: https://www.linkedin.com/in/rohini-krishnapura
+  ✓ Updated 16 fields
+    💼 Headline: Global Technical Product Leader | Social Impact | Amazon Web...
+
+[194/453] Ben Toopet
+  LinkedIn: https://www.linkedin.com/in/ben-toopet
+  ✓ Updated 12 fields
+    💼 Headline: Building a Community around Sports...
+
+[195/453] Michelle Hunsberger
+  LinkedIn: https://www.linkedin.com/in/michelle-hunsberger-1575596b
+  ✓ Updated 12 fields
+    💼 Headline: Social impact and communications specialist | Employee Healt...
+
+[196/453] Wesley May
+  LinkedIn: https://www.linkedin.com/in/wesley-may-18281853
+  ✓ Updated 13 fields
+    💼 Headline: Scaling Enterprise Engineering Teams Through Global Staff Au...
+
+[197/453] Erin Axelrod
+  LinkedIn: https://www.linkedin.com/in/erinaxelrod
+  ✓ Updated 14 fields
+    💼 Headline: Project Director, Jonas Philanthropies Climate Health
+      ...
+
+[198/453] Erin Bradbury
+  LinkedIn: https://www.linkedin.com/in/erinbradbury
+  ✓ Updated 9 fields
+
+[199/453] Tricia Levesque
+  LinkedIn: https://www.linkedin.com/in/tricialevesque
+  ⚠ Profile not found: https://www.linkedin.com/in/tricialevesque
+
+[200/453] James Francis
+  LinkedIn: https://www.linkedin.com/in/jamesefrancis
+  ✓ Updated 14 fields
+    💼 Headline: Leading the AI Revolution with Integrity...
+
+  → Progress: 200/453 processed...
+
+[201/453] Celena Green
+  LinkedIn: https://www.linkedin.com/in/celenagreen
+  ✓ Updated 13 fields
+    💼 Headline: Founder, ProsperWorks | Mission-driven leader leveraging tec...
+
+[202/453] Luis Miranda
+  LinkedIn: https://www.linkedin.com/in/luis-miranda-1150889
+  ✓ Updated 19 fields
+    💼 Headline: Strategist and Philanthropist...
+
+[203/453] Alex M. Johnson
+  LinkedIn: https://www.linkedin.com/in/alex-m-johnson-2289295
+  ✓ Updated 20 fields
+    💼 Headline: Philanthropy + Community + Social Impact Opinions are my own...
+    👔 Position: Chief of Staff (Programs)
+
+[204/453] Kendra Janelle Ross, PhD
+  LinkedIn: https://www.linkedin.com/in/kendraross
+  ✓ Updated 21 fields
+    💼 Headline: Head of Social Impact at Duolingo + Award-winning Cultural W...
+
+[205/453] John Jackson
+  LinkedIn: https://www.linkedin.com/in/johnjackson
+  ✓ Updated 14 fields
+    💼 Headline: Unlocking Potential in Prison | Executive Director | Defy Ve...
+
+[206/453] Edward Wang
+  LinkedIn: https://www.linkedin.com/in/edwardwangcsi
+  ✓ Updated 11 fields
+    💼 Headline: Philanthropy and Social Impact...
+
+[207/453] Jessica Fiscella
+  LinkedIn: https://www.linkedin.com/in/jessicafiscella
+  ✓ Updated 18 fields
+    💼 Headline: Driving Purpose Through Strategy | CSR & Cause Marketing Exp...
+    🏢 Company: The Breast Cancer Research Foundation
+    👔 Position: Advisory Board Member
+
+[208/453] Malcolm McClain
+  LinkedIn: https://www.linkedin.com/in/malcolm-mcclain-834a1b31
+  ✓ Updated 11 fields
+    💼 Headline: Chief of Staff at BrightUp...
+
+[209/453] Kizzi Thompson
+  LinkedIn: https://www.linkedin.com/in/kizzi-t-518b623
+  ⚠ Profile not found: https://www.linkedin.com/in/kizzi-t-518b623
+
+[210/453] Ben Jealous
+  LinkedIn: https://www.linkedin.com/in/ben-jealous
+  ✓ Updated 26 fields
+    💼 Headline: Executive Director, Sierra Club...
+    🏢 Company: Sierra Club
+    👔 Position: Executive Director
+
+  → Progress: 210/453 processed...
+
+[211/453] Michele Lawrence Jawando
+  LinkedIn: https://www.linkedin.com/in/michele-lawrence-jawando
+  ✓ Updated 11 fields
+    💼 Headline: President Omidyar Network| Builder| Values Driven Leadership...
+
+[212/453] James Wright
+  LinkedIn: https://www.linkedin.com/in/jamesewright
+  ✓ Updated 17 fields
+    💼 Headline: Unapologetically Obsessed with Inclusion ™...
+
+[213/453] David Lewis
+  LinkedIn: https://www.linkedin.com/in/davidalewismba
+  ✓ Updated 17 fields
+    💼 Headline: Founder & CEO — MoveEV...
+
+[214/453] Michael Skolnik
+  LinkedIn: https://www.linkedin.com/in/michael-skolnik-4998365
+  ✓ Updated 14 fields
+    💼 Headline: Founding Partner of The Soze Agency...
+
+[215/453] Malika Saada Saar
+  LinkedIn: https://www.linkedin.com/in/malika-saada-saar
+  ✓ Updated 18 fields
+    💼 Headline: Tech Executive & Responsible AI Leader | Policy & Human Righ...
+
+[216/453] Adam Russell Taylor
+  LinkedIn: https://www.linkedin.com/in/adam-russell-taylor
+  ✓ Updated 18 fields
+    💼 Headline: President at Sojourners...
+
+[217/453] John MacPhee
+  LinkedIn: https://www.linkedin.com/in/johnamacphee
+  ✓ Updated 18 fields
+    💼 Headline: Chief Executive Officer @ The Jed Foundation | Youth Mental ...
+
+[218/453] Sarah Lee Steele
+  LinkedIn: https://www.linkedin.com/in/sarah-lee-steele
+  ✓ Updated 15 fields
+    💼 Headline: Senior Program Manager & Business Development | x-Google, Yo...
+
+[219/453] Leslie K
+  LinkedIn: https://www.linkedin.com/in/keetonleslie
+  ⚠ Profile not found: https://www.linkedin.com/in/keetonleslie
+
+[220/453] Megan Trotter
+  LinkedIn: https://www.linkedin.com/in/megantrotter
+  ✓ Updated 15 fields
+    💼 Headline: Social Impact and Sustainability Strategist | Turning Comple...
+
+  → Progress: 220/453 processed...
+
+[221/453] Kristin J. Hansen
+  LinkedIn: https://www.linkedin.com/in/kristinjhansen
+  ✓ Updated 17 fields
+    💼 Headline: Executive Director at Civic Health Project; Keynote Coach at...
+
+[222/453] Sonia Lowery
+  LinkedIn: https://www.linkedin.com/in/sonialowery
+  ⚠ Profile not found: https://www.linkedin.com/in/sonialowery
+
+[223/453] Ginger Naylor
+  LinkedIn: https://www.linkedin.com/in/gingernaylor
+  ✓ Updated 12 fields
+    💼 Headline: CEO @ Outward Bound, Community Organizer, Coach...
+
+[224/453] Robert Joseph
+  LinkedIn: https://www.linkedin.com/in/robert-joseph-95503a7
+  ✓ Updated 12 fields
+    💼 Headline: Vice President of Programs at Evelyn and Walter Haas, Jr. Fu...
+
+[225/453] Alexander Busansky
+  LinkedIn: https://www.linkedin.com/in/alexander-busansky-72161757
+  ✓ Updated 13 fields
+    💼 Headline: President of Impact Justice...
+
+[226/453] Edgar Villanueva
+  LinkedIn: https://www.linkedin.com/in/edgarv
+  ✓ Updated 11 fields
+
+[227/453] Alyssa (Farrelly) Heath
+  LinkedIn: https://www.linkedin.com/in/alyssa-farrelly-heath-b822602a
+  ✓ Updated 16 fields
+    💼 Headline: Chief Operating Officer & Director of Social Impact, Fire Ca...
+
+[228/453] Yamilee Toussaint
+  LinkedIn: https://www.linkedin.com/in/yamilee-toussaint
+  ⚠ Profile not found: https://www.linkedin.com/in/yamilee-toussaint
+
+[229/453] Chris Kiagiri
+  LinkedIn: https://www.linkedin.com/in/chris-kiagiri
+  ⚠ Profile not found: https://www.linkedin.com/in/chris-kiagiri
+
+[230/453] Brian Walker
+  LinkedIn: https://www.linkedin.com/in/briancwalker1985
+  ✓ Updated 13 fields
+    💼 Headline: Marketing, Biz Dev, CSR | CEO @ Picture Motion (A Publicis M...
+
+  → Progress: 230/453 processed...
+
+[231/453] Kelly Yun
+  LinkedIn: https://www.linkedin.com/in/kellyyun88
+  ⚠ Profile not found: https://www.linkedin.com/in/kellyyun88
+
+[232/453] Tya Ward, MSW
+  LinkedIn: https://www.linkedin.com/in/tya-ward-msw-2582035
+  ⚠ Profile not found: https://www.linkedin.com/in/tya-ward-msw-2582035
+
+[233/453] Maxwell Pamphile
+  LinkedIn: https://www.linkedin.com/in/maxwell-pamphile
+  ✓ Updated 13 fields
+    💼 Headline: VP of Partnerships | SaaS & Cloud | Strategic Alliances...
+
+[234/453] Jonathan Atkins, CDE®
+  LinkedIn: https://www.linkedin.com/in/atkinsjonathan
+  ✓ Updated 15 fields
+    💼 Headline: People & Culture | Inclusion & Belonging | Social Impact Exe...
+
+[235/453] Aneisha Hughes
+  LinkedIn: https://www.linkedin.com/in/aneishahughes
+  ✓ Updated 18 fields
+    💼 Headline: Strategic Consultant for Good | Award-Winning Filmmaker | Na...
+
+[236/453] Juliana Han
+  LinkedIn: https://www.linkedin.com/in/julianahan
+  ✓ Updated 8 fields
+
+[237/453] Jasper van Brakel
+  LinkedIn: https://www.linkedin.com/in/jasper-van-brakel-147434
+  ✓ Updated 11 fields
+    💼 Headline: CEO | Board Member | Regenerative Finance | Impact Investing...
+    🏢 Company: RSF Social Finance
+
+[238/453] Aanya Niaz
+  LinkedIn: https://www.linkedin.com/in/aanyaniaz
+  ✓ Updated 14 fields
+    💼 Headline: Global Impact Leader @ AWS | PhD Researcher, AI & Learning...
+    👔 Position: Global Impact & Product Leader, AWS Education Equity Initiative
+
+[239/453] Jessica Oya
+  LinkedIn: https://www.linkedin.com/in/jessica-oya
+  ✓ Updated 12 fields
+    💼 Headline: Oakland Goes Outdoors Coordinator...
+
+[240/453] Sandra Topić
+  LinkedIn: https://www.linkedin.com/in/sandratopic
+  ✓ Updated 18 fields
+    💼 Headline: AI for Good @ AWS☁️...
+
+  → Progress: 240/453 processed...
+
+[241/453] Heidi Hunt
+  LinkedIn: https://www.linkedin.com/in/hunt-heidi
+  ✓ Updated 15 fields
+    💼 Headline: Social Responsibility & Impact at AWS...
+
+[242/453] Kristi Rhoades
+  LinkedIn: https://www.linkedin.com/in/kristirhoades
+  ✓ Updated 9 fields
+    💼 Headline: Engagement Manager | AWS Social Responsibility and Impact...
+
+[243/453] Max Weihe
+  LinkedIn: https://www.linkedin.com/in/maxweihe
+  ✓ Updated 15 fields
+    💼 Headline: Social Impact @ AWS...
+
+[244/453] Anna Tobert
+  LinkedIn: https://www.linkedin.com/in/anna-tobert
+  ✓ Updated 13 fields
+    💼 Headline: Public Speaking and Communications Coach...
+
+[245/453] LaToya Thomas PMP, CSPO, CSM, CLSSGB
+  LinkedIn: https://www.linkedin.com/in/latoya-thomas-mba-pmp
+  ✓ Updated 15 fields
+    💼 Headline: Operational Excellence & Business Transformation | AI & Clou...
+
+[246/453] Alexandra Volpe
+  LinkedIn: https://www.linkedin.com/in/alexandra-volpe-43195274
+  ✓ Updated 10 fields
+    💼 Headline: Executive Director, Beloved Village...
+
+[247/453] Caleb Zigas
+  LinkedIn: https://www.linkedin.com/in/caleb-zigas-42b2792
+  ✓ Updated 10 fields
+
+[248/453] Andrea Keller Helsel
+  LinkedIn: https://www.linkedin.com/in/andreakellerhelsel
+  ✓ Updated 12 fields
+    💼 Headline: ******...
+
+[249/453] Cary Simmons
+  LinkedIn: https://www.linkedin.com/in/cary-simmons-74a7468
+  ✓ Updated 14 fields
+    💼 Headline: Democracy happens outside!...
+
+[250/453] Lucretia P. Murphy
+  LinkedIn: https://www.linkedin.com/in/lucretia-p-murphy-98aa6128
+  ✓ Updated 14 fields
+    💼 Headline: "Hate won't only destroy us. It will destroy these people th...
+
+  → Progress: 250/453 processed...
+
+[251/453] William Jackson
+  LinkedIn: https://www.linkedin.com/in/william-j-greenhouse
+  ✓ Updated 18 fields
+    💼 Headline: Doing good work with my people...
+
+[252/453] Maria Dejito
+  LinkedIn: https://www.linkedin.com/in/maria-dejito-84726a36
+  ✓ Updated 6 fields
+    💼 Headline: DC native with a passion for serving and improving the lives...
+
+[253/453] Brandon Q. Jones
+  LinkedIn: https://www.linkedin.com/in/brandon-q-jones
+  ✓ Updated 15 fields
+    💼 Headline: SVP, National Director of External Affairs at Comerica Bank ...
+
+[254/453] Maureen Alma Sigliano
+  LinkedIn: https://www.linkedin.com/in/maureen-alma-s-62baab
+  ✓ Updated 10 fields
+
+[255/453] Michael Munoz
+  LinkedIn: https://www.linkedin.com/in/michaelrmunoz
+  ⚠ Profile not found: https://www.linkedin.com/in/michaelrmunoz
+
+[256/453] Mariam Wakili
+  LinkedIn: https://www.linkedin.com/in/mariam-wakili-power-purpose-philanthropy
+  ✓ Updated 20 fields
+    💼 Headline: Philanthropy & Strategy | Social Impact Leader | Driving Gro...
+    🏢 Company: PolicyLink
+    👔 Position: Director of Philanthropic Partnerships
+
+[257/453] Arielle Contreras
+  LinkedIn: https://www.linkedin.com/in/ariellecontrerasdiaz
+  ✓ Updated 15 fields
+    💼 Headline: Peabody Nominated TV Writer, Producer: Netflix, Amazon Prime...
+
+[258/453] Kate Leidy
+  LinkedIn: https://www.linkedin.com/in/kate-leidy
+  ✓ Updated 13 fields
+    💼 Headline: LinkedIn Account Executive - Learning...
+
+[259/453] Isa Noack
+  LinkedIn: https://www.linkedin.com/in/isa-noack-75803b27
+  ✓ Updated 17 fields
+    💼 Headline: AI, Marketing & Partnerships @ Google | BA in Journalism...
+
+[260/453] Renuka [Ren-e-ka] Kher [Care]
+  LinkedIn: https://www.linkedin.com/in/renuka-ren-e-ka-kher-care-0894812
+  ✓ Updated 6 fields
+
+  → Progress: 260/453 processed...
+
+[261/453] Donnel Baird
+  LinkedIn: https://www.linkedin.com/in/donnel-baird
+  ✓ Updated 13 fields
+    💼 Headline: Founder, Stealth Startup. Founder, BlocPower BOD @ New York ...
+
+[262/453] Samuel Rugi
+  LinkedIn: https://www.linkedin.com/in/samrugi
+  ✓ Updated 7 fields
+
+[263/453] Alison Ascher Webber
+  LinkedIn: https://www.linkedin.com/in/alisonascherwebber
+  ✓ Updated 13 fields
+    💼 Headline: *Social Innovation * Development Director * Edtech *Educatio...
+
+[264/453] Abi Ogunmwonyi
+  LinkedIn: https://www.linkedin.com/in/abiogun
+  ✓ Updated 7 fields
+
+[265/453] Dwight S. Williams
+  LinkedIn: https://www.linkedin.com/in/dwightswill
+  ✓ Updated 22 fields
+    💼 Headline: Educator | Connector | Coach:
+I coach math educators and par...
+    🏢 Company: Robin Hood
+    👔 Position: Summer Resident – Blue Ridge Labs Fellow
+
+[266/453] Roosevelt Callahan
+  LinkedIn: https://www.linkedin.com/in/roosevelt-callahan
+  ✓ Updated 21 fields
+    💼 Headline: Chief Program Officer | Career and Leadership Coach | Confli...
+    🏢 Company: The Knowledge House
+    👔 Position: Chief Program Officer
+
+[267/453] Ryan Demarco Anderson,CDP
+  LinkedIn: https://www.linkedin.com/in/ryandemarcoanderson
+  ✓ Updated 23 fields
+    💼 Headline: Head of Corporate Citizenship Philanthropic Strategy | ACCP ...
+    🏢 Company: Comerica Bank
+    👔 Position: Head of Corporate Citizenship Philanthropic Strategy
+
+[268/453] Jalon Thomas
+  LinkedIn: https://www.linkedin.com/in/jalonthomas
+  ✓ Updated 15 fields
+    💼 Headline: SWE @ Google | Ridley and Rodman Scholar at the University o...
+
+[269/453] Leo Espinoza
+  LinkedIn: https://www.linkedin.com/in/lejcku
+  ✓ Updated 5 fields
+
+[270/453] Nazanine Scheuer
+  LinkedIn: https://www.linkedin.com/in/nazanine-scheuer-a883a57
+  ✓ Updated 5 fields
+
+  → Progress: 270/453 processed...
+
+[271/453] Velda Habaj, SPHR,  SCP
+  LinkedIn: https://www.linkedin.com/in/velda-habaj
+  ✓ Updated 10 fields
+    💼 Headline: HR Executive | 20+ yrs driving people-first strategies that ...
+
+[272/453] Annie Lewin
+  LinkedIn: https://www.linkedin.com/in/annielewin
+  ✓ Updated 12 fields
+    💼 Headline: Senior Director of Global Programs and Asia Pacific, Google....
+
+[273/453] Milena Meehan
+  LinkedIn: https://www.linkedin.com/in/milenameehan
+  ✓ Updated 15 fields
+    💼 Headline: Manager, Americas Sales Associate Program...
+
+[274/453] CHELSEA TATE
+  LinkedIn: https://www.linkedin.com/in/link-with-chelsea
+  ✓ Updated 5 fields
+
+[275/453] Michelle N. Phillips, CFE, CIG, CPO
+  LinkedIn: https://www.linkedin.com/in/michelle-n-phillips
+  ⚠ Profile not found: https://www.linkedin.com/in/michelle-n-phillips
+
+[276/453] Don Gates
+  LinkedIn: https://www.linkedin.com/in/don-gates-735a49b3
+  ✓ Updated 16 fields
+    💼 Headline: MBA Candidate | Leeds School of Business...
+    🏢 Company: Chatham Financial
+    👔 Position: Valuation, Reporting, and Analytics
+
+[277/453] Denisha DeLane
+  LinkedIn: https://www.linkedin.com/in/denishadelane
+  ✓ Updated 12 fields
+    💼 Headline: CEO at Melanin Meanings | Target Forward Founders 2023 | Pas...
+
+[278/453] Nadia Anderson, Ph.D.
+  LinkedIn: https://www.linkedin.com/in/nadiaianderson
+  ✓ Updated 11 fields
+    💼 Headline: Strategic Initiatives |  Public Policy | Transportation + Mo...
+
+[279/453] Musa Kamara
+  LinkedIn: https://www.linkedin.com/in/musa-kamaaraa-4734b24d
+  ✓ Updated 21 fields
+    💼 Headline: Founder @ Huda Strategies | Certified in Business and Entrep...
+    🏢 Company: Huda Strategies
+    👔 Position: CEO
+
+[280/453] Nishant Bagadia
+  LinkedIn: https://www.linkedin.com/in/nishantbagadia
+  ✓ Updated 22 fields
+    💼 Headline: Global Partnerships @Breakthrough Energy, Founder Bill Gates...
+    🏢 Company: Fair Trade USA
+    👔 Position: Board Member
+
+  → Progress: 280/453 processed...
+
+[281/453] Keerthy Kishore
+  LinkedIn: https://www.linkedin.com/in/keerthy-kishore
+  ✓ Updated 13 fields
+    💼 Headline: Data Scientist | Research Engagement Manager...
+
+[282/453] Mel Harris
+  LinkedIn: https://www.linkedin.com/in/melharrisstrategy
+  ✓ Updated 6 fields
+
+[283/453] Indira Henard, DSW, MSW
+  LinkedIn: https://www.linkedin.com/in/indirahenard
+  ✓ Updated 16 fields
+    💼 Headline: President and CEO| Board Member| Trustee| Doula|
+Faculty Mem...
+
+[284/453] Bella Jasquez
+  LinkedIn: https://www.linkedin.com/in/bella-jasquez
+  ✓ Updated 5 fields
+
+[285/453] Allison (Bernstein) Paillant MBA, MPP
+  LinkedIn: https://www.linkedin.com/in/allisoningebernstein
+  ✓ Updated 18 fields
+    💼 Headline: Strategic Partnerships | Business Development | Board Member...
+    👔 Position: Self Employed
+
+[286/453] Zaira Macegoza
+  LinkedIn: https://www.linkedin.com/in/zaira-macegoza
+  ✓ Updated 9 fields
+    💼 Headline: Individual Giving Philanthropy Consultant - Social impact ad...
+
+[287/453] David Kyuman Kim
+  LinkedIn: https://www.linkedin.com/in/dkkpublic
+  ⚠ Profile not found: https://www.linkedin.com/in/dkkpublic
+
+[288/453] Laura Wallace, M.A.
+  LinkedIn: https://www.linkedin.com/in/lauramw
+  ✓ Updated 15 fields
+    💼 Headline: VP, Strategic Engagement & Corporate Relations...
+    🏢 Company: The African American Chamber of Commerce of New Jersey (AACCNJ)
+
+[289/453] Erika Evearitt
+  LinkedIn: https://www.linkedin.com/in/erika-evearitt
+  ✓ Updated 13 fields
+    💼 Headline: Assistant Dean of External Affairs & Development at
+UC Berke...
+
+[290/453] Marwa Ibraheem, PhD
+  LinkedIn: https://www.linkedin.com/in/marwa-w-ibraheem
+  ✓ Updated 21 fields
+    💼 Headline: Nonprofit Development Leader | Social Impact Strategist | Fu...
+    🏢 Company: Legal Assistance to the Elderly, Inc. 
+
+  → Progress: 290/453 processed...
+
+[291/453] Yasmeen Magaña
+  LinkedIn: https://www.linkedin.com/in/yasmeenmagana
+  ⚠ Profile not found: https://www.linkedin.com/in/yasmeenmagana
+
+[292/453] Monica Silva Gutiérrez
+  LinkedIn: https://www.linkedin.com/in/monicasilvagutierrez
+  ✓ Updated 21 fields
+    💼 Headline: People and Team Success | Business Model, Organizational Des...
+    🏢 Company: Google
+    👔 Position: Head of Strategy and Operations, People Development
+
+[293/453] Ashley Sherwin
+  LinkedIn: https://www.linkedin.com/in/ashleycsherwin
+  ✓ Updated 21 fields
+    💼 Headline: Co-Founder at Giving Credit...
+    🏢 Company: Community Finance
+    👔 Position: Co-Founder and Board Member
+
+[294/453] Adam Delgado
+  LinkedIn: https://www.linkedin.com/in/adam-delgado
+  ✓ Updated 12 fields
+    💼 Headline: UX Research | Harvard MPA Candidate | Center for Public Lead...
+
+[295/453] Maria Broeckel
+  LinkedIn: https://www.linkedin.com/in/maria-broeckel-4508a337
+  ✓ Updated 15 fields
+    💼 Headline: Nonprofit Development/ Youth Leadership/ Grant Administratio...
+    🏢 Company: Self-employed
+    👔 Position: Consultant
+
+[296/453] Irene Hong
+  LinkedIn: https://www.linkedin.com/in/irenehong
+  ✓ Updated 12 fields
+    💼 Headline: Counsel at William and Flora Hewlett Foundation • Go Quakers...
+
+[297/453] Emma Lundberg, MPA
+  LinkedIn: https://www.linkedin.com/in/emma-p-lundberg
+  ✓ Updated 21 fields
+    💼 Headline: Seeking opportunities in Los Angeles to support high-impact ...
+    🏢 Company: Tipping Point Community
+    👔 Position: Institutional Giving Manager
+
+[298/453] Lauren Gutierrez-Brown
+  LinkedIn: https://www.linkedin.com/in/lauren-gutierrez-brown
+  ✓ Updated 21 fields
+    💼 Headline: Operations Innovator: Program Management | Workforce Develop...
+    🏢 Company: Advancing Women in Tech (AWIT)
+    👔 Position: Director of Programs
+
+[299/453] Natalia San Martin
+  LinkedIn: https://www.linkedin.com/in/natalia-san-martin
+  ✓ Updated 14 fields
+    💼 Headline: Connecting dots |
+Imagine the possibilities, always....
+
+[300/453] Trina Villanueva
+  LinkedIn: https://www.linkedin.com/in/trinavillanueva
+  ✓ Updated 12 fields
+
+  → Progress: 300/453 processed...
+
+[301/453] Michael Belinsky
+  LinkedIn: https://www.linkedin.com/in/michaelbelinsky
+  ✓ Updated 18 fields
+    💼 Headline: AI for Good | Impact Investing | Philanthropy | ex-Bridgespa...
+
+[302/453] Philippe Sion
+  LinkedIn: https://www.linkedin.com/in/philippe-sion
+  ✓ Updated 16 fields
+    💼 Headline: Philanthropic Advisor...
+    🏢 Company: Private Family Office
+    👔 Position: Philanthropic Advisor
+
+[303/453] Bryan Lattimore
+  LinkedIn: https://www.linkedin.com/in/bryanlattimore
+  ✓ Updated 16 fields
+    💼 Headline: Using creativity to make things that matter...
+
+[304/453] Gabriel Grant, Ph.D.
+  LinkedIn: https://www.linkedin.com/in/gabrielgrant
+  ✓ Updated 21 fields
+    💼 Headline: Dad, Husband, Author, Speaker, Facilitator, Impact Strategis...
+
+[305/453] Corey  Scott McDonald
+  LinkedIn: https://www.linkedin.com/in/feudebois03
+  ✓ Updated 17 fields
+    💼 Headline: Sustainability & Innovation | Meta | Columbia University | A...
+
+[306/453] Chris Busselle
+  LinkedIn: https://www.linkedin.com/in/busselle
+  ✓ Updated 13 fields
+    💼 Headline: Values-driven social impact leader...
+
+[307/453] Jonathan Pulley
+  LinkedIn: https://www.linkedin.com/in/jonathan-pulley-m-a-
+  ✓ Updated 14 fields
+    💼 Headline: Executive Leader | Social Impact Advocate | Community Engage...
+
+[308/453] Rena Davis
+  LinkedIn: https://www.linkedin.com/in/renaadavis
+  ✓ Updated 7 fields
+
+[309/453] Loni Mahanta
+  LinkedIn: https://www.linkedin.com/in/loni-mahanta-36a685a
+  ✓ Updated 24 fields
+    💼 Headline: COO of the AI Education Project | AI & Education; Future of ...
+    🏢 Company: aiEDU.org
+    👔 Position: Chief Operating Officer & General Counsel
+
+[310/453] Hannah Abuzaineh
+  LinkedIn: https://www.linkedin.com/in/abuzaineh
+  ✓ Updated 22 fields
+    💼 Headline: Impact Strategy | Brand Storytelling | Cultural Change...
+    🏢 Company: The North Face
+    👔 Position: Global Brand Narrative
+
+  → Progress: 310/453 processed...
+
+[311/453] Lili Gangas
+  LinkedIn: https://www.linkedin.com/in/liligangas
+  ✓ Updated 18 fields
+    💼 Headline: Chief Technology Community Officer at Kapor Foundation | Inc...
+
+[312/453] Kaity Galanos
+  LinkedIn: https://www.linkedin.com/in/kaity-galanos
+  ✓ Updated 22 fields
+    💼 Headline: Strategic Accounts | Driving revenue growth and customized S...
+    🏢 Company: Unite Us
+    👔 Position: Community Engagement Manager
+
+[313/453] Cheryl Stevens
+  LinkedIn: https://www.linkedin.com/in/cheryl-stevens1
+  ✓ Updated 15 fields
+    💼 Headline: Managing Director & Co-Head of the Chicago Office at DSG | K...
+
+[314/453] Addie Achan
+  LinkedIn: https://www.linkedin.com/in/addie-achan
+  ✓ Updated 17 fields
+    💼 Headline: ai x social impact...
+    🏢 Company: Fast Forward
+    👔 Position: Director of AI Programs
+
+[315/453] Marilyn Higi Kincaid
+  LinkedIn: https://www.linkedin.com/in/mhkincaid
+  ✓ Updated 16 fields
+    💼 Headline: Youth Mental Health & Wellness Advocate | Cause Partnerships...
+
+[316/453] Lassana Toure
+  LinkedIn: https://www.linkedin.com/in/lassanatoure
+  ✓ Updated 13 fields
+    💼 Headline: ....
+
+[317/453] Jama Adams
+  LinkedIn: https://www.linkedin.com/in/jamaadams
+  ✓ Updated 23 fields
+    💼 Headline: JamaAdams.com...
+    🏢 Company: Responsible Innovation Labs
+    👔 Position: Chief Operating Officer
+
+[318/453] Shannon Albert
+  LinkedIn: https://www.linkedin.com/in/shannonalbertstrategicleader
+  ✓ Updated 21 fields
+    💼 Headline: Dynamic Strategic Leader Driving Revenue Growth, Operational...
+    🏢 Company: Year Up
+    👔 Position: Tech Sales & Account Management
+
+[319/453] Francine Marquis
+  LinkedIn: https://www.linkedin.com/in/francinemarquis
+  ✓ Updated 24 fields
+    💼 Headline: AI Program Manager, Google Cloud| LEAD Atlanta '26...
+    🏢 Company: Google
+    👔 Position: Program Manager, Google Cloud AI and Industry Solutions
+
+[320/453] Sterrin Bird, CFRE
+  LinkedIn: https://www.linkedin.com/in/sterrin-bird-cfre-aab3545
+  ✓ Updated 21 fields
+    💼 Headline: Proud Mom; Change Champion; Purpose Driven Global C-Suite Ex...
+    🏢 Company: We Are For Good
+    👔 Position: Impact Uprising Founding Member
+
+  → Progress: 320/453 processed...
+
+[321/453] Emily Calderon Galdeano
+  LinkedIn: https://www.linkedin.com/in/emilycalderon
+  ✓ Updated 7 fields
+
+[322/453] Alexandra Corvin
+  LinkedIn: https://www.linkedin.com/in/alexandracorvin
+  ✓ Updated 15 fields
+    💼 Headline: Executive Recruiter, DSG | Koya...
+
+[323/453] Salima Bhimani, PhD
+  LinkedIn: https://www.linkedin.com/in/moonshottechnologyleader
+  ✓ Updated 26 fields
+    💼 Headline: Tech Exec I Fmr Google Chief Strategist, Director I Trusted ...
+    🏢 Company: 10XResponsibletech
+    👔 Position: Principal
+
+[324/453] Lucian Teo
+  LinkedIn: https://www.linkedin.com/in/lucianteo
+  ✓ Updated 17 fields
+    💼 Headline: Doing Good Well...
+
+[325/453] Desiree Morton
+  LinkedIn: https://www.linkedin.com/in/desireekmorton
+  ✓ Updated 15 fields
+    💼 Headline: Architect of Connection and Belonging |  Building and Learni...
+
+[326/453] Silvina María Ferrari
+  LinkedIn: https://www.linkedin.com/in/silvina-mar%C3%ADa-ferrari-42272134
+  ✓ Updated 20 fields
+    💼 Headline: ☆ Relaciones Institucionales. Comunicación. Responsabilidad ...
+    🏢 Company: Crecimiento profesional en el ámbito del triple impacto  -
+    👔 Position: Comunicación y Relaciones Institucionales |  Sustentabilidad & Triple Impacto
+
+[327/453] Jenny Flores
+  LinkedIn: https://www.linkedin.com/in/jenny-flores-amh
+  ✓ Updated 14 fields
+
+[328/453] Kiwoba Allaire
+  LinkedIn: https://www.linkedin.com/in/kiwoba
+  ✓ Updated 24 fields
+    💼 Headline: CEO, Founder Girl STEM Stars | Motivational Keynote Speaker ...
+    🏢 Company: XQ Institute
+    👔 Position: Executive Assistant to Chief Financial Officer and Chief Product Officer
+
+[329/453] Sofia Chiappero
+  LinkedIn: https://www.linkedin.com/in/sofia-chiappero
+  ✓ Updated 17 fields
+    💼 Headline: Strategy + Design @ MIT | CoFounder at PUBLICO lab...
+
+[330/453] Hina West
+  LinkedIn: https://www.linkedin.com/in/hinawest
+  ✓ Updated 22 fields
+    💼 Headline: Catalysing systemic change & positive impact for People, Cli...
+    🏢 Company: Business Fights Poverty
+    👔 Position: Member, Global Expert Network
+
+  → Progress: 330/453 processed...
+
+[331/453] Maya Markovich
+  LinkedIn: https://www.linkedin.com/in/mayamarkovich
+  ✓ Updated 15 fields
+    💼 Headline: Vice President at AAA-ICDR Institute | Executive Director at...
+
+[332/453] Michael Jonas, JD, MBA
+  LinkedIn: https://www.linkedin.com/in/michaelericjonas
+  ✓ Updated 16 fields
+    💼 Headline: Owner & Attorney, Narwhal Law and Business Strategy | Voted ...
+
+[333/453] J. M. Johnson
+  LinkedIn: https://www.linkedin.com/in/jmjjb
+  ✓ Updated 18 fields
+    💼 Headline: co-parent of Aloe, the world’s most capable AI agent | maxim...
+
+[334/453] Casey Johnson
+  LinkedIn: https://linkedin.com/in/casey-johnson-5350a43b
+  ✓ Updated 15 fields
+    💼 Headline: Venture philanthropy, Social Impact, Nonprofit sector...
+
+[335/453] Tyler Miles
+  LinkedIn: https://www.linkedin.com/in/tyler-miles-934566103
+  ✓ Updated 21 fields
+    💼 Headline: Columbia Business School MBA Candidate | Ex-Google | MLT Pro...
+    🏢 Company: Sofar Sounds
+    👔 Position: Master of Ceremonies
+
+[336/453] Vanessa Humes
+  LinkedIn: https://www.linkedin.com/in/vanessahumes
+  ✓ Updated 12 fields
+    💼 Headline: Chief of Staff I Operations Leader I Organization Builder...
+
+[337/453] Eli Sugarman
+  LinkedIn: https://www.linkedin.com/in/eli-sugarman-7849621
+  ✓ Updated 19 fields
+    💼 Headline: Philanthropy I Safety & Security I Emerging Tech...
+
+[338/453] Stephanie Kim-Poston
+  LinkedIn: https://www.linkedin.com/in/stephanie-kim-poston
+  ✓ Updated 14 fields
+    💼 Headline: Community Engagement & Social Impact Leader...
+
+[339/453] Grace Zuncic
+  LinkedIn: https://www.linkedin.com/in/gracezuncic
+  ✓ Updated 17 fields
+    💼 Headline: Managing Director at Manna Tree | Executive Leader and Board...
+
+[340/453] Sean Ness
+  LinkedIn: https://www.linkedin.com/in/seanness
+  ✓ Updated 16 fields
+    💼 Headline: Principal Program Manager @ PG&E | Advocating for Integrated...
+
+  → Progress: 340/453 processed...
+
+[341/453] Ellie Winkelmann
+  LinkedIn: https://www.linkedin.com/in/ellie-winkelmann-973034158
+  ✓ Updated 10 fields
+    💼 Headline: Leadership/Learning & Development professional. Working on m...
+
+[342/453] Kelly Galvin
+  LinkedIn: https://www.linkedin.com/in/kelly-galvin-01b4225
+  ✓ Updated 11 fields
+    💼 Headline: Strategic Communications, Brand & Partnerships Executive  | ...
+
+[343/453] Zachary Hill
+  LinkedIn: https://www.linkedin.com/in/zacharyalanhill
+  ✓ Updated 18 fields
+    💼 Headline: Community Engagement @ Cruise...
+    🏢 Company: Cruise
+    👔 Position: Head of Community Engagement
+
+[344/453] Crystal Yang
+  LinkedIn: https://www.linkedin.com/in/crystaljyang
+  ✓ Updated 19 fields
+    💼 Headline: The Audacious Project is a collaborative approach to funding...
+    🏢 Company: The Audacious Project
+    👔 Position: Director of Donor Community
+
+[345/453] Dana Loatman
+  LinkedIn: https://www.linkedin.com/in/dana-loatman-26482544
+  ✓ Updated 18 fields
+    💼 Headline: Executive Director, Virgil Abloh Foundation...
+
+[346/453] Collin Mays
+  LinkedIn: https://www.linkedin.com/in/collin-mays
+  ✓ Updated 12 fields
+
+[347/453] Libby Schaaf
+  LinkedIn: https://www.linkedin.com/in/libbyschaaf
+  ✓ Updated 11 fields
+    💼 Headline: Candidate for CA State Treasurer 2026; 50th Mayor of Oakland...
+
+[348/453] Sarah Marchal Murray
+  LinkedIn: https://www.linkedin.com/in/firemarchal
+  ✓ Updated 6 fields
+
+[349/453] Ayen Monasha.
+  LinkedIn: https://www.linkedin.com/in/ayen-monasha-b96666236
+  ✓ Updated 27 fields
+    💼 Headline: CS & Economics @ Macaulay Honors | 1 x Exited CTO | Reneged ...
+    🏢 Company: Scale AI
+    👔 Position: Technical Advisor Intern
+
+[350/453] Sara Bargzie
+  LinkedIn: https://www.linkedin.com/in/sara-b-2018
+  ✓ Updated 5 fields
+
+  → Progress: 350/453 processed...
+
+[351/453] Colleen Galbraith
+  LinkedIn: https://www.linkedin.com/in/colleen-galbraith
+  ✓ Updated 13 fields
+    💼 Headline: Chief Revenue Officer @ Summit Strategies | Growth Strategy ...
+
+[352/453] Raquel Helen Silva
+  LinkedIn: https://www.linkedin.com/in/raquelhelensilva
+  ✓ Updated 19 fields
+    💼 Headline: Program Manager | International Education | Diversity, Equit...
+    🏢 Company: Fundação Lemann
+    👔 Position: Gerente, Programa Brasil on Campus
+
+[353/453] Rachel Labi
+  LinkedIn: https://www.linkedin.com/in/rachel-labi
+  ✓ Updated 26 fields
+    💼 Headline: VOA Impact Investing Intern | Delegate @ WBG Youth Summit | ...
+    🏢 Company: Volunteers of America
+    👔 Position: Social Impact Investing Intern
+
+[354/453] Jonathan Brack
+  LinkedIn: https://www.linkedin.com/in/jbrack
+  ✓ Updated 18 fields
+    💼 Headline: Committed educator, life-long learner supporting nonprofit p...
+
+[355/453] Jewel Burks Solomon
+  LinkedIn: https://www.linkedin.com/in/jewelburks
+  ✓ Updated 14 fields
+    💼 Headline: Managing Partner @ Collab Capital | Investing in Economic Mo...
+
+[356/453] Sarah Rutherford English
+  LinkedIn: https://www.linkedin.com/in/sarah-r-170a9a2
+  ✓ Updated 9 fields
+
+[357/453] Annelise Kinney
+  LinkedIn: https://www.linkedin.com/in/annelise-kinney-096922165
+  ✓ Updated 15 fields
+    💼 Headline: Advancement Officer at the Branson School...
+
+[358/453] Steffani Maxwell
+  LinkedIn: https://www.linkedin.com/in/soulbatical
+  ⚠ Profile not found: https://www.linkedin.com/in/soulbatical
+
+[359/453] Chiagozie Nwabuebo
+  LinkedIn: https://www.linkedin.com/in/chiagozienwabuebo
+  ✓ Updated 6 fields
+
+[360/453] Michael McAfee
+  LinkedIn: https://www.linkedin.com/in/michaelmcafee
+  ✓ Updated 17 fields
+    💼 Headline: Chief Executive Officer | Fortune 100 Corporate Board Direct...
+
+  → Progress: 360/453 processed...
+
+[361/453] Ben Polansky
+  LinkedIn: https://www.linkedin.com/in/benpolansky
+  ✓ Updated 21 fields
+    💼 Headline: COO | Nonprofit Leader | Social Entrepreneur | Philanthropic...
+
+[362/453] Jorge Fontanez
+  LinkedIn: https://www.linkedin.com/in/jorgelf
+  ✓ Updated 20 fields
+    💼 Headline: CEO, Board Director & Thought Leader | Governance Expert | S...
+
+[363/453] Saul Sutcher
+  LinkedIn: https://www.linkedin.com/in/saulsutcher
+  ✓ Updated 19 fields
+    💼 Headline: Creative Catalyst · Entrepreneur · Product + Strategy Leader...
+    🏢 Company: Saul Sutcher LLC
+    👔 Position: Principal
+
+[364/453] Vien Truong
+  LinkedIn: https://www.linkedin.com/in/vien-v-truong
+  ✓ Updated 17 fields
+    💼 Headline: Award-Winning Sustainability Leader | Senior Advisor on Stak...
+
+[365/453] Kevin Sani
+  LinkedIn: https://www.linkedin.com/in/kevin-sani-b61b10126
+  ✓ Updated 16 fields
+    💼 Headline: Business Development | ex-Bain | Harvard MBA...
+
+[366/453] Candice Morgan
+  LinkedIn: https://www.linkedin.com/in/candicemorgan
+  ✓ Updated 21 fields
+    💼 Headline: Tech & Venture Transformation Leader | Board Member | Invest...
+
+[367/453] Lisa N. Wiley
+  LinkedIn: https://www.linkedin.com/in/lisa-n-wiley-852a4b8b
+  ✓ Updated 23 fields
+    💼 Headline: Site Director at Year Up United...
+    🏢 Company: Year Up
+    👔 Position: Site Director (Senior Director)
+
+[368/453] Anna Santos
+  LinkedIn: https://www.linkedin.com/in/santos-anna
+  ✓ Updated 7 fields
+
+[369/453] Bakari Grant
+  LinkedIn: https://www.linkedin.com/in/bakarigrant
+  ✓ Updated 13 fields
+    💼 Headline: CEO at The WellNest Company...
+
+[370/453] Eve Idusuyi
+  LinkedIn: https://www.linkedin.com/in/eveidusuyi
+  ✓ Updated 19 fields
+    💼 Headline: Creditcliq | Girls Who Invest | 34 Colors | @Elf Cosmetics 2...
+    🏢 Company: CreditCliq
+    👔 Position: Co-Founder
+
+  → Progress: 370/453 processed...
+
+[371/453] Daniel Adeyanju
+  LinkedIn: https://www.linkedin.com/in/danadey
+  ✓ Updated 19 fields
+    💼 Headline: ✞ 🎤Keynote & TEDx Speaker🎤 Communication➡️Leadership➡️Innova...
+
+[372/453] Saranya Loehrer, MD, MPH
+  LinkedIn: https://www.linkedin.com/in/saranya-loehrer-md-mph-43142822
+  ✓ Updated 20 fields
+    💼 Headline: Rule Breaker. Change Maker. Movement Builder...
+    🏢 Company: Teladoc Health
+    👔 Position: Chief Patient Experience and Health Equity Officer
+
+[373/453] Anee Brar
+  LinkedIn: https://www.linkedin.com/in/aneebrar
+  ⚠ Profile not found: https://www.linkedin.com/in/aneebrar
+
+[374/453] Shalini Iyer Rana
+  LinkedIn: https://www.linkedin.com/in/shalini-iyer-rana-8516615
+  ✓ Updated 12 fields
+    💼 Headline: Leading regional partnerships | Investing in community | Dri...
+
+[375/453] Eva Sarnowska 
+  LinkedIn: https://www.linkedin.com/in/eva-sarnowska-94a67790
+  ✓ Updated 17 fields
+    💼 Headline: BUCK Senior Business Developer...
+    🏢 Company: BUCK
+    👔 Position: Senior Business Developer
+
+[376/453] Simone Price
+  LinkedIn: https://www.linkedin.com/in/simoneprice
+  ✓ Updated 15 fields
+    💼 Headline: Strategic Partnerships and Initiatives Leader | Innovative S...
+
+[377/453] Kari Niedfeldt-Thomas
+  LinkedIn: https://www.linkedin.com/in/kariniedfeldtthomas
+  ✓ Updated 24 fields
+    💼 Headline: Managing Director & Chief Operating Officer (COO) at CECP; a...
+    🏢 Company: CECP
+    👔 Position: Managing Director & Chief Operating Officer (COO)
+
+[378/453] Oluwagbemibori Olaoye
+  LinkedIn: https://www.linkedin.com/in/oluwagbemiboriolaoye
+  ✓ Updated 21 fields
+    💼 Headline: Strategy & Operations Advisor | Entrepreneurial Leader | Bui...
+    👔 Position: Consultant
+
+[379/453] Trevor Hooper
+  LinkedIn: https://www.linkedin.com/in/trevor-hooper-23001437
+  ✓ Updated 16 fields
+    💼 Headline: Managing Director | Non Profit, Social Impact and Sports...
+    🏢 Company: Koya Partners | Diversified Search Group
+
+[380/453] Megan M McClendon
+  LinkedIn: https://www.linkedin.com/in/meganmmclendon
+  ✓ Updated 23 fields
+    💼 Headline: Founder | New Views Consulting | Leadership Development | Pr...
+    🏢 Company: New Views Consulting
+    👔 Position: Founder
+
+  → Progress: 380/453 processed...
+
+[381/453] Artavia B. Berry, M.Div
+  LinkedIn: https://www.linkedin.com/in/artaviab
+  ✓ Updated 6 fields
+
+[382/453] Jennifer Pfister
+  LinkedIn: https://www.linkedin.com/in/jennifer-pfister
+  ⚠ Profile not found: https://www.linkedin.com/in/jennifer-pfister
+
+[383/453] Anjali Fernandes
+  LinkedIn: https://www.linkedin.com/in/anjalifernandes
+  ⚠ Profile not found: https://www.linkedin.com/in/anjalifernandes
+
+[384/453] Ryan Odibo, Ed.M
+  LinkedIn: https://www.linkedin.com/in/ryanodibo
+  ✓ Updated 21 fields
+    💼 Headline: AI Upskilling Fellow @ Section...
+
+[385/453] Justine Zawatski
+  LinkedIn: https://www.linkedin.com/in/jzawatski
+  ✓ Updated 16 fields
+    💼 Headline: Philanthropy @ BGV...
+
+[386/453] J.G. Boccella
+  LinkedIn: https://www.linkedin.com/in/jgboccella
+  ✓ Updated 13 fields
+    💼 Headline: Musician, Artist, & Founder @ VISION, a creativity-based per...
+
+[387/453] Marie Buck,  CPA (MD), CMA, CFM, SHRM-CP
+  LinkedIn: https://www.linkedin.com/in/misabell2007
+  ✓ Updated 12 fields
+    💼 Headline: President and CEO, Western National Parks...
+
+[388/453] Josephine Lau
+  LinkedIn: https://www.linkedin.com/in/laujosephine
+  ✓ Updated 12 fields
+    💼 Headline: Catalytic Capital | Climate | US-China | Lawyer...
+
+[389/453] Kristen Struys
+  LinkedIn: https://www.linkedin.com/in/kristenstruys
+  ✓ Updated 20 fields
+    💼 Headline: Strategic Partnership Development | Passionate about ESG | C...
+    🏢 Company: Poka-Yoke Solutions: The Ops Agency
+    👔 Position: Project Manager | Account Management | Strategic Partnerships
+
+[390/453] Leila Hashemi
+  LinkedIn: https://www.linkedin.com/in/leila-hashemi-147b488a
+  ⚠ Profile not found: https://www.linkedin.com/in/leila-hashemi-147b488a
+
+[391/453] Rosie Williams
+  LinkedIn: https://www.linkedin.com/in/rosemaryowilliams
+  ✓ Updated 15 fields
+    💼 Headline: Building More Resilient Communities...
+
+[392/453] Karen Bigelow
+  LinkedIn: https://www.linkedin.com/in/kabigelow
+  ✓ Updated 19 fields
+    💼 Headline: Connector | Government Affairs | DBJ Outstanding Women in Bu...
+
+[393/453] Christina Legg Greenberg
+  LinkedIn: https://www.linkedin.com/in/christinalgreenberg
+  ✓ Updated 9 fields
+
+[394/453] Julia Cabrales Senne
+  LinkedIn: https://www.linkedin.com/in/julia-cabrales
+  ✓ Updated 12 fields
+    💼 Headline: Program Manager @ Adobe...
+
+[395/453] Matt Haldeman
+  LinkedIn: https://www.linkedin.com/in/matt-haldeman-a33a0a11
+  ✓ Updated 14 fields
+    💼 Headline: Nonprofit investment, M&A, and consolidation...
+
+[396/453] Harjas  Grewal
+  LinkedIn: https://www.linkedin.com/in/harjaskgrewal
+  ✓ Updated 17 fields
+    💼 Headline: Impact, Venture, and Sustainability | Princess Diana Award R...
+
+[397/453] Flemming Videriksen
+  LinkedIn: https://www.linkedin.com/in/flemming-videriksen-decideact
+  ✓ Updated 17 fields
+    💼 Headline: Executive coach | Expert Strategy Execution Management | Spe...
+    👔 Position: CEO & Founder
+
+[398/453] John Ray
+  LinkedIn: https://www.linkedin.com/in/johnray313
+  ✓ Updated 18 fields
+    💼 Headline: Impact | Equity | Strategy | Transformation...
+
+[399/453] Tiara D. Muse, MPH
+  LinkedIn: https://www.linkedin.com/in/tiara-d-muse-mph-158a3080
+  ⚠ Profile not found: https://www.linkedin.com/in/tiara-d-muse-mph-158a3080
+
+[400/453] Sheila Guastamachio
+  LinkedIn: https://www.linkedin.com/in/sheilaguastamachio
+  ✓ Updated 15 fields
+    💼 Headline: Vice President Product Management | Strategic Leader Who Del...
+
+  → Progress: 400/453 processed...
+
+[401/453] Mark Rodriguez
+  LinkedIn: https://www.linkedin.com/in/markrodriguez15
+  ✓ Updated 15 fields
+    💼 Headline: Trust and Safety, TikTok US Data Governance...
+
+[402/453] Devi Thomas
+  LinkedIn: https://www.linkedin.com/in/devi-thomas
+  ✓ Updated 15 fields
+    💼 Headline: Social Impact and Philanthropy , Tech, AI for Good, Communic...
+    🏢 Company: Microsoft
+    👔 Position: Global Leader, Nonprofit Community Capacity and AI Skills, Microsoft Philanthropies
+
+[403/453] jaspa Jawino
+  LinkedIn: https://www.linkedin.com/in/jaspa-jawino-b2144a229
+  ✓ Updated 13 fields
+    💼 Headline: Motivated Project Coordinator with 2+ years of experience ma...
+
+[404/453] Seanita Tolliver
+  LinkedIn: https://www.linkedin.com/in/seanita
+  ✓ Updated 15 fields
+    💼 Headline: Tech & Product Leader | Board Advisor | NYU ITP...
+
+[405/453] Preena Soni (she,her)
+  LinkedIn: https://www.linkedin.com/in/preenasoni
+  ✓ Updated 17 fields
+    💼 Headline: Partnerships | Sustainable Development | Strategic Engagemen...
+
+[406/453] Yvonne Melton
+  LinkedIn: https://www.linkedin.com/in/yvonne-melton-70655223
+  ✓ Updated 20 fields
+    💼 Headline: Community & Social Impact Leader...
+    🏢 Company: General Motors
+    👔 Position: Community Impact Business Partner, GM Cares
+
+[407/453] Aaron McNeilly
+  LinkedIn: https://www.linkedin.com/in/aaronmcneilly
+  ✓ Updated 23 fields
+    💼 Headline: Strategic philanthropic operative | Grounded in reality, del...
+
+[408/453] Jonathan Jean-Pierre, MBA
+  LinkedIn: https://www.linkedin.com/in/jonathan-jean-pierre-mba-82010366
+  ✓ Updated 23 fields
+    💼 Headline: HR Leader & Advisor | Board of Directors | Founder | Duke MB...
+
+[409/453] Arup Kumar Baishya
+  LinkedIn: https://www.linkedin.com/in/arup-kumar-baishya-227a4012
+  ✓ Updated 25 fields
+    💼 Headline: Director...
+    🏢 Company: AVACreations Social Impact Foundation
+    👔 Position: Director
+
+[410/453] Sarah Wood
+  LinkedIn: https://www.linkedin.com/in/sarahk500
+  ✓ Updated 24 fields
+    💼 Headline: Executive Partner | Program Manager | Ex-Google | Founder of...
+    🏢 Company: Easy Living Collective
+    👔 Position: Founder & CEO
+
+  → Progress: 410/453 processed...
+
+[411/453] Azim Lila
+  LinkedIn: https://www.linkedin.com/in/azimlila
+  ✓ Updated 15 fields
+    💼 Headline: Payments I Disruptive Strategy | Board Member London School ...
+
+[412/453] Jason Rissman
+  LinkedIn: https://www.linkedin.com/in/jasonrissman
+  ✓ Updated 11 fields
+    💼 Headline: Co-Founder & CEO, Stealth Startup | Host of Invested in Clim...
+
+[413/453] JG Larochette
+  LinkedIn: https://www.linkedin.com/in/jg-larochette-9bba0355
+  ✓ Updated 20 fields
+    💼 Headline: Founder and CEO, Mindful Life Project, 
+Youth Mental Health,...
+    🏢 Company: Mindful Life Project
+    👔 Position: Founder and CEO
+
+[414/453] Martin Chaplin
+  LinkedIn: https://www.linkedin.com/in/martinchaplin44
+  ✓ Updated 14 fields
+    💼 Headline: Technologist, Educator, and Engineer of a better future worl...
+
+[415/453] Shweta Taneja
+  LinkedIn: https://www.linkedin.com/in/shwetawrites
+  ✓ Updated 20 fields
+    💼 Headline: Award-winning author | Tech Columnist | Social Impact Leader...
+    🏢 Company: Locus Science Fiction Foundation
+    👔 Position: Head of Partnerships and Strategic Communication
+
+[416/453] Olamide Babatunde
+  LinkedIn: https://www.linkedin.com/in/olamideb
+  ✓ Updated 18 fields
+    💼 Headline: Economic Mobility Leader | Senior Director @ MyPath | 2023 O...
+    👔 Position: Senior Director of Youth Leadership & Economic Mobility
+
+[417/453] Rey Faustino
+  LinkedIn: https://www.linkedin.com/in/reyfaustino
+  ✓ Updated 20 fields
+    💼 Headline: CEO & Founder | Building AI-Powered Infrastructure for the S...
+    🏢 Company: Harvard Kennedy School
+    👔 Position: Visiting Social Innovator at the Marla and Barry Beck- Social Innovation and Change Initiative
+
+[418/453] Andrew Del Rosario
+  LinkedIn: https://www.linkedin.com/in/andrew-del-rosario
+  ✓ Updated 6 fields
+
+[419/453] Brendan Chan
+  LinkedIn: https://www.linkedin.com/in/brendanchan
+  ✓ Updated 15 fields
+    💼 Headline: Bridging ideas, sectors, and generations within philanthropy...
+
+[420/453] Michael Diamond
+  LinkedIn: https://www.linkedin.com/in/michaeldiamond08
+  ✓ Updated 18 fields
+    💼 Headline: Vice President, Customer Success & Brand Growth at SuperCirc...
+
+  → Progress: 420/453 processed...
+
+[421/453] Dan Shannon
+  LinkedIn: https://www.linkedin.com/in/danshannon2
+  ✓ Updated 14 fields
+    💼 Headline: Fighting factory farming at The Humane League...
+
+[422/453] Max Vargas
+  LinkedIn: https://www.linkedin.com/in/max-vargas-96270052
+  ✓ Updated 21 fields
+    💼 Headline: Vice President of Economic Justice...
+    🏢 Company: Latino Community Foundation
+    👔 Position: Vice President of Economic Justice
+
+[423/453] Lawrence Wagner
+  LinkedIn: https://www.linkedin.com/in/lawrence-wagner
+  ✓ Updated 16 fields
+    💼 Headline: AI Governance | AI Safety | Cybersecurity | Researcher | Mac...
+
+[424/453] Antonio Lopez
+  LinkedIn: https://www.linkedin.com/in/antonio-lopez-90bbbb1b3
+  ✓ Updated 16 fields
+    💼 Headline: Poet Laureate of San Mateo County | Former Mayor for the Cit...
+
+[425/453] Martin Ganchev
+  LinkedIn: https://www.linkedin.com/in/martinganchev
+  ✓ Updated 23 fields
+    💼 Headline: Enterprise Solutions @Oxylabs.io | Data collection for AI an...
+    👔 Position: Enterprise AE (Cybersecurity and AI)
+
+[426/453] Bennett Grassano
+  LinkedIn: https://www.linkedin.com/in/bennett-grassano-20335a
+  ✓ Updated 8 fields
+
+[427/453] Kim Carson
+  LinkedIn: https://www.linkedin.com/in/kimberlyacarson
+  ✓ Updated 16 fields
+    💼 Headline: AI Futurist & Strategist | Serial Founder | Conceptual Techn...
+
+[428/453] Joy Stephens
+  LinkedIn: https://www.linkedin.com/in/joystephens
+  ✓ Updated 20 fields
+    💼 Headline: Founder & CEO - Corporate Giving Network...
+    🏢 Company: Corporate Giving Network 
+
+[429/453] Jen Weaver
+  LinkedIn: https://www.linkedin.com/in/jen-weaver-66768b13
+  ✓ Updated 15 fields
+    💼 Headline: Bringing Year Up talent and enterprise tech companies togeth...
+
+[430/453] Joey Womack
+  LinkedIn: https://www.linkedin.com/in/joeywomack
+  ✓ Updated 17 fields
+    💼 Headline: A Force Multiplier For Good + Community Builder + Convener |...
+
+  → Progress: 430/453 processed...
+
+[431/453] Jorge Blandón
+  LinkedIn: https://www.linkedin.com/in/jorge-bland%C3%B3n
+  ✓ Updated 17 fields
+    💼 Headline: Senior Director at Arrow Impact...
+
+[432/453] Meredith Delich
+  LinkedIn: https://www.linkedin.com/in/meredithdelich
+  ✓ Updated 12 fields
+    💼 Headline: VP of StratOps | Fighting climate change by reimagining the ...
+
+[433/453] Lucia McKelvey
+  LinkedIn: https://www.linkedin.com/in/luciamckelvey
+  ✓ Updated 11 fields
+
+[434/453] Jordan Thierry
+  LinkedIn: https://www.linkedin.com/in/jordanthierry
+  ✓ Updated 17 fields
+    💼 Headline: Executive Nonprofit Professional |  Communications, Philanth...
+
+[435/453] Shona Carter, MBA
+  LinkedIn: https://www.linkedin.com/in/shona-carter-mba
+  ✓ Updated 21 fields
+    💼 Headline: Philanthropy professional and founding investor of The Rest ...
+    🏢 Company: The Rest Spot
+    👔 Position: Founding Investor
+
+[436/453] Nyamekye (Yah-MEH-chay) Wilson
+  LinkedIn: https://www.linkedin.com/in/dianawilson3
+  ✓ Updated 20 fields
+    💼 Headline: Founder & CEO at Black Sisters in STEM (Techstars '22) | Spe...
+
+[437/453] Alexandra Trabulsi
+  LinkedIn: https://www.linkedin.com/in/alexandrahaygood
+  ✓ Updated 12 fields
+    💼 Headline: Vice President of Partnerships @ Fast Forward | Angel Invest...
+
+[438/453] Oliver Farshi
+  LinkedIn: https://www.linkedin.com/in/oliverfarshi
+  ⚠ Profile not found: https://www.linkedin.com/in/oliverfarshi
+
+[439/453] Chrystine Villarreal
+  LinkedIn: https://www.linkedin.com/in/chrystine-villarreal-b3049124
+  ✓ Updated 14 fields
+    💼 Headline: Transformational People and Operations Leader, Partnership B...
+
+[440/453] Didier P. Dumerjean
+  LinkedIn: https://www.linkedin.com/in/didierdumerjean
+  ✓ Updated 10 fields
+    💼 Headline: Cross-Sector Strategist, Impact Investor, Social Impact Prac...
+
+  → Progress: 440/453 processed...
+
+[441/453] Valerie Goode
+  LinkedIn: https://www.linkedin.com/in/valj74
+  ✓ Updated 20 fields
+    💼 Headline: Chief Marketing Officer at San Francisco Foundation...
+    🏢 Company: Chief
+    👔 Position: Member
+
+[442/453] Olivia Khalili (she/her)
+  LinkedIn: https://www.linkedin.com/in/oliviak
+  ✓ Updated 15 fields
+
+[443/453] Gail Moody-Byrd
+  LinkedIn: https://www.linkedin.com/in/gailmoodybyrd
+  ✓ Updated 23 fields
+    💼 Headline: VP, Marketing, LinkedIn for Sales l Board Member @ Grocery O...
+    🏢 Company: LinkedIn
+    👔 Position: Vice President, Marketing, LinkedIn Sales Solutions
+
+[444/453] Aida Bekele
+  LinkedIn: https://www.linkedin.com/in/aidabekele
+  ✓ Updated 9 fields
+    💼 Headline: Philanthropy ⎮ Law ⎮ Social Impact...
+
+[445/453] Vivie Nguyen, MBA
+  LinkedIn: https://www.linkedin.com/in/viviehnguyen
+  ⚠ Profile not found: https://www.linkedin.com/in/viviehnguyen
+
+[446/453] Hussainatu Blake
+  LinkedIn: https://www.linkedin.com/in/hussainatu-blake-jd-ma-5177b791
+  ✓ Updated 19 fields
+    💼 Headline: Global Executive Leader | TEDx Speaker | Education & Workfor...
+
+[447/453] Tatyana Bolton
+  LinkedIn: https://www.linkedin.com/in/tatyana-b-58358021
+  ✓ Updated 12 fields
+    💼 Headline: Monument Advocacy | Executive Director, OTCC | SCC | Board M...
+
+[448/453] Vanina Farber 
+  LinkedIn: https://www.linkedin.com/in/vaninafarber
+  ✓ Updated 19 fields
+    💼 Headline: IMD elea Chair on Social Innovation, Dean of Executive MBA, ...
+    👔 Position: Member Global Future Council on Innovative Financing for Nature and Climate
+
+[449/453] Cynthia Kreng
+  LinkedIn: https://www.linkedin.com/in/cynthiakreng
+  ✓ Updated 16 fields
+    💼 Headline: Simplifying local food procurement | Co-host @ Azure Podcast...
+
+[450/453] Cory Boatwright
+  LinkedIn: https://www.linkedin.com/in/coryboatwright
+  ✓ Updated 21 fields
+    💼 Headline: Strategic Partnerships & Program Management Leader | Driving...
+    🏢 Company: LinkedIn
+    👔 Position: Head of Military & Veteran Programs and Partnerships
+
+  → Progress: 450/453 processed...
+
+[451/453] Andrea Powell
+  LinkedIn: https://www.linkedin.com/in/andrea-powell-bb53255
+  ✓ Updated 19 fields
+    💼 Headline: Author: Believe Me. 3x Founder. Advancing survivor-centered ...
+    🏢 Company: The June Coalition
+    👔 Position: Founder + Curating Director
+
+[452/453] Alexis Menocal Harrigan
+  LinkedIn: https://www.linkedin.com/in/alexismenocalharrigan
+  ✓ Updated 13 fields
+    💼 Headline: Strategic Partnerships | Social Impact | Coalition Building...
+
+[453/453] Ruby Vitatoe, M.S.
+  LinkedIn: https://www.linkedin.com/in/ruby-vitatoe
+  ✓ Updated 15 fields
+    💼 Headline: Fractional Consultant & Futurist | Convener| Climate x Respo...
+
+============================================================
+📊 ENRICHMENT SUMMARY
+============================================================
+Total processed:    453
+Successfully enriched: 427
+Failed:            26
+Skipped:           0
+Emails found:      0
+Phone numbers found: 0
+============================================================
+
+💳 Credits used: 453 (1 credit per profile)

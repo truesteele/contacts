@@ -1,0 +1,742 @@
+{
+  "public_identifier": "crystal-barnes-0259b95",
+  "profile_pic_url": "https://assets.enrichlayer.com/ll/D4E03AQFzoY-Ev16gCw/profile-displayphoto-shrink_800_800/profile-displayphoto-shrink_800_800/0/1700190424184?e=1760572800&v=beta&t=Pol5qUe5MvgYTKNbezLiFyl3QX2YSHx3caa5AZj5EMQ",
+  "background_cover_image_url": null,
+  "first_name": "Crystal",
+  "last_name": "Barnes",
+  "full_name": "Crystal Barnes",
+  "follower_count": 2588,
+  "occupation": "Executive Vice President, Social Impact & ESG at Paramount",
+  "headline": "Executive Vice President, Social Impact & Environmental Social and Governance (ESG) at Paramount",
+  "summary": null,
+  "location_str": "New York, New York, United States",
+  "country": null,
+  "country_full_name": "United States",
+  "city": "New York",
+  "state": "NY",
+  "experiences": [
+    {
+      "starts_at": {
+        "day": 1,
+        "month": 2,
+        "year": 2023
+      },
+      "ends_at": null,
+      "company": "Paramount",
+      "company_linkedin_profile_url": "https://www.linkedin.com/company/paramountco/",
+      "company_facebook_profile_url": null,
+      "title": "Executive Vice President, Social Impact & ESG",
+      "description": null,
+      "location": "New York, United States",
+      "logo_url": "https://assets.enrichlayer.com/ll/D4E0BAQEnsaToB27LXw/company-logo_400_400/B4EZdBNBpZHgAc-/0/1749145623499/paramountco_logo?e=1760572800&v=beta&t=8L4JGrrlORwp45J_6rvRCAx148bhQWznAerILweoxL0"
+    },
+    {
+      "starts_at": {
+        "day": 1,
+        "month": 2,
+        "year": 2022
+      },
+      "ends_at": {
+        "day": 31,
+        "month": 10,
+        "year": 2023
+      },
+      "company": "Paramount",
+      "company_linkedin_profile_url": "https://www.linkedin.com/company/paramountco/",
+      "company_facebook_profile_url": null,
+      "title": "Senior Vice President, Social Responsibility & Environmental Social and Governance (ESG)",
+      "description": null,
+      "location": null,
+      "logo_url": "https://assets.enrichlayer.com/ll/D4E0BAQEnsaToB27LXw/company-logo_400_400/B4EZdBNBpZHgAc-/0/1749145623499/paramountco_logo?e=1760572800&v=beta&t=8L4JGrrlORwp45J_6rvRCAx148bhQWznAerILweoxL0"
+    },
+    {
+      "starts_at": {
+        "day": 1,
+        "month": 2,
+        "year": 2019
+      },
+      "ends_at": {
+        "day": 30,
+        "month": 6,
+        "year": 2022
+      },
+      "company": "Viacom",
+      "company_linkedin_profile_url": "https://www.linkedin.com/company/viacom/",
+      "company_facebook_profile_url": null,
+      "title": "Senior Vice President, Culture, Corporate Social Responsibility, ESG Strategy & Reporting",
+      "description": null,
+      "location": "Greater New York City Area",
+      "logo_url": "https://assets.enrichlayer.com/ll/C4D0BAQHTYwGMfQruFQ/company-logo_400_400/company-logo_400_400/0/1631359034119?e=1760572800&v=beta&t=M8ASWcd-O2D3atDdKiXg2O-qdrpER5wgRnuLI8K5M00"
+    },
+    {
+      "starts_at": {
+        "day": 1,
+        "month": 5,
+        "year": 2017
+      },
+      "ends_at": {
+        "day": 28,
+        "month": 2,
+        "year": 2019
+      },
+      "company": "Nielsen",
+      "company_linkedin_profile_url": "https://www.linkedin.com/company/nielsen/",
+      "company_facebook_profile_url": null,
+      "title": "Senior Vice President, Global Responsibility & Sustainability;Executive Director, Nielsen Foundation",
+      "description": null,
+      "location": "Greater New York City Area",
+      "logo_url": "https://assets.enrichlayer.com/ll/C4E0BAQFKa_ObftR_8w/company-logo_400_400/company-logo_400_400/0/1634555714141/nielsen_logo?e=1760572800&v=beta&t=3glb1vTPUzpNiHXNpATlm0ClzyQ1z7-8D3XDAEyrGPc"
+    },
+    {
+      "starts_at": {
+        "day": 1,
+        "month": 7,
+        "year": 2016
+      },
+      "ends_at": {
+        "day": 31,
+        "month": 5,
+        "year": 2017
+      },
+      "company": "Nielsen",
+      "company_linkedin_profile_url": "https://www.linkedin.com/company/nielsen/",
+      "company_facebook_profile_url": null,
+      "title": "Vice President, Global Responsibility and Sustainability",
+      "description": null,
+      "location": "Greater New York City Area",
+      "logo_url": "https://assets.enrichlayer.com/ll/C4E0BAQFKa_ObftR_8w/company-logo_400_400/company-logo_400_400/0/1634555714141/nielsen_logo?e=1760572800&v=beta&t=3glb1vTPUzpNiHXNpATlm0ClzyQ1z7-8D3XDAEyrGPc"
+    },
+    {
+      "starts_at": {
+        "day": 1,
+        "month": 9,
+        "year": 2013
+      },
+      "ends_at": {
+        "day": 31,
+        "month": 7,
+        "year": 2016
+      },
+      "company": "Nielsen",
+      "company_linkedin_profile_url": "https://www.linkedin.com/company/nielsen/",
+      "company_facebook_profile_url": null,
+      "title": "Vice President, Corporate Social Responsibility",
+      "description": "Nielsen Global Impact Day 2015",
+      "location": "New York",
+      "logo_url": "https://assets.enrichlayer.com/ll/C4E0BAQFKa_ObftR_8w/company-logo_400_400/company-logo_400_400/0/1634555714141/nielsen_logo?e=1760572800&v=beta&t=3glb1vTPUzpNiHXNpATlm0ClzyQ1z7-8D3XDAEyrGPc"
+    },
+    {
+      "starts_at": {
+        "day": 1,
+        "month": 5,
+        "year": 2012
+      },
+      "ends_at": {
+        "day": 31,
+        "month": 8,
+        "year": 2013
+      },
+      "company": "Nielsen",
+      "company_linkedin_profile_url": "https://www.linkedin.com/company/nielsen/",
+      "company_facebook_profile_url": null,
+      "title": "VP, Industry Relations, Global Marketing",
+      "description": null,
+      "location": "New York, New York",
+      "logo_url": "https://assets.enrichlayer.com/ll/C4E0BAQFKa_ObftR_8w/company-logo_400_400/company-logo_400_400/0/1634555714141/nielsen_logo?e=1760572800&v=beta&t=3glb1vTPUzpNiHXNpATlm0ClzyQ1z7-8D3XDAEyrGPc"
+    },
+    {
+      "starts_at": {
+        "day": 1,
+        "month": 4,
+        "year": 2010
+      },
+      "ends_at": {
+        "day": 30,
+        "month": 6,
+        "year": 2012
+      },
+      "company": "Nielsen",
+      "company_linkedin_profile_url": "https://www.linkedin.com/company/nielsen/",
+      "company_facebook_profile_url": null,
+      "title": "Director, Industry Relations, Global Marketing",
+      "description": "Develop and manage strategic alliances with industry and business associations within the global business community. \n\nGrow and expand the reach of Nielsen\u2019s thought leadership efforts across the media and consumer industries, focusing on the increasingly diverse, demanding and connected consumer.",
+      "location": "Greater New York City Area",
+      "logo_url": "https://assets.enrichlayer.com/ll/C4E0BAQFKa_ObftR_8w/company-logo_400_400/company-logo_400_400/0/1634555714141/nielsen_logo?e=1760572800&v=beta&t=3glb1vTPUzpNiHXNpATlm0ClzyQ1z7-8D3XDAEyrGPc"
+    },
+    {
+      "starts_at": {
+        "day": 1,
+        "month": 6,
+        "year": 2009
+      },
+      "ends_at": {
+        "day": 30,
+        "month": 4,
+        "year": 2010
+      },
+      "company": "Nielsen",
+      "company_linkedin_profile_url": "https://www.linkedin.com/company/nielsen/",
+      "company_facebook_profile_url": null,
+      "title": "Director, Client Communications & Business Initiatives",
+      "description": "Lead client communications process including - draft, edit and approve client communications content,  manage execution of communication releases, and streamline and create new processes for enhanced communication, distribution, and internal education.\n\nWork collaboratively with Client Services, Corporate Communications Stakeholder and Media Relations Center of Excellence (COE) to develop and execute communications strategy for multiple media business.\n\nDevelop market growth strategy based on media client insights working with Marketing and Product Leadership teams.",
+      "location": "Greater New York City Area",
+      "logo_url": "https://assets.enrichlayer.com/ll/C4E0BAQFKa_ObftR_8w/company-logo_400_400/company-logo_400_400/0/1634555714141/nielsen_logo?e=1760572800&v=beta&t=3glb1vTPUzpNiHXNpATlm0ClzyQ1z7-8D3XDAEyrGPc"
+    },
+    {
+      "starts_at": {
+        "day": 1,
+        "month": 9,
+        "year": 2005
+      },
+      "ends_at": {
+        "day": 30,
+        "month": 6,
+        "year": 2009
+      },
+      "company": "Nielsen",
+      "company_linkedin_profile_url": "https://www.linkedin.com/company/nielsen/",
+      "company_facebook_profile_url": null,
+      "title": "Director, Public Affairs, Nielsen",
+      "description": "Create and execute strategic communications and public relations plan including community, government and civic outreach initiatives across the United States. \n\nProduce and execute go-to-market strategy and education campaign focused the Nielsen brand , its innovative solutions and keen understanding of communities and consumer behavior.\n\nCoordinate and oversee external independent advisory council consisting of industry, community and business leaders, to inform and enhance efforts with recruitment, measurement and accurate reporting of ethnic television households in the U.S. \n\nDesign and manage global purchasing assessment for company-wide procurement profitability and efficiency appraisal",
+      "location": "Greater New York City Area",
+      "logo_url": "https://assets.enrichlayer.com/ll/C4E0BAQFKa_ObftR_8w/company-logo_400_400/company-logo_400_400/0/1634555714141/nielsen_logo?e=1760572800&v=beta&t=3glb1vTPUzpNiHXNpATlm0ClzyQ1z7-8D3XDAEyrGPc"
+    }
+  ],
+  "education": [
+    {
+      "starts_at": null,
+      "ends_at": null,
+      "field_of_study": "Communications & Marketing",
+      "degree_name": "Bachelor of Arts (B.A.)",
+      "school": "Temple University",
+      "school_linkedin_profile_url": "https://www.linkedin.com/school/templeuniversity/",
+      "school_facebook_profile_url": null,
+      "description": null,
+      "logo_url": "https://assets.enrichlayer.com/ll/D4E0BAQFCgJvmO1eSjg/company-logo_400_400/company-logo_400_400/0/1691416681835/templeuniversity_logo?e=1760572800&v=beta&t=f4sz81GjJoO8CSxym4G7KOKWJYwV-pAriLCPTrBoyyM",
+      "grade": null,
+      "activities_and_societies": null
+    }
+  ],
+  "languages": [],
+  "languages_and_proficiencies": [],
+  "accomplishment_organisations": [],
+  "accomplishment_publications": [
+    {
+      "name": "Nielsen and the World Food Programme: Revolutionizing Data Collection",
+      "publisher": "The Conference Board",
+      "published_on": {
+        "day": 1,
+        "month": 1,
+        "year": 2015
+      },
+      "description": null,
+      "url": "https://www.conference-board.org/retrievefile.cfm?filename=TCB-GT-V1N12-Nielsen-Data-Collection1.pdf&type=subsite"
+    },
+    {
+      "name": "Using Data to Fight Hunger",
+      "publisher": "Feeding America",
+      "published_on": {
+        "day": 1,
+        "month": 1,
+        "year": 2015
+      },
+      "description": null,
+      "url": "http://www.feedingamerica.org/hunger-in-america/news-and-updates/hunger-blog/using-data-to-fight-hunger.html"
+    },
+    {
+      "name": "Moving to Mobile: How Nielsen and WFP Are Revolutionizing Hunger Relief",
+      "publisher": "The Conference Board",
+      "published_on": {
+        "day": 1,
+        "month": 1,
+        "year": 2015
+      },
+      "description": null,
+      "url": "http://tcbblogs.org/philanthropy/2015/03/17/moving-to-mobile-how-nielsen-and-wfp-are-revolutionizing-hunger-relief-2/#sthash.vkeoYSJZ.O4gupNXA.dpbs"
+    },
+    {
+      "name": "Suiting Words to Action: How Nielsen Is Using Advertising to Tailor a Nonprofit\u2019s Message",
+      "publisher": "The Conference Board",
+      "published_on": {
+        "day": 1,
+        "month": 1,
+        "year": 2015
+      },
+      "description": null,
+      "url": "http://tcbblogs.org/philanthropy/2015/03/24/suiting-words-to-action-how-nielsen-is-using-advertising-to-tailor-a-nonprofits-message/#sthash.H7yU0pd2.Zn8oehMq.dpbs"
+    }
+  ],
+  "accomplishment_honors_awards": [
+    {
+      "title": "Advertising Research Foundation Young Pros Award",
+      "issuer": "Advertising Research Foundation",
+      "issued_on": {
+        "day": 1,
+        "month": 12,
+        "year": 2013
+      },
+      "description": null
+    },
+    {
+      "title": "Nielsen Leadership Program",
+      "issuer": "Nielsen",
+      "issued_on": {
+        "day": 1,
+        "month": 9,
+        "year": 2013
+      },
+      "description": null
+    }
+  ],
+  "accomplishment_patents": [],
+  "accomplishment_courses": [],
+  "accomplishment_projects": [
+    {
+      "starts_at": {
+        "day": 1,
+        "month": 11,
+        "year": 2011
+      },
+      "ends_at": {
+        "day": 30,
+        "month": 4,
+        "year": 2012
+      },
+      "title": "Diverse Intelligence Series: The Power of the Digital Black Consumer",
+      "description": "Building upon the tremendous success of The Power of the Black Consumer series debut in 2011, we return this year to shift focus and showcase the digital presence in their daily lives. The evening will be an interactive event, highlighted by a panel of senior executives from various industries including Consumer Packaged Goods, Media, Online, Advertiser and Retail. Following the panel, there will be an opportunity for active discussion with panelists and a networking reception.",
+      "url": null
+    }
+  ],
+  "accomplishment_test_scores": [],
+  "volunteer_work": [
+    {
+      "starts_at": {
+        "day": 1,
+        "month": 9,
+        "year": 2012
+      },
+      "ends_at": {
+        "day": 31,
+        "month": 1,
+        "year": 2016
+      },
+      "title": "New York City Department of Education Minority and Women-Owned Business Enterprise Diversity Council",
+      "cause": null,
+      "company": "NYC Public Schools",
+      "company_linkedin_profile_url": "https://www.linkedin.com/company/nyc-department-of-education/",
+      "description": null,
+      "logo_url": "https://assets.enrichlayer.com/ll/D4E0BAQFt_pRS91qOQA/company-logo_400_400/company-logo_400_400/0/1738779898964/nyc_department_of_education_logo?e=1760572800&v=beta&t=2kbRHAu4oJrqt2MJPQ3f5Mq4UEKvnM1Fp44uWgmNRw8"
+    },
+    {
+      "starts_at": {
+        "day": 1,
+        "month": 4,
+        "year": 2017
+      },
+      "ends_at": {
+        "day": 31,
+        "month": 1,
+        "year": 2021
+      },
+      "title": "Board of Advocates ",
+      "cause": "EDUCATION",
+      "company": "Citizen Schools",
+      "company_linkedin_profile_url": "https://www.linkedin.com/company/citizen-schools/",
+      "description": null,
+      "logo_url": "https://assets.enrichlayer.com/ll/C4E0BAQFQYrf6yPjDTg/company-logo_400_400/company-logo_400_400/0/1630566779070/citizen_schools_logo?e=1760572800&v=beta&t=f40Vdz_Df4Srxpz5G_z9V2AXdZqgMup5EE8JE39gr4I"
+    },
+    {
+      "starts_at": {
+        "day": 1,
+        "month": 12,
+        "year": 2020
+      },
+      "ends_at": null,
+      "title": "Member Board Of Directors",
+      "cause": null,
+      "company": "The WICT Network: New York",
+      "company_linkedin_profile_url": "https://www.linkedin.com/company/wict-ny/",
+      "description": null,
+      "logo_url": "https://assets.enrichlayer.com/ll/C560BAQGTGfeu6vGllQ/company-logo_400_400/company-logo_400_400/0/1641966668118/wict_ny_logo?e=1760572800&v=beta&t=rZNCLuPU88g_fDWUPCyU_wFUcExmgPdlm8WaB_OwV4s"
+    }
+  ],
+  "certifications": [
+    {
+      "starts_at": {
+        "day": 1,
+        "month": 10,
+        "year": 2022
+      },
+      "ends_at": null,
+      "name": "FORTUNE Impact Initiative Member",
+      "license_number": "635838a2ee92705bceda26ce",
+      "display_source": "badgr.io",
+      "authority": "Badgr (now part of Instructure)",
+      "url": "https://api.badgr.io/public/assertions/H7z7CddQQye9xYJtmlZHgg"
+    },
+    {
+      "starts_at": {
+        "day": 1,
+        "month": 2,
+        "year": 2015
+      },
+      "ends_at": null,
+      "name": "GRI Certified Training Program",
+      "license_number": "TR102077",
+      "display_source": null,
+      "authority": "Boston College Center for Corporate Citizenship",
+      "url": null
+    }
+  ],
+  "connections": 500,
+  "people_also_viewed": [
+    {
+      "link": "https://linkedin.com/in/nancy-phillips-36442b176",
+      "name": "Nancy Phillips",
+      "summary": "Executive Vice President, Chief People Officer at Paramount Global",
+      "location": null
+    },
+    {
+      "link": "https://linkedin.com/in/noopur-agarwal-profile",
+      "name": "Noopur Agarwal",
+      "summary": "VP @ Paramount | Strategy, Partnerships + Impact | Harvard/HBS/Bain Alum",
+      "location": null
+    },
+    {
+      "link": "https://linkedin.com/in/marva-smalls-888b844b",
+      "name": "Marva Smalls",
+      "summary": "Senior Strategic Advisor to the Office of the CEO",
+      "location": null
+    },
+    {
+      "link": "https://linkedin.com/in/briannacc",
+      "name": "Brianna Cayo Cotter",
+      "summary": "SVP, Social Impact SHOWTIME/ MTV Entertainment Studios",
+      "location": null
+    },
+    {
+      "link": "https://linkedin.com/in/bradley-p-archer-haynes",
+      "name": "Bradley Archer-Haynes",
+      "summary": "Global Brand & Marketing Lead | Corporate Brand Strategy | Global Partnerships | Board-level Strategic Planning | Executive Director | Enterprise-Wide Social Impact | Corporate Transformation",
+      "location": null
+    },
+    {
+      "link": "https://linkedin.com/in/pamkaufman",
+      "name": "Pam Kaufman",
+      "summary": "CEO, International Markets & Global Consumer Products @ Paramount\ud83d\udd39Transforming Global Operations\ud83d\udd39Elevating Iconic Franchises\ud83d\udd39Boards: Lindblad Expeditions, Stella McCartney, Rock & Roll Hall of Fame Foundation",
+      "location": null
+    },
+    {
+      "link": "https://linkedin.com/in/adammasonrobinson",
+      "name": "Adam Robinson",
+      "summary": "VP, Global Social Impact @ Paramount",
+      "location": null
+    },
+    {
+      "link": "https://linkedin.com/in/erikasotolamb",
+      "name": "Erika Soto Lamb",
+      "summary": "Strategic initiatives, partnerships and communications. Doing good is good for business.",
+      "location": null
+    },
+    {
+      "link": "https://linkedin.com/in/bobbakish",
+      "name": "Robert M. Bakish",
+      "summary": "Former President and CEO at Paramount",
+      "location": null
+    },
+    {
+      "link": "https://linkedin.com/in/jessicamthurston",
+      "name": "Jessica Thurston",
+      "summary": "Vice President, ESG Strategy at Paramount Global & Adjunct Faculty at Columbia University",
+      "location": null
+    }
+  ],
+  "recommendations": [],
+  "activities": [
+    {
+      "title": "https://lnkd.in/g5jePMy",
+      "link": null,
+      "activity_status": null
+    },
+    {
+      "title": "Just a few years into her career, Veronica Hernandez is the driving force behind our Inclusion Analytics solution, poised to have a profound impact\u2026",
+      "link": null,
+      "activity_status": null
+    },
+    {
+      "title": "I am thrilled to join Tirrell Whittley and the amazing team at Liquid Soul as their Chief Strategy Officer. Liquid Soul is the best-in-class\u2026",
+      "link": null,
+      "activity_status": null
+    },
+    {
+      "title": "Loved our recent in-person, all-staff retreat with team Get Schooled! So grateful to be helping young people get to college, find first jobs, and\u2026",
+      "link": null,
+      "activity_status": null
+    },
+    {
+      "title": "Thank you Diversity Action Alliance  for this honor! #diversity #PR",
+      "link": null,
+      "activity_status": null
+    },
+    {
+      "title": "Had a blast talking media and tech with the Jungle Cat Kara Swisher and Jed Meyer at #canneslions2022. A fan of her polite yet disagreeable\u2026",
+      "link": null,
+      "activity_status": null
+    },
+    {
+      "title": "Such an honor and privilege to celebrate South Asian excellence at the Oscars Naveen Chopra Claudia Ramsumair Lyon Jon Koa Noriko Kelley P.  Sean\u2026",
+      "link": null,
+      "activity_status": null
+    },
+    {
+      "title": "Speaking to healthy relations with our youth. #TeenDatingViolenceAwareness",
+      "link": null,
+      "activity_status": null
+    },
+    {
+      "title": "Yesterday, I had the honor and pleasure of hosting a session with Harvard Business School Professor Anita Elberse at Paramount Global on the Future\u2026",
+      "link": null,
+      "activity_status": null
+    },
+    {
+      "title": "I truly enjoyed the Ignite Social Impact Summit led by Amanda Morrall, MPP and Huong Dang. I had amazing conversations with Columbia students and\u2026",
+      "link": null,
+      "activity_status": null
+    },
+    {
+      "title": "Here\u2019s to a truly special group of friends during a once in a lifetime eclipse in Rochester. We\u2019ve gone our separate ways professionally but nothing\u2026",
+      "link": null,
+      "activity_status": null
+    },
+    {
+      "title": "#Linkedinsports This is what #nil look like, when: \u2b50\ufe0fBrands \u2b50\ufe0f\u2b50\ufe0fMedia And \u2b50\ufe0f\u2b50\ufe0f\u2b50\ufe0fFans Become invested in women\u2019s sports and have an authentic\u2026",
+      "link": null,
+      "activity_status": null
+    },
+    {
+      "title": "black\u2022ish actor and comedian #AnthonyAnderson meets iwgroup\u2022ish at the Cannes Lions International Festival of Creativity. Special thanks to our\u2026",
+      "link": null,
+      "activity_status": null
+    },
+    {
+      "title": "I had the pleasure of participating in a fireside chat at Collision, discussing critical issues such as regulation, emerging technologies like AI\u2026",
+      "link": null,
+      "activity_status": null
+    },
+    {
+      "title": "Storytellers are change makers. We connect, learn and understand our world through stories. Advertising and marketing teams have the power and\u2026",
+      "link": null,
+      "activity_status": null
+    },
+    {
+      "title": "Great way to bring in Juneteenth. If you\u2019re local, pull up!",
+      "link": null,
+      "activity_status": null
+    },
+    {
+      "title": "Thanks for having us Microsoft Advertising! #paramount",
+      "link": null,
+      "activity_status": null
+    },
+    {
+      "title": "\ud83c\udf99\ufe0f Jumping on the microphone and giving y\u2019all a glimpse of some of MDDC Credit Union Association\u2019s #CONNECT2024 conference\u2019s key takeaways \ud83d\udd11\u2026",
+      "link": null,
+      "activity_status": null
+    },
+    {
+      "title": "Your culture defines your essence - encompassing your talent, messaging, values, and principles. Experiencing this firsthand in Scottsdale, AZ\u2026",
+      "link": "https://www.linkedin.com/posts/stacey-bryant-smile_aoba25-activity-7286022544220979200-q3nW",
+      "activity_status": null
+    },
+    {
+      "title": "Temple Owls left their best bird calls and hype messages on the line for the Philadelphia Eagles ahead of the Super Bowl! \ud83e\udd85\ud83e\udd89",
+      "link": "https://www.linkedin.com/posts/templeuniversity_temple-owls-left-their-best-bird-calls-and-activity-7294478063776456704-sOKD",
+      "activity_status": null
+    },
+    {
+      "title": "That's how you do it! Congrats to Temple Men's Basketball for their big win over No. 18 Memphis last night \ud83d\udc4f  #TempleProud",
+      "link": "https://www.linkedin.com/posts/templeuniversity_templeproud-activity-7286110271750701057-1N8A",
+      "activity_status": null
+    },
+    {
+      "title": "Change isn\u2019t coming\u2014it\u2019s already here. I had the chance to host a powerful group of HR professionals in my home last week for dinner and a roundtable\u2026",
+      "link": "https://www.linkedin.com/posts/cheryl-grace_changemanagement-hrleadership-navigatingchange-activity-7293060841841598465-M1HZ",
+      "activity_status": null
+    },
+    {
+      "title": "So excited to see this day come!",
+      "link": "https://www.linkedin.com/posts/christinegpierce_paramount-and-nielsen-sign-multi-year-measurement-activity-7292336931575615488-OuSH",
+      "activity_status": null
+    },
+    {
+      "title": "Last week in New Orleans, the Sterling Legacy Fund in partnership with Prime Video & Amazon MGM Studios, PUMA Group and New Orleans Saints player\u2026",
+      "link": "https://www.linkedin.com/posts/latonya-story-0b08456_last-week-in-new-orleans-the-sterling-legacy-activity-7296310923659538433-kY6S",
+      "activity_status": null
+    },
+    {
+      "title": "THIS!! BIG congrats to an amazing woman, leader, momma bear, wife and friend. Keep them on their toes sis! Hugs \ud83e\udef6\ud83c\udffe",
+      "link": "https://www.linkedin.com/posts/crystal-barnes-0259b95_this-big-congrats-to-an-amazing-woman-activity-7299299247164719104-Cggs",
+      "activity_status": null
+    },
+    {
+      "title": "Still on a high from an amazing time connecting with old and new friends at the The Female Quotient #SXSW Equality Lounge this weekend! I learned, I\u2026",
+      "link": "https://www.linkedin.com/posts/janelleajames_sxsw-worklife-tech-activity-7306072606330245120-YurG",
+      "activity_status": null
+    },
+    {
+      "title": "A huge thank you to the amazing students from Fairfield University\u2019s Women in Business Club for their enthusiasm, thoughtful engagement, and\u2026",
+      "link": "https://www.linkedin.com/posts/ti-shea-meadows-a9667311_fairfielduniversity-womeninbusiness-leadership-activity-7304946220194488321-Ze6S",
+      "activity_status": null
+    },
+    {
+      "title": "Happy International Women\u2019s Day! \ud83d\udc95 This week we celebrated female empowerment with an incredible Paramount and Fairfield University\u2019s Women in\u2026",
+      "link": "https://www.linkedin.com/posts/candice-brancazio-52b69320_paramount-fairfielduniversity-womenshistorymonth-activity-7304144675915857921-zNY0",
+      "activity_status": null
+    },
+    {
+      "title": "*INTERNSHIP OPPORTUNITY*",
+      "link": "https://www.linkedin.com/posts/crystal-barnes-0259b95_internship-opportunity-activity-7303529964757241856-OAq3",
+      "activity_status": null
+    },
+    {
+      "title": "Five years later and it still hits! Thanks for the opportunity Jake Siewert Lindsay MacMillan Sarah Wood Gonz\u00e1lez.",
+      "link": "https://www.linkedin.com/posts/sean-legister-8a113014_five-years-later-and-it-still-hits-thanks-activity-7301402565559164928-lMaL",
+      "activity_status": null
+    },
+    {
+      "title": "The Content For Change Creators House New Orleans was a VIBE! 1 day, 300+ guests, 4 panels, 17 panelists and a good ol fashion \"Haus Party\". We\u2026",
+      "link": "https://www.linkedin.com/posts/crystal-barnes-0259b95_the-content-for-change-creators-house-new-activity-7303115466875502592-vbXJ",
+      "activity_status": null
+    },
+    {
+      "title": "The team is team-ing! Let's go Rita Papadogiannis!!",
+      "link": "https://www.linkedin.com/posts/crystal-barnes-0259b95_the-team-is-team-ing-lets-go-rita-papadogiannis-activity-7313243853061312512-cKOP",
+      "activity_status": null
+    }
+  ],
+  "similarly_named_profiles": [
+    {
+      "name": "Crystal Barnes",
+      "link": "https://www.linkedin.com/in/crystal-barnes-879676102",
+      "summary": "Property Manager/Community Director at NON PROFIT HOUSING CORPORATION OF GREATER HOUSTON",
+      "location": "Marietta, GA"
+    },
+    {
+      "name": "Crystal Barnes",
+      "link": "https://www.linkedin.com/in/crystal-barnes-04911bbb",
+      "summary": "Director at Preschool of America",
+      "location": "New York City Metropolitan Area"
+    },
+    {
+      "name": "Crystal Barnes",
+      "link": "https://www.linkedin.com/in/crystal-barnes-6a488328",
+      "summary": "25Q at United States Army",
+      "location": "Killeen, TX"
+    },
+    {
+      "name": "Crystal Barnes",
+      "link": "https://www.linkedin.com/in/crystal-barnes-51464997",
+      "summary": "Director at Wells Fargo Securities",
+      "location": "Charlotte Metro"
+    },
+    {
+      "name": "Crystal Barnes",
+      "link": "https://www.linkedin.com/in/crystal-barnes-10622b59",
+      "summary": "Wellness Engagement Manager  at United Airlines",
+      "location": "Calumet City, IL"
+    },
+    {
+      "name": "Crystal Barnes",
+      "link": "https://www.linkedin.com/in/crystal-barnes-23b047206",
+      "summary": "Director of Compensation and Benefits at von Drehle Corporation",
+      "location": "Hickory, NC"
+    },
+    {
+      "name": "Crystal Barnes",
+      "link": "https://www.linkedin.com/in/crystal-barnes-baa951158",
+      "summary": "Graduate University of Arkansas at Pine Bluff",
+      "location": "Pine Bluff, AR"
+    },
+    {
+      "name": "Crystal Barnes",
+      "link": "https://www.linkedin.com/in/crystalkbarnes",
+      "summary": "SVP of Compliance at Eclipse Bank at Eclipse Bank, Inc.",
+      "location": "Madison, IN"
+    },
+    {
+      "name": "Crystal Barnes",
+      "link": "https://www.linkedin.com/in/crystal-barnes-357259212",
+      "summary": "Director Of Workforce Development at Majestic Care",
+      "location": "Pittsboro, IN"
+    },
+    {
+      "name": "Crystal Barnes",
+      "link": "https://www.linkedin.com/in/crystal-barnes-2968198b",
+      "summary": "Practice Administrator Cornell Scott - Hill Health Center",
+      "location": "West Haven, CT"
+    },
+    {
+      "name": "Crystal Barnes",
+      "link": "https://www.linkedin.com/in/crystal-barnes-82b3021b8",
+      "summary": null,
+      "location": "Little Rock, AR"
+    },
+    {
+      "name": "Crystal Barnes",
+      "link": "https://www.linkedin.com/in/crystal-barnes-429553a7",
+      "summary": "Human Resources Assistant at FASTRAQ, LGX.",
+      "location": "Dayton, OH"
+    },
+    {
+      "name": "Crystal B.",
+      "link": "https://www.linkedin.com/in/crystal-b-82b3021b8",
+      "summary": "Intake Specialist",
+      "location": "Little Rock, AR"
+    },
+    {
+      "name": "Crystal B.",
+      "link": "https://www.linkedin.com/in/crystal-barnes-20177b1a",
+      "summary": "Film & TV Workforce Director",
+      "location": "Greater Chicago Area"
+    },
+    {
+      "name": "Crystal Barnes",
+      "link": "https://www.linkedin.com/in/crystal-barnes-a1657b1a",
+      "summary": null,
+      "location": "San Diego, CA"
+    },
+    {
+      "name": "Crystal Barnes",
+      "link": "https://www.linkedin.com/in/crystal-barnes-2245b9345",
+      "summary": "Real Estate Agent @ Epique Realty | Client Service, Real estate transactions",
+      "location": "Stone Mountain, GA"
+    },
+    {
+      "name": "Crystal Barnes",
+      "link": "https://www.linkedin.com/in/barnescrystal",
+      "summary": "Senior IT Shared Services Specialist",
+      "location": "Groton, MA"
+    },
+    {
+      "name": "Crystal O'Brien",
+      "link": "https://www.linkedin.com/in/crystal-o-brien-ab4a1a26",
+      "summary": "Sr Human Resources Generalist",
+      "location": "Greenbrier, TN"
+    }
+  ],
+  "articles": [],
+  "groups": [],
+  "skills": [],
+  "inferred_salary": null,
+  "gender": null,
+  "birth_date": null,
+  "industry": null,
+  "extra": null,
+  "interests": [],
+  "personal_emails": [],
+  "personal_numbers": [],
+  "meta": {
+    "thin_profile": false,
+    "last_updated": "2025-09-10T23:37:13Z"
+  }
+}

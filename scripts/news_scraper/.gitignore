@@ -1,0 +1,15 @@
+# Environment variables
+.env
+
+# Output files (keep directory structure)
+output/*.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# IDE
+.vscode/
+.idea/
