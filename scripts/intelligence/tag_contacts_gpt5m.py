@@ -10,7 +10,8 @@ Processes all contacts through GPT-5 mini structured output to generate:
 - Outreach context and personalization hooks
 
 Usage:
-  python scripts/intelligence/tag_contacts_gpt5m.py --test        # Process 5 contacts
+  python scripts/intelligence/tag_contacts_gpt5m.py --test        # Process 10 contacts
+  python scripts/intelligence/tag_contacts_gpt5m.py --test -n 5   # Process 5 contacts
   python scripts/intelligence/tag_contacts_gpt5m.py --dry-run     # Assemble prompts only
   python scripts/intelligence/tag_contacts_gpt5m.py               # Full run (all contacts)
   python scripts/intelligence/tag_contacts_gpt5m.py --force       # Re-tag already-tagged contacts
@@ -260,11 +261,12 @@ class ContactTagger:
         "enrich_honors_awards"
     )
 
-    def __init__(self, test_mode=False, dry_run=False, force=False, workers=10):
+    def __init__(self, test_mode=False, dry_run=False, force=False, workers=10, test_count=10):
         self.test_mode = test_mode
         self.dry_run = dry_run
         self.force = force
         self.workers = workers
+        self.test_count = test_count
         self.supabase: Optional[Client] = None
         self.openai: Optional[OpenAI] = None
         self.stats = {
@@ -320,8 +322,7 @@ class ContactTagger:
             offset += page_size
 
         if self.test_mode:
-            # Pick up to 5 diverse contacts
-            all_contacts = all_contacts[:5]
+            all_contacts = all_contacts[:self.test_count]
 
         return all_contacts
 
@@ -377,7 +378,7 @@ class ContactTagger:
         """Save the LLM output to Supabase."""
         tags_json = result.model_dump(mode="json")
         updates = {
-            "ai_tags": json.dumps(tags_json),
+            "ai_tags": tags_json,
             "ai_tags_generated_at": datetime.now(timezone.utc).isoformat(),
             "ai_tags_model": self.MODEL,
             # Denormalized scores
@@ -512,7 +513,9 @@ def main():
         description="Tag contacts with GPT-5 mini structured output"
     )
     parser.add_argument("--test", "-t", action="store_true",
-                        help="Process only 5 contacts for validation")
+                        help="Process only N contacts for validation (default: 10)")
+    parser.add_argument("--count", "-n", type=int, default=10,
+                        help="Number of contacts to process in test mode (default: 10)")
     parser.add_argument("--dry-run", "-d", action="store_true",
                         help="Assemble prompts but don't call OpenAI")
     parser.add_argument("--force", "-f", action="store_true",
@@ -526,6 +529,7 @@ def main():
         dry_run=args.dry_run,
         force=args.force,
         workers=args.workers,
+        test_count=args.count,
     )
     success = tagger.run()
     sys.exit(0 if success else 1)

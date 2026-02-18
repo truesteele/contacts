@@ -62,7 +62,7 @@ Started: 2026-02-18
 - OpenAI integration: Uses `responses.parse()` with Pydantic `text_format` for guaranteed schema compliance
 - Batch processing: `ThreadPoolExecutor(max_workers=10)` with Supabase pagination
 - Saves to DB: full `ai_tags` JSONB + 7 denormalized score columns + metadata (generated_at, model)
-- Flags: `--test` (5 contacts), `--dry-run` (no API calls), `--force` (re-tag), `--workers N`
+- Flags: `--test` (10 contacts default, configurable with `--count N`), `--dry-run` (no API calls), `--force` (re-tag), `--workers N`
 - Error handling: 3 retries with exponential backoff for rate limits, graceful skip on failure
 - Progress logging: contact-level output, periodic batch progress, final summary with token/cost tracking
 
@@ -80,5 +80,60 @@ Started: 2026-02-18
 
 **Files changed:**
 - `scripts/intelligence/tag_contacts_gpt5m.py` (new)
+
+---
+
+### Iteration 3 — US-003: Test LLM Tagging on 10 Contacts and Validate Output Quality
+**Date:** 2026-02-18
+**Status:** Complete
+
+**What was done:**
+- Updated `--test` flag to default to 10 contacts (was 5), added `--count N` / `-n` parameter
+- Ran `python scripts/intelligence/tag_contacts_gpt5m.py --test --count 10` — 10/10 contacts tagged, 0 errors
+- **Critical bug fix:** `save_tags()` was using `json.dumps(tags_json)` which double-encoded the JSONB (string inside JSONB). Fixed by passing the dict directly. This caused `->` operator queries to fail on `ai_tags`.
+- After fix, re-ran the test: all 10 contacts re-tagged with proper native JSONB storage
+- Verified via SQL that `ai_tags->'topical_affinity'->'topics'` returns proper arrays (not null)
+
+**Test contacts processed (10):**
+| ID | Name | Proximity | Capacity | Kindora |
+|----|------|-----------|----------|---------|
+| 1 | Jeanne Byrd Adams | 65 (close) | 55 (mid_level) | 58 |
+| 2 | Eugene Kirpichov | 30 (familiar) | 50 (mid_level) | 75 |
+| 3 | Dakarai Aarons | 45 (warm) | 60 (mid_level) | 75 |
+| 7 | Dreama Gentry | 48 (warm) | 55 (mid_level) | 82 |
+| 9 | Miguel Santana | 55 (warm) | 95 (major_donor) | 90 |
+| 10 | Kay Fernandez Smith | 78 (close) | 72 (major_donor) | 82 |
+| 11 | Steffani Maxwell | 34 (familiar) | 48 (mid_level) | 72 |
+| 12 | Precious Freeman, CFRE | 15 (acquaintance) | 45 (mid_level) | 65 |
+| 13 | Casey Recupero | 68 (close) | 55 (mid_level) | 78 |
+| 14 | Trina Villanueva | 50 (warm) | 62 (mid_level) | 72 |
+
+**Spot-check results (all pass):**
+- Shared employer → proximity >= 60: Kay (SF Foundation, 78), Casey (Year Up, 68), Jeanne (Year Up, 65) ✓
+- C-suite → major_donor or mid_level: Miguel (CEO of CCF, 95 major_donor), Dreama (CEO, 55 mid_level) ✓
+- Topics non-empty: All 10 contacts have 5-9 relevant topic tags with evidence ✓
+- Personalization hooks: All 10 contacts have 3-5 specific, actionable hooks ✓
+- Score distribution: 3 close, 4 warm, 2 familiar, 1 acquaintance — good spread, not 94% distant like old Perplexity scoring ✓
+
+**Cost of 10-contact test:**
+- Input tokens: 35,929
+- Output tokens: 26,868
+- Cost: $0.02
+- Time: 448.9s (~44.9s/contact sequential)
+- Extrapolated full batch: ~$5.00 for 2,498 contacts (higher than dry-run estimate due to actual output tokens being larger than 800 estimate)
+
+**Quality observations:**
+- Model sometimes varies proximity scores between runs for borderline cases (Eugene Kirpichov: 68 in run 1 vs 30 in run 2). Without confirmed temporal overlap at shared employers, the model is uncertain. Layer 3 (comms history) will help resolve these.
+- Kindora prospect scores skew high (55-90 range) — may need calibration if too many contacts get flagged as prospects. Acceptable for now.
+- Output quality is excellent: reasoning is detailed, personalization hooks reference specific shared experiences, topic tags have evidence strings.
+
+**Learnings:**
+- **CRITICAL:** Do NOT `json.dumps()` before passing to Supabase update for JSONB columns — pass the dict directly. Double-encoding breaks `->` operator queries.
+- gpt-5-mini model works reliably for structured output — 100% success rate on 10 contacts
+- Sequential test mode takes ~45s/contact; concurrent full batch should be much faster
+- Output tokens per contact average ~2,687 (higher than the 800 estimate in planning doc) — this increases cost
+
+**Files changed:**
+- `scripts/intelligence/tag_contacts_gpt5m.py` (modified: added --count param, fixed JSONB double-encoding bug)
 
 ---

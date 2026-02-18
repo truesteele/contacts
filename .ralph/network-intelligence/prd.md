@@ -85,22 +85,22 @@ Create `scripts/intelligence/tag_contacts_gpt5m.py` — the batch processing scr
 
 ### US-003: Test LLM Tagging on 10 Contacts and Validate Output Quality
 **Priority:** 3
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Run the tagging script in test mode on 10 diverse contacts. Validate that the structured output is correct, scores are reasonable, and personalization hooks are useful.
 
 **Acceptance Criteria:**
-- [ ] Run: `source .venv/bin/activate && python scripts/intelligence/tag_contacts_gpt5m.py --test`
-- [ ] Script completes without errors for all 10 contacts
-- [ ] Verify `ai_tags` JSONB is stored correctly for the 10 test contacts (query Supabase)
-- [ ] Verify denormalized scores are populated (ai_proximity_score, ai_capacity_score, etc.)
-- [ ] Spot-check: at least one contact with shared employer should have proximity score >= 60
-- [ ] Spot-check: C-suite contacts should have capacity_tier of "major_donor" or "mid_level"
-- [ ] Spot-check: topics array should contain relevant tags (not empty)
-- [ ] Spot-check: outreach_context.personalization_hooks should be non-empty and relevant
-- [ ] If output quality is poor, adjust the system prompt and re-test
-- [ ] Log the cost of the 10-contact test run
+- [x] Run: `source .venv/bin/activate && python scripts/intelligence/tag_contacts_gpt5m.py --test`
+- [x] Script completes without errors for all 10 contacts
+- [x] Verify `ai_tags` JSONB is stored correctly for the 10 test contacts (query Supabase)
+- [x] Verify denormalized scores are populated (ai_proximity_score, ai_capacity_score, etc.)
+- [x] Spot-check: at least one contact with shared employer should have proximity score >= 60
+- [x] Spot-check: C-suite contacts should have capacity_tier of "major_donor" or "mid_level"
+- [x] Spot-check: topics array should contain relevant tags (not empty)
+- [x] Spot-check: outreach_context.personalization_hooks should be non-empty and relevant
+- [x] If output quality is poor, adjust the system prompt and re-test
+- [x] Log the cost of the 10-contact test run
 
 **Notes:**
 - Pick diverse contacts: some who clearly worked with Justin (e.g., Google colleagues), some C-suite, some unknown
