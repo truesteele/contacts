@@ -262,3 +262,55 @@ Score Ranges (min / avg / max):
 - `scripts/intelligence/generate_embeddings.py` (new)
 
 ---
+
+### Iteration 6 — US-006: Create Supabase RPC Functions for Search
+**Date:** 2026-02-18
+**Status:** Complete
+
+**What was done:**
+- Applied Supabase migration `create_search_rpc_functions_and_fts_index` with 4 objects:
+  1. **`idx_contacts_fts`** — GIN full-text search index on `to_tsvector('english', headline || summary || company || position)`
+  2. **`match_contacts_by_profile(query_embedding, match_threshold, match_count)`** — semantic search on profile_embedding, returns id, name, headline, company, position, proximity/capacity info, similarity score
+  3. **`match_contacts_by_interests(query_embedding, match_threshold, match_count)`** — same pattern using interests_embedding
+  4. **`hybrid_contact_search(query_text, query_embedding, filter_proximity_min, filter_capacity_min, semantic_weight, keyword_weight, match_count, rrf_k)`** — combines semantic similarity (profile_embedding) + full-text keyword search + structured filters using Reciprocal Rank Fusion (RRF)
+
+- Created test script `scripts/intelligence/test_search_functions.py` that validates all 3 functions via Supabase RPC client
+
+**Test Results:**
+
+1. **match_contacts_by_profile** (Kay Fernandez Smith, SF Foundation):
+   - Top results: NorCal Grantmakers (0.738), SF Foundation (0.698), Children & Nature Network (0.689), Oakland Goes Outdoors (0.669), Latino Community Foundation (0.668) — highly relevant
+   - Similarity range: 0.664–1.0 at threshold 0.6
+
+2. **match_contacts_by_interests** ("outdoor equity, nature access, public lands"):
+   - Top results: Trust for Public Land (0.591), CA Natural Resources Agency (0.568), Sierra Club (0.547), Black Outside (0.543), Boyz N The Wood (0.537) — excellent topical match
+   - Similarity range: 0.536–0.597 at threshold 0.5
+
+3. **hybrid_contact_search** ("philanthropy education technology"):
+   - Top results: ED2Tech, CZI, Stanford Philanthropy Center, Hewlett Foundation — great fusion of semantic + keyword
+   - RRF scores range 0.017–0.038
+
+4. **hybrid_contact_search with filters** ("foundation grantmaking nonprofit", proximity >= 30, capacity >= 40):
+   - Top results: Packard Foundation, NorCal Grantmakers, California Black Freedom Fund — filtered results are relevant and high-quality
+   - Keyword weight boosted to 1.5 vs semantic 1.0 works well for specific org-type queries
+
+**Observations:**
+- Some duplicate contacts appear in results (Laura Arrillaga-Andreessen, Crystal Hayling appear twice) — data quality issue, not function bug
+- The hybrid search RRF scores are small numbers (0.01–0.04 range) which is expected since RRF formula is `weight/(k+rank)` — these are relative ranking scores, not similarity percentages
+- Functions return additional useful columns (headline, company, position, proximity/capacity) beyond the planning doc spec, making them more useful for direct display
+- `position` is a PostgreSQL reserved word — must be quoted as `"position"` in RETURNS TABLE and function body
+- All functions marked `STABLE` for query optimizer benefits
+- COALESCE added around `ai_proximity_score` and `ai_capacity_score` filters for contacts with NULL scores
+
+**Learnings:**
+- **`position` is a PostgreSQL reserved keyword** — must be double-quoted in function signatures and body. This caused initial migration failure.
+- Used `apply_migration` (not `execute_sql`) for DDL — consistent with US-001 pattern
+- Functions enhanced beyond planning doc: added `headline`, `company`, `position`, proximity/capacity columns to return types for practical usability
+- RRF fusion works well even at small scale (2,498 contacts) — the combination of semantic + keyword eliminates keyword-only blind spots
+- Supabase Python client `supabase.rpc()` works seamlessly with vector parameters passed as native Python lists
+- `websearch_to_tsquery` handles natural language queries well — no need for manual tsquery syntax
+
+**Files changed:**
+- `scripts/intelligence/test_search_functions.py` (new)
+
+---

@@ -164,20 +164,20 @@ Create `scripts/intelligence/generate_embeddings.py` and run it to generate prof
 
 ### US-006: Create Supabase RPC Functions for Search
 **Priority:** 6
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Create the SQL RPC functions in Supabase that enable similarity search and hybrid search queries.
 
 **Acceptance Criteria:**
-- [ ] Create `match_contacts_by_profile` function (Section 6 of planning doc) — takes query_embedding, match_threshold, match_count
-- [ ] Create `match_contacts_by_interests` function — same pattern but uses interests_embedding
-- [ ] Create `hybrid_contact_search` function (Section 6 of planning doc) — combines semantic + keyword + structured filters with RRF fusion
-- [ ] Create full-text search tsvector index on `headline || summary || company || position`
-- [ ] All functions created via Supabase MCP execute_sql
-- [ ] Test `match_contacts_by_profile` with a sample embedding — returns ranked results
-- [ ] Test `hybrid_contact_search` with text query + embedding — returns fused results
-- [ ] Verify functions are accessible via Supabase RPC client
+- [x] Create `match_contacts_by_profile` function (Section 6 of planning doc) — takes query_embedding, match_threshold, match_count
+- [x] Create `match_contacts_by_interests` function — same pattern but uses interests_embedding
+- [x] Create `hybrid_contact_search` function (Section 6 of planning doc) — combines semantic + keyword + structured filters with RRF fusion
+- [x] Create full-text search tsvector index on `headline || summary || company || position`
+- [x] All functions created via Supabase MCP execute_sql
+- [x] Test `match_contacts_by_profile` with a sample embedding — returns ranked results
+- [x] Test `hybrid_contact_search` with text query + embedding — returns fused results
+- [x] Verify functions are accessible via Supabase RPC client
 
 **Notes:**
 - See Section 6 of `docs/NETWORK_INTELLIGENCE_SYSTEM.md` for exact SQL
