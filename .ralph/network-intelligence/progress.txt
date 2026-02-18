@@ -314,3 +314,57 @@ Score Ranges (min / avg / max):
 - `scripts/intelligence/test_search_functions.py` (new)
 
 ---
+
+### Iteration 7 — US-007: Validate End-to-End with Use Case Queries
+**Date:** 2026-02-18
+**Status:** Complete
+
+**What was done:**
+- Created `scripts/intelligence/validate_use_cases.py` — runs all 5 use cases from Section 12 of the planning doc
+- Ran all 5 use cases via Supabase MCP SQL queries and Supabase RPC functions
+- Saved comprehensive validation report to `docs/reports/network-intelligence-validation.md`
+
+**Use Case Results:**
+
+1. **Outdoorithm Collective Fundraiser Invite** (proximity >= 40 AND invite_fit IN high/medium):
+   - **1,247 contacts match** — top results are SF Foundation colleagues, Google.org team, Kindora co-founder
+   - Top contacts: Judith Bell (prox=94), Fred Blackwell (prox=92), Mark Doherty (prox=92), Raquiba LaBrie (prox=92)
+   - Results are highly relevant — exactly who you'd invite to an Outdoorithm fundraiser
+
+2. **Kindora Enterprise Prospects** (score >= 50 AND type IN enterprise_buyer/champion):
+   - **935 contacts match** — foundation CEOs, corporate philanthropy leaders, network intermediaries
+   - Top contacts: Annie Maxwell (Anthropic, 95), Rhea Suh (Marin Community Foundation, 92), Gregory Johnson (Foundation for the Mid South, 92)
+   - Correctly identifies foundation/network decision-makers
+
+3. **People Interested in Outdoor Equity** (semantic search on interests_embedding):
+   - Top results: Trust for Public Land (0.591), CA Natural Resources Agency (0.568), Sierra Club (0.547), Black Outside (0.543), Boyz N The Wood (0.537)
+   - Excellent topical matches — semantic search correctly finds outdoor/nature/environmental justice people
+
+4. **Close Contacts** (proximity >= 60):
+   - **729 contacts** — inner circle includes SF Foundation board, Kindora co-founder, Google.org, Year Up founder, family
+   - Top: Judith Bell (94), Fred Blackwell (92), Karibu Nyaggah (92), Sally Steele (90), Gerald Chertavian (88)
+   - Layer 3 (comms history) needed to filter by "haven't spoken to recently"
+
+5. **Hybrid Search** ("philanthropy education technology"):
+   - RRF fusion combines semantic + keyword effectively
+   - Top results: ED2Tech (0.038), Philanthropy Together (0.020), CZI (0.019), Renaissance Philanthropy (0.018)
+   - Correctly ranks contacts matching both modalities higher
+
+**Calibration Issues Identified:**
+1. **Duplicate contacts** — Fred Blackwell, Judith Bell, Brandi Howard appear 2x in results (duplicate rows in contacts table, not a scoring issue)
+2. **Kindora prospect scores skew high** — 935 matches at >= 50. Tighter filter (>= 70) would be more actionable
+3. **Karibu Nyaggah appears as Kindora prospect** — co-founder, not external prospect. Needs manual exclusion
+4. **Proximity tier thresholds generous** — 729 contacts with proximity >= 60. Layer 3 comms will help distinguish active vs. inferred relationships
+5. **Semantic similarity scores moderate** (0.5-0.6 range) — normal for text-embedding-3-small at 768 dims, ranking is correct
+
+**Key Observations:**
+- Proximity scoring is a massive improvement over old Perplexity scoring (94% Cold → now 40% warm, 28% close, 0.9% inner circle)
+- All 5 use cases produce meaningful, actionable results
+- The three-layer architecture (LLM tags + embeddings + future comms) is validated
+- System is ready for production use cases
+
+**Files changed:**
+- `scripts/intelligence/validate_use_cases.py` (new)
+- `docs/reports/network-intelligence-validation.md` (new)
+
+---

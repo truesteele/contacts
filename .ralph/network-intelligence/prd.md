@@ -188,20 +188,20 @@ Create the SQL RPC functions in Supabase that enable similarity search and hybri
 
 ### US-007: Validate End-to-End with Use Case Queries
 **Priority:** 7
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Run all 5 use cases from Section 12 of the planning doc and verify the system produces meaningful results.
 
 **Acceptance Criteria:**
-- [ ] Use Case 1 (Outdoorithm Collective Fundraiser Invite): Query contacts with proximity >= 40 AND outdoorithm_invite_fit IN ('high', 'medium') — should return a list of real contacts
-- [ ] Use Case 2 (Kindora Enterprise Prospects): Query contacts with kindora_prospect_score >= 50 AND prospect_type IN ('enterprise_buyer', 'champion') — should return foundation/network leaders
-- [ ] Use Case 3 (People Interested in Outdoor Equity): Run semantic search with "outdoor equity, nature access, public lands" embedding — results should include people with relevant backgrounds
-- [ ] Use Case 4 (Close Contacts I Haven't Spoken To): Query proximity >= 60 — should return people Justin actually knows (Google colleagues, HBS classmates, etc.)
-- [ ] Use Case 5 (Hybrid Search): Run hybrid_contact_search with "philanthropy education technology" — results should combine semantic and keyword matches
-- [ ] Save sample results (top 10 from each use case) to `docs/reports/network-intelligence-validation.md`
-- [ ] Identify any calibration issues (e.g., scores too high, too low, wrong tier assignments)
-- [ ] Document findings in progress.txt
+- [x] Use Case 1 (Outdoorithm Collective Fundraiser Invite): Query contacts with proximity >= 40 AND outdoorithm_invite_fit IN ('high', 'medium') — should return a list of real contacts
+- [x] Use Case 2 (Kindora Enterprise Prospects): Query contacts with kindora_prospect_score >= 50 AND prospect_type IN ('enterprise_buyer', 'champion') — should return foundation/network leaders
+- [x] Use Case 3 (People Interested in Outdoor Equity): Run semantic search with "outdoor equity, nature access, public lands" embedding — results should include people with relevant backgrounds
+- [x] Use Case 4 (Close Contacts I Haven't Spoken To): Query proximity >= 60 — should return people Justin actually knows (Google colleagues, HBS classmates, etc.)
+- [x] Use Case 5 (Hybrid Search): Run hybrid_contact_search with "philanthropy education technology" — results should combine semantic and keyword matches
+- [x] Save sample results (top 10 from each use case) to `docs/reports/network-intelligence-validation.md`
+- [x] Identify any calibration issues (e.g., scores too high, too low, wrong tier assignments)
+- [x] Document findings in progress.txt
 
 **Notes:**
 - Use Supabase MCP execute_sql to run queries
