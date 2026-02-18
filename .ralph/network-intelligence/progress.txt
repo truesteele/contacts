@@ -1,0 +1,46 @@
+# Ralph Progress Log
+Loop: network-intelligence
+Started: 2026-02-18
+---
+
+## Codebase Patterns
+- Python venv at `.venv/` — activate with `source .venv/bin/activate`
+- Supabase pagination: `.range(offset, offset + page_size - 1)` for >1000 rows
+- Concurrent batch processing: `ThreadPoolExecutor(max_workers=8)` with batches
+- API keys in `.env` loaded via `python-dotenv`
+- JSONB enrichment fields may be string-wrapped — use `json.loads()` if string
+- Supabase MCP tools available for SQL execution
+- Existing enrichment script: `scripts/enrichment/enrich_contacts_apify.py`
+
+---
+
+## Iteration Log
+
+### Iteration 1 — US-001: Add Intelligence Columns and Indexes
+**Date:** 2026-02-18
+**Status:** Complete
+
+**What was done:**
+- Applied Supabase migration via `mcp__supabase__apply_migration` (named `add_intelligence_columns_and_indexes`)
+- Added 14 new columns to the `contacts` table:
+  - Layer 1 (LLM tags): `ai_tags` (jsonb), `ai_tags_generated_at` (timestamptz), `ai_tags_model` (text)
+  - Layer 2 (embeddings): `profile_embedding` (vector(768)), `interests_embedding` (vector(768))
+  - Layer 3 (comms): `communication_history` (jsonb), `comms_last_gathered_at` (timestamptz)
+  - Denormalized scores: `ai_proximity_score` (int), `ai_proximity_tier` (text), `ai_capacity_score` (int), `ai_capacity_tier` (text), `ai_kindora_prospect_score` (int), `ai_kindora_prospect_type` (text), `ai_outdoorithm_fit` (text)
+- Created 4 indexes:
+  - `idx_contacts_profile_embedding` — HNSW on profile_embedding (vector_cosine_ops, m=16, ef_construction=64)
+  - `idx_contacts_interests_embedding` — HNSW on interests_embedding (vector_cosine_ops, m=16, ef_construction=64)
+  - `idx_contacts_proximity_capacity` — Composite btree on (ai_proximity_tier, ai_capacity_tier) WHERE ai_proximity_score IS NOT NULL
+  - `idx_contacts_ai_tags` — GIN on ai_tags with jsonb_path_ops
+- Verified all columns via `information_schema.columns` query
+- Verified all indexes via `pg_indexes` query
+
+**Learnings:**
+- Used `apply_migration` (not `execute_sql`) for DDL — this is the recommended approach per Supabase MCP docs
+- All `ALTER TABLE ADD COLUMN IF NOT EXISTS` for idempotency
+- All `CREATE INDEX IF NOT EXISTS` for idempotency
+- Migration name used snake_case as required
+
+**Files changed:** None (migration was applied directly to Supabase, no local script needed)
+
+---
