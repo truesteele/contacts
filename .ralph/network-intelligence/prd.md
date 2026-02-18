@@ -137,23 +137,23 @@ Process all ~2,498 contacts through GPT-5 mini structured tagging. Monitor progr
 
 ### US-005: Write and Run Embedding Generation for All Contacts
 **Priority:** 5
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Create `scripts/intelligence/generate_embeddings.py` and run it to generate profile_embedding and interests_embedding for all contacts.
 
 **Acceptance Criteria:**
-- [ ] Create script at `scripts/intelligence/generate_embeddings.py`
-- [ ] Build profile text document per contact: `{name} | {headline}\nCurrently: {title} at {company}\nPreviously: {company1} ({title1}), ...\nEducation: {school1} ({degree1}), ...\nSkills: {skill1}, ...\nVolunteering: {org1} ({role1}), ...\nLocation: {city}, {state}\nAbout: {summary}`
-- [ ] Build interests text document per contact: use LLM-generated tags from ai_tags (topical_affinity.topics, talking_points) + summary + headline
-- [ ] Call `text-embedding-3-small` with `dimensions=768` for both documents
-- [ ] Store vectors in `profile_embedding` and `interests_embedding` columns
-- [ ] Batch embedding calls (OpenAI supports batching up to 2048 inputs per call)
-- [ ] Process all ~2,498 contacts
-- [ ] Verify count: `SELECT COUNT(*) FROM contacts WHERE profile_embedding IS NOT NULL` should be ~2,400+
-- [ ] Test a sample similarity query: find 5 contacts most similar to a known contact
-- [ ] Log cost and time elapsed (expected: ~$0.05 total, ~2 minutes)
-- [ ] Script runs without errors
+- [x] Create script at `scripts/intelligence/generate_embeddings.py`
+- [x] Build profile text document per contact: `{name} | {headline}\nCurrently: {title} at {company}\nPreviously: {company1} ({title1}), ...\nEducation: {school1} ({degree1}), ...\nSkills: {skill1}, ...\nVolunteering: {org1} ({role1}), ...\nLocation: {city}, {state}\nAbout: {summary}`
+- [x] Build interests text document per contact: use LLM-generated tags from ai_tags (topical_affinity.topics, talking_points) + summary + headline
+- [x] Call `text-embedding-3-small` with `dimensions=768` for both documents
+- [x] Store vectors in `profile_embedding` and `interests_embedding` columns
+- [x] Batch embedding calls (OpenAI supports batching up to 2048 inputs per call)
+- [x] Process all ~2,498 contacts
+- [x] Verify count: `SELECT COUNT(*) FROM contacts WHERE profile_embedding IS NOT NULL` should be ~2,400+
+- [x] Test a sample similarity query: find 5 contacts most similar to a known contact
+- [x] Log cost and time elapsed (expected: ~$0.05 total, ~2 minutes)
+- [x] Script runs without errors
 
 **Notes:**
 - OpenAI's embedding API supports batch input — send up to 100 texts per call for efficiency

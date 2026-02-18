@@ -211,3 +211,54 @@ Score Ranges (min / avg / max):
 **Files changed:** None (used existing script from US-002/US-003)
 
 ---
+
+### Iteration 5 — US-005: Write and Run Embedding Generation for All Contacts
+**Date:** 2026-02-18
+**Status:** Complete
+
+**What was done:**
+- Created `scripts/intelligence/generate_embeddings.py` — batch embedding generation script (~280 lines)
+- Two text builders:
+  - `build_profile_text()`: Name | headline, current role, employment history (up to 10), education, skills (up to 20), volunteering (up to 10), location, summary (truncated at 1000 chars)
+  - `build_interests_text()`: LLM-generated topics, primary interests, talking points, personalization hooks (from ai_tags), headline, summary. Falls back to skills + volunteering for contacts without ai_tags.
+- OpenAI batch embedding: 100 texts per API call for efficiency
+- Processes profile and interests embeddings separately (interests can be empty)
+- Flags: `--test` (10 contacts), `--count N`, `--dry-run`, `--force`
+- Supabase pagination with `.range()` for >1000 rows
+- Skip already-embedded contacts unless `--force`
+
+**Test run (10 contacts):**
+- 10/10 embedded, 0 errors
+- 6,622 tokens, 2 API calls
+- Cost: $0.0001
+- Time: 4.6s
+- Verified: all 10 have 768-dim profile_embedding and interests_embedding
+- Similarity search works: Kay Fernandez Smith (SF Foundation) → Kayla Ballard (NCG), Karely Ordaz Salto (SF Foundation), etc.
+
+**Full run (2,488 remaining contacts):**
+- 2,488/2,488 embedded, 0 errors
+- 1,407,399 tokens, 50 API calls
+- Cost: $0.03
+- Time: 202.4s (3.4 minutes), 12.3 contacts/sec
+- 3 contacts had empty interests texts (no ai_tags + no headline/summary/skills)
+
+**Final database counts:**
+- profile_embedding: 2,498 / 2,498 (100%)
+- interests_embedding: 2,495 / 2,498 (99.9% — 3 had empty interest text)
+
+**Similarity search validation:**
+- Profile similarity (Kay Fernandez Smith, SF Foundation): Top results = NorCal Grantmakers, SF Foundation, Children & Nature Network — highly relevant
+- Interests similarity (Miguel Santana, CCF CEO): Top results = Community Foundation leader, Public Advocates, SF Foundation, CA Wellness Foundation — excellent topical match with 0.81-0.83 similarity scores
+
+**Learnings:**
+- Batch embedding is extremely fast and cheap — 2,498 contacts in 3.4 minutes for $0.03
+- 100 texts per API call is efficient — only 50 API calls total for ~5,000 embeddings
+- text-embedding-3-small with dimensions=768 works perfectly with pgvector HNSW indexes
+- Supabase stores vectors as native vector type — `vector_dims()` confirms 768 dimensions
+- Interests embeddings with LLM-generated topics produce high-quality similarity results (0.8+ for semantically related contacts)
+- 3 contacts have no interests_embedding due to truly empty profiles (no tags, no headline, no summary) — acceptable at 0.1% missing
+
+**Files changed:**
+- `scripts/intelligence/generate_embeddings.py` (new)
+
+---
