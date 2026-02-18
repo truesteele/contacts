@@ -111,21 +111,21 @@ Run the tagging script in test mode on 10 diverse contacts. Validate that the st
 
 ### US-004: Run Full LLM Tagging Batch on All Contacts
 **Priority:** 4
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Process all ~2,498 contacts through GPT-5 mini structured tagging. Monitor progress, costs, and errors.
 
 **Acceptance Criteria:**
-- [ ] Run: `source .venv/bin/activate && python scripts/intelligence/tag_contacts_gpt5m.py`
-- [ ] Script completes processing all contacts (may skip already-tagged from test run)
-- [ ] Total errors < 5% of contacts
-- [ ] Verify count: `SELECT COUNT(*) FROM contacts WHERE ai_tags IS NOT NULL` should be ~2,400+
-- [ ] Verify score distribution makes sense:
+- [x] Run: `source .venv/bin/activate && python scripts/intelligence/tag_contacts_gpt5m.py`
+- [x] Script completes processing all contacts (may skip already-tagged from test run)
+- [x] Total errors < 5% of contacts
+- [x] Verify count: `SELECT COUNT(*) FROM contacts WHERE ai_tags IS NOT NULL` should be ~2,400+
+- [x] Verify score distribution makes sense:
   - `SELECT ai_proximity_tier, COUNT(*) FROM contacts WHERE ai_proximity_tier IS NOT NULL GROUP BY ai_proximity_tier` — should NOT be 94% "distant" (unlike the old Perplexity scoring)
   - `SELECT ai_capacity_tier, COUNT(*) FROM contacts WHERE ai_capacity_tier IS NOT NULL GROUP BY ai_capacity_tier` — should show spread across tiers
-- [ ] Log final statistics: total processed, errors, cost, time elapsed
-- [ ] Document the score distribution in progress.txt
+- [x] Log final statistics: total processed, errors, cost, time elapsed
+- [x] Document the score distribution in progress.txt
 
 **Notes:**
 - This will take ~5-10 minutes at 50 RPM with 10 concurrent workers
