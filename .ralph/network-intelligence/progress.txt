@@ -44,3 +44,41 @@ Started: 2026-02-18
 **Files changed:** None (migration was applied directly to Supabase, no local script needed)
 
 ---
+
+### Iteration 2 — US-002: Write LLM Tagging Script with Pydantic Schema
+**Date:** 2026-02-18
+**Status:** Complete
+
+**What was done:**
+- Created `scripts/intelligence/` directory
+- Created `scripts/intelligence/tag_contacts_gpt5m.py` — full batch tagging script (310 lines)
+- Pydantic models:
+  - `ContactIntelligence` (top-level): relationship_proximity, giving_capacity, topical_affinity, sales_fit, outreach_context
+  - Enums for tiers: ProximityTier, CapacityTier, ProspectType, FitLevel, TopicStrength, BestApproach
+  - Nested models: SharedEmployer, SharedSchool, TopicTag, etc.
+- Anchor profile: Justin's full career (Kindora, True Steele, Outdoorithm, Google.org, Year Up, Bridgespan, Bain + HBS, HKS, UVA + SF Foundation, Outdoorithm Collective boards)
+- System prompt with detailed scoring guidelines per Section 5 & 8 of planning doc
+- Context assembly: parses all JSONB enrichment fields (employment, education, skills, volunteering, certifications, publications, honors/awards), handles string-wrapped and native JSONB
+- OpenAI integration: Uses `responses.parse()` with Pydantic `text_format` for guaranteed schema compliance
+- Batch processing: `ThreadPoolExecutor(max_workers=10)` with Supabase pagination
+- Saves to DB: full `ai_tags` JSONB + 7 denormalized score columns + metadata (generated_at, model)
+- Flags: `--test` (5 contacts), `--dry-run` (no API calls), `--force` (re-tag), `--workers N`
+- Error handling: 3 retries with exponential backoff for rate limits, graceful skip on failure
+- Progress logging: contact-level output, periodic batch progress, final summary with token/cost tracking
+
+**Dry-run verification:**
+- `--dry-run --test`: 5 contacts, ~12K input tokens estimated
+- `--dry-run` (full): 2,498 contacts, ~5.8M input tokens, ~2M output tokens, est. cost ~$2.08
+- All imports clean, Pydantic models validate correctly
+
+**Learnings:**
+- OpenAI SDK v2.21 supports `client.responses.parse()` with `text_format=PydanticModel` — clean structured output
+- `gpt-5-mini` is available (model ID: `gpt-5-mini-2025-08-07`)
+- JSONB enrichment fields are stored as stringified JSON strings in Supabase — need `json.loads()` before passing to prompt
+- Empty certifications exist (all null fields) — filter them out before including in prompt
+- Average input tokens per contact: ~2,340 (range: 371-7,750 depending on enrichment depth)
+
+**Files changed:**
+- `scripts/intelligence/tag_contacts_gpt5m.py` (new)
+
+---

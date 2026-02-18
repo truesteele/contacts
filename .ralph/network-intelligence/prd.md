@@ -52,27 +52,27 @@ Add all new columns, vector indexes, and composite indexes to the contacts table
 
 ### US-002: Write LLM Tagging Script with Pydantic Schema
 **Priority:** 2
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Create `scripts/intelligence/tag_contacts_gpt5m.py` — the batch processing script that tags all contacts using GPT-5 mini structured output.
 
 **Acceptance Criteria:**
-- [ ] Create `scripts/intelligence/` directory
-- [ ] Define Pydantic models matching the output schema in Section 5 of the planning doc (relationship_proximity, giving_capacity, topical_affinity, sales_fit, outreach_context)
-- [ ] Include Justin's profile as anchor context in the prompt (employers, schools, boards, key interests — from Section 3 of planning doc)
-- [ ] Assemble per-contact context document from enrichment JSONB fields (enrich_employment, enrich_education, enrich_skills_detailed, enrich_volunteering, enrich_certifications, enrich_publications, enrich_honors_awards, headline, summary, company, position, connected_on, city, state)
-- [ ] Use OpenAI Responses API with `response_format={"type": "json_schema", ...}` for guaranteed schema compliance
-- [ ] Batch processing with `ThreadPoolExecutor(max_workers=10)` and Supabase pagination (`.range()`)
-- [ ] Store full LLM output in `ai_tags` JSONB column
-- [ ] Extract and store denormalized scores (ai_proximity_score, ai_proximity_tier, ai_capacity_score, ai_capacity_tier, ai_kindora_prospect_score, ai_kindora_prospect_type, ai_outdoorithm_fit)
-- [ ] Set `ai_tags_generated_at` and `ai_tags_model` metadata columns
-- [ ] Add `--test` flag that processes only 5 contacts for validation
-- [ ] Add `--dry-run` flag that assembles prompts but doesn't call OpenAI
-- [ ] Add progress logging (processed X/Y contacts, errors, cost estimate)
-- [ ] Handle errors gracefully (skip failed contacts, log errors, continue processing)
-- [ ] Load env vars from `.env` file
-- [ ] Script runs without import errors: `source .venv/bin/activate && python scripts/intelligence/tag_contacts_gpt5m.py --dry-run`
+- [x] Create `scripts/intelligence/` directory
+- [x] Define Pydantic models matching the output schema in Section 5 of the planning doc (relationship_proximity, giving_capacity, topical_affinity, sales_fit, outreach_context)
+- [x] Include Justin's profile as anchor context in the prompt (employers, schools, boards, key interests — from Section 3 of planning doc)
+- [x] Assemble per-contact context document from enrichment JSONB fields (enrich_employment, enrich_education, enrich_skills_detailed, enrich_volunteering, enrich_certifications, enrich_publications, enrich_honors_awards, headline, summary, company, position, connected_on, city, state)
+- [x] Use OpenAI Responses API with `response_format={"type": "json_schema", ...}` for guaranteed schema compliance
+- [x] Batch processing with `ThreadPoolExecutor(max_workers=10)` and Supabase pagination (`.range()`)
+- [x] Store full LLM output in `ai_tags` JSONB column
+- [x] Extract and store denormalized scores (ai_proximity_score, ai_proximity_tier, ai_capacity_score, ai_capacity_tier, ai_kindora_prospect_score, ai_kindora_prospect_type, ai_outdoorithm_fit)
+- [x] Set `ai_tags_generated_at` and `ai_tags_model` metadata columns
+- [x] Add `--test` flag that processes only 5 contacts for validation
+- [x] Add `--dry-run` flag that assembles prompts but doesn't call OpenAI
+- [x] Add progress logging (processed X/Y contacts, errors, cost estimate)
+- [x] Handle errors gracefully (skip failed contacts, log errors, continue processing)
+- [x] Load env vars from `.env` file
+- [x] Script runs without import errors: `source .venv/bin/activate && python scripts/intelligence/tag_contacts_gpt5m.py --dry-run`
 
 **Notes:**
 - Use model `gpt-5-mini` (or `gpt-4o-mini` as fallback if gpt-5-mini is not available)
