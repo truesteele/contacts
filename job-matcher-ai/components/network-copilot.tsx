@@ -6,6 +6,7 @@ import { NLQueryBar } from '@/components/nl-query-bar';
 import { FilterBar } from '@/components/filter-bar';
 import { ContactsTable } from '@/components/contacts-table';
 import { ContactDetailSheet } from '@/components/contact-detail-sheet';
+import { OutreachDrawer } from '@/components/outreach-drawer';
 import { ListManager } from '@/components/list-manager';
 import { OutreachStatusValue } from '@/components/pipeline-status';
 import { FilterState, ProspectList } from '@/lib/types';
@@ -16,6 +17,7 @@ import {
   Download,
   X,
   FolderOpen,
+  Mail,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -32,6 +34,7 @@ export function NetworkCopilot() {
   const [lastQuery, setLastQuery] = useState('');
   const [detailContactId, setDetailContactId] = useState<number | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [outreachOpen, setOutreachOpen] = useState(false);
 
   // List mode state
   const [activeList, setActiveList] = useState<ProspectList | null>(null);
@@ -336,6 +339,16 @@ export function NetworkCopilot() {
             <Download className="w-3.5 h-3.5" />
             Export CSV
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setOutreachOpen(true)}
+            disabled={selectedIds.size === 0}
+            className="gap-1.5"
+          >
+            <Mail className="w-3.5 h-3.5" />
+            Draft Outreach
+          </Button>
 
           {selectedIds.size > 0 && (
             <Badge variant="secondary" className="ml-auto text-xs">
@@ -363,6 +376,14 @@ export function NetworkCopilot() {
         contactId={detailContactId}
         open={detailOpen}
         onOpenChange={setDetailOpen}
+      />
+
+      {/* Outreach drawer */}
+      <OutreachDrawer
+        open={outreachOpen}
+        onOpenChange={setOutreachOpen}
+        contacts={contacts.filter((c) => selectedIds.has(parseInt(String(c.id), 10)))}
+        listId={activeList?.id}
       />
     </Card>
   );
