@@ -3,7 +3,7 @@
 import { ChatInterface } from '@/components/chat-interface';
 import { SoCalContacts } from '@/components/socal-contacts';
 import { CamelbackCoachSearch } from '@/components/camelback-coach-search';
-import { NetworkIntelligence } from '@/components/network-intelligence';
+import { NetworkCopilot } from '@/components/network-copilot';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search, MapPin, Mountain, Network } from 'lucide-react';
 
@@ -44,7 +44,7 @@ export default function Home() {
           </TabsContent>
 
           <TabsContent value="network-intel" className="h-[calc(100%-60px)]">
-            <NetworkIntelligence />
+            <NetworkCopilot />
           </TabsContent>
         </Tabs>
       </div>
