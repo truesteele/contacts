@@ -13,6 +13,7 @@ import {
   Building2,
   MapPin,
 } from 'lucide-react';
+import { PipelineStatus, OutreachStatusValue } from '@/components/pipeline-status';
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -31,6 +32,9 @@ interface ContactsTableProps {
   selectedIds: Set<number>;
   onSelectionChange: (ids: Set<number>) => void;
   onContactClick: (contactId: number) => void;
+  listId?: string;
+  memberStatuses?: Map<number, OutreachStatusValue>;
+  onStatusChange?: (contactId: number, status: OutreachStatusValue) => void;
 }
 
 // ── Tier badge colors ──────────────────────────────────────────────────
@@ -115,7 +119,11 @@ export function ContactsTable({
   selectedIds,
   onSelectionChange,
   onContactClick,
+  listId,
+  memberStatuses,
+  onStatusChange,
 }: ContactsTableProps) {
+  const showPipeline = !!listId && !!memberStatuses;
   const [sortBy, setSortBy] = useState<SortField>('proximity');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
@@ -226,6 +234,13 @@ export function ContactsTable({
                 </button>
               </th>
             ))}
+            {showPipeline && (
+              <th className="text-left p-2">
+                <span className="font-medium text-xs uppercase tracking-wide text-muted-foreground">
+                  Status
+                </span>
+              </th>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -371,6 +386,18 @@ export function ContactsTable({
                     <span className="text-muted-foreground">—</span>
                   )}
                 </td>
+
+                {/* Pipeline Status (only for saved lists) */}
+                {showPipeline && (
+                  <td className="p-2">
+                    <PipelineStatus
+                      contactId={cid}
+                      listId={listId!}
+                      status={memberStatuses!.get(cid) || 'not_contacted'}
+                      onStatusChange={onStatusChange || (() => {})}
+                    />
+                  </td>
+                )}
               </tr>
             );
           })}
