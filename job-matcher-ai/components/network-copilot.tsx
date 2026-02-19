@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { NLQueryBar } from '@/components/nl-query-bar';
 import { FilterBar } from '@/components/filter-bar';
 import { ContactsTable } from '@/components/contacts-table';
+import { ContactDetailSheet } from '@/components/contact-detail-sheet';
 import { FilterState } from '@/lib/types';
 import { NetworkContact } from '@/lib/supabase';
 import { AlertCircle, RefreshCw } from 'lucide-react';
@@ -20,6 +21,8 @@ export function NetworkCopilot() {
   const [phase, setPhase] = useState<Phase>('idle');
   const [error, setError] = useState('');
   const [lastQuery, setLastQuery] = useState('');
+  const [detailContactId, setDetailContactId] = useState<number | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   // Abort controller for cancelling in-flight requests
   const abortRef = useRef<AbortController | null>(null);
@@ -98,8 +101,8 @@ export function NetworkCopilot() {
   );
 
   const handleContactClick = useCallback((contactId: number) => {
-    // Placeholder — contact detail sheet will be wired in US-007
-    console.log('Contact clicked:', contactId);
+    setDetailContactId(contactId);
+    setDetailOpen(true);
   }, []);
 
   const isLoading = phase === 'parsing' || phase === 'searching';
@@ -161,6 +164,13 @@ export function NetworkCopilot() {
           onContactClick={handleContactClick}
         />
       )}
+
+      {/* Contact detail slide-out */}
+      <ContactDetailSheet
+        contactId={detailContactId}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+      />
     </Card>
   );
 }
