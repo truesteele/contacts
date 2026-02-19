@@ -86,6 +86,32 @@ export async function searchContacts(filters: SearchFilters): Promise<Contact[]>
   return contacts;
 }
 
+export interface NetworkContact {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email?: string;
+  personal_email?: string;
+  work_email?: string;
+  linkedin_url?: string;
+  company?: string;
+  position?: string;
+  city?: string;
+  state?: string;
+  headline?: string;
+  summary?: string;
+  ai_proximity_score?: number;
+  ai_proximity_tier?: string;
+  ai_capacity_score?: number;
+  ai_capacity_tier?: string;
+  ai_kindora_prospect_score?: number;
+  ai_kindora_prospect_type?: string;
+  ai_outdoorithm_fit?: string;
+  ai_tags?: Record<string, any>;
+  profile_embedding?: string;
+  interests_embedding?: string;
+}
+
 export async function getContactById(id: string): Promise<Contact | null> {
   const { data, error } = await supabase
     .from('contacts')

@@ -155,9 +155,9 @@ export function ChatInterface() {
   };
 
   return (
-    <div className="flex flex-col h-screen max-w-6xl mx-auto p-4">
+    <div className="flex flex-col h-full">
       <div className="mb-4">
-        <h1 className="text-3xl font-bold mb-2">AI Job Search Agent</h1>
+        <h2 className="text-2xl font-bold mb-2">AI Job Search Agent</h2>
         <p className="text-muted-foreground">
           Upload a job description or describe the role you're looking to fill
         </p>

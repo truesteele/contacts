@@ -1,0 +1,514 @@
+import Anthropic from '@anthropic-ai/sdk';
+import { supabase, NetworkContact } from './supabase';
+import { generateEmbedding768 } from './openai';
+
+const NETWORK_SELECT_COLS =
+  'id, first_name, last_name, company, position, city, state, email, linkedin_url, headline, ' +
+  'ai_proximity_score, ai_proximity_tier, ai_capacity_score, ai_capacity_tier, ' +
+  'ai_kindora_prospect_score, ai_kindora_prospect_type, ai_outdoorithm_fit';
+
+export const networkTools: Anthropic.Tool[] = [
+  {
+    name: 'search_network',
+    description:
+      'Search contacts with structured filters. Use for questions about specific segments: fundraiser invites, Kindora prospects, contacts at a company, contacts in a city, etc. Returns contacts sorted by proximity score.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        proximity_min: {
+          type: 'number',
+          description: 'Minimum proximity score (0-100). E.g., 40 for warm+, 60 for close+, 80 for inner circle.',
+        },
+        proximity_tiers: {
+          type: 'array',
+          items: { type: 'string' },
+          description:
+            'Filter by specific tiers: "inner_circle", "close", "warm", "familiar", "acquaintance", "distant"',
+        },
+        capacity_min: {
+          type: 'number',
+          description: 'Minimum giving capacity score (0-100). E.g., 70 for major donors.',
+        },
+        capacity_tiers: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Filter by capacity tiers: "major_donor", "mid_level", "grassroots", "unknown"',
+        },
+        outdoorithm_fit: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Filter by Outdoorithm Collective fit: "high", "medium", "low", "none"',
+        },
+        kindora_type: {
+          type: 'array',
+          items: { type: 'string' },
+          description:
+            'Filter by Kindora prospect type: "enterprise_buyer", "champion", "influencer", "not_relevant"',
+        },
+        company_keyword: {
+          type: 'string',
+          description: 'Search for contacts at a specific company (partial match). E.g., "Google", "San Francisco Foundation"',
+        },
+        name_search: {
+          type: 'string',
+          description: 'Search for a specific person by name (partial match on first or last name)',
+        },
+        location_state: {
+          type: 'string',
+          description: 'Filter by state. E.g., "California", "New York"',
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum results to return (default 50). Use higher values (100-200) when the user wants a comprehensive list.',
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: 'semantic_search',
+    description:
+      'Find contacts by topic or interests using natural language. Uses AI embeddings to find people whose interests, skills, or background match the query — even if exact keywords don\'t appear in their profile. Best for: "who cares about outdoor equity", "people in philanthropy tech", "education reform advocates".',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        query: {
+          type: 'string',
+          description:
+            'Natural language description of what you\'re looking for. E.g., "outdoor equity, nature access, environmental justice"',
+        },
+        search_type: {
+          type: 'string',
+          enum: ['interests', 'profile'],
+          description:
+            'Which embedding to search. "interests" (default) matches on topics/affinities. "profile" matches on career/background similarity.',
+        },
+        match_count: {
+          type: 'number',
+          description: 'Number of results (default 30). Use higher values (50-100) for comprehensive lists.',
+        },
+      },
+      required: ['query'],
+    },
+  },
+  {
+    name: 'find_similar',
+    description:
+      'Find contacts similar to a specific person. Provide a contact ID to find people with similar profiles or interests.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        contact_id: {
+          type: 'number',
+          description: 'The contact ID to find similar people for',
+        },
+        search_type: {
+          type: 'string',
+          enum: ['profile', 'interests'],
+          description: '"profile" (default) finds similar career backgrounds. "interests" finds similar topical interests.',
+        },
+        count: {
+          type: 'number',
+          description: 'Number of similar contacts to return (default 20)',
+        },
+      },
+      required: ['contact_id'],
+    },
+  },
+  {
+    name: 'hybrid_search',
+    description:
+      'Combined semantic + keyword search with optional structured filters. Uses Reciprocal Rank Fusion to combine results. Best for broad queries that benefit from both meaning-based and keyword matching.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        query: {
+          type: 'string',
+          description: 'Free text search query. E.g., "philanthropy education technology"',
+        },
+        proximity_min: {
+          type: 'number',
+          description: 'Minimum proximity score filter (default 0)',
+        },
+        capacity_min: {
+          type: 'number',
+          description: 'Minimum capacity score filter (default 0)',
+        },
+        match_count: {
+          type: 'number',
+          description: 'Number of results (default 40). Use higher values for comprehensive lists.',
+        },
+      },
+      required: ['query'],
+    },
+  },
+  {
+    name: 'get_contact_detail',
+    description:
+      'Get full profile details and AI tags for a specific contact. Use after searching to dive deep on a specific person. Returns scores, topics, personalization hooks, and outreach context.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        contact_id: {
+          type: 'number',
+          description: 'The contact ID to fetch details for',
+        },
+      },
+      required: ['contact_id'],
+    },
+  },
+  {
+    name: 'get_outreach_context',
+    description:
+      'Get personalization hooks, suggested opener, and talking points for outreach to a specific contact. Use this when drafting messages or emails.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        contact_id: {
+          type: 'number',
+          description: 'The contact ID to get outreach context for',
+        },
+      },
+      required: ['contact_id'],
+    },
+  },
+  {
+    name: 'export_contacts',
+    description:
+      'Export a list of contacts to CSV for download. Provide the contact IDs from a previous search result.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        contact_ids: {
+          type: 'array',
+          items: { type: 'number' },
+          description: 'Array of contact IDs to export',
+        },
+        label: {
+          type: 'string',
+          description: 'Label for the export file (e.g., "outdoorithm_fundraiser_invites")',
+        },
+      },
+      required: ['contact_ids'],
+    },
+  },
+];
+
+// ── Tool Implementations ─────────────────────────────────────────────
+
+async function searchNetwork(input: any): Promise<any> {
+  let query = supabase
+    .from('contacts')
+    .select(NETWORK_SELECT_COLS);
+
+  if (input.proximity_min != null) {
+    query = query.gte('ai_proximity_score', input.proximity_min);
+  }
+  if (input.capacity_min != null) {
+    query = query.gte('ai_capacity_score', input.capacity_min);
+  }
+  if (input.proximity_tiers?.length > 0) {
+    query = query.in('ai_proximity_tier', input.proximity_tiers);
+  }
+  if (input.capacity_tiers?.length > 0) {
+    query = query.in('ai_capacity_tier', input.capacity_tiers);
+  }
+  if (input.outdoorithm_fit?.length > 0) {
+    query = query.in('ai_outdoorithm_fit', input.outdoorithm_fit);
+  }
+  if (input.kindora_type?.length > 0) {
+    query = query.in('ai_kindora_prospect_type', input.kindora_type);
+  }
+  if (input.company_keyword) {
+    query = query.ilike('company', `%${input.company_keyword}%`);
+  }
+  if (input.name_search) {
+    const term = `%${input.name_search}%`;
+    query = query.or(`first_name.ilike.${term},last_name.ilike.${term}`);
+  }
+  if (input.location_state) {
+    query = query.ilike('state', `%${input.location_state}%`);
+  }
+
+  const limit = input.limit || 50;
+  query = query.order('ai_proximity_score', { ascending: false }).limit(limit);
+
+  const { data, error } = await query;
+  if (error) throw new Error(`Search failed: ${error.message}`);
+
+  return {
+    count: data?.length || 0,
+    contacts: data || [],
+  };
+}
+
+async function semanticSearch(input: any): Promise<any> {
+  const searchType = input.search_type || 'interests';
+  const matchCount = input.match_count || 30;
+
+  const queryEmbedding = await generateEmbedding768(input.query);
+
+  const rpcName =
+    searchType === 'profile'
+      ? 'match_contacts_by_profile'
+      : 'match_contacts_by_interests';
+
+  const { data, error } = await supabase.rpc(rpcName, {
+    query_embedding: queryEmbedding,
+    match_threshold: 0.3,
+    match_count: matchCount,
+  });
+
+  if (error) throw new Error(`Semantic search failed: ${error.message}`);
+
+  return {
+    query: input.query,
+    search_type: searchType,
+    count: data?.length || 0,
+    contacts: data || [],
+  };
+}
+
+async function findSimilar(input: any): Promise<any> {
+  const searchType = input.search_type || 'profile';
+  const count = input.count || 20;
+  const embeddingCol = searchType === 'profile' ? 'profile_embedding' : 'interests_embedding';
+
+  const { data: contact, error: fetchError } = await supabase
+    .from('contacts')
+    .select(`id, first_name, last_name, company, ${embeddingCol}`)
+    .eq('id', input.contact_id)
+    .single();
+
+  if (fetchError || !contact) {
+    throw new Error(`Contact ${input.contact_id} not found`);
+  }
+
+  const embedding = (contact as any)[embeddingCol];
+  if (!embedding) {
+    return { error: true, message: `Contact has no ${searchType} embedding` };
+  }
+
+  const rpcName =
+    searchType === 'profile'
+      ? 'match_contacts_by_profile'
+      : 'match_contacts_by_interests';
+
+  const { data, error } = await supabase.rpc(rpcName, {
+    query_embedding: embedding,
+    match_threshold: 0.4,
+    match_count: count + 1,
+  });
+
+  if (error) throw new Error(`Find similar failed: ${error.message}`);
+
+  // Exclude the source contact from results
+  const results = (data || []).filter((r: any) => r.id !== input.contact_id);
+
+  return {
+    source: `${contact.first_name} ${contact.last_name}` + (contact.company ? ` (${contact.company})` : ''),
+    search_type: searchType,
+    count: results.length,
+    contacts: results.slice(0, count),
+  };
+}
+
+async function hybridSearch(input: any): Promise<any> {
+  const matchCount = input.match_count || 40;
+  const queryEmbedding = await generateEmbedding768(input.query);
+
+  const { data, error } = await supabase.rpc('hybrid_contact_search', {
+    query_text: input.query,
+    query_embedding: queryEmbedding,
+    filter_proximity_min: input.proximity_min || 0,
+    filter_capacity_min: input.capacity_min || 0,
+    semantic_weight: 1.0,
+    keyword_weight: 1.0,
+    match_count: matchCount,
+    rrf_k: 60,
+  });
+
+  if (error) throw new Error(`Hybrid search failed: ${error.message}`);
+
+  // The RPC returns only id, first_name, last_name, score. Fetch full profiles.
+  const ids = (data || []).map((r: any) => r.id);
+  if (ids.length === 0) {
+    return { query: input.query, count: 0, contacts: [] };
+  }
+
+  const { data: profiles } = await supabase
+    .from('contacts')
+    .select(NETWORK_SELECT_COLS)
+    .in('id', ids);
+
+  // Merge scores back into profiles
+  const scoreMap = new Map((data || []).map((r: any) => [r.id, r.score]));
+  const merged = (profiles || [])
+    .map((p: any) => ({ ...p, hybrid_score: scoreMap.get(p.id) || 0 }))
+    .sort((a: any, b: any) => b.hybrid_score - a.hybrid_score);
+
+  return {
+    query: input.query,
+    count: merged.length,
+    contacts: merged,
+  };
+}
+
+async function getContactDetail(input: any): Promise<any> {
+  const { data, error } = await supabase
+    .from('contacts')
+    .select(
+      'id, first_name, last_name, company, position, city, state, email, personal_email, work_email, ' +
+        'linkedin_url, headline, summary, ' +
+        'ai_proximity_score, ai_proximity_tier, ai_capacity_score, ai_capacity_tier, ' +
+        'ai_kindora_prospect_score, ai_kindora_prospect_type, ai_outdoorithm_fit, ai_tags'
+    )
+    .eq('id', input.contact_id)
+    .single();
+
+  if (error || !data) {
+    throw new Error(`Contact ${input.contact_id} not found`);
+  }
+
+  const contact = data as any;
+  // Extract key subfields from ai_tags to avoid sending the full blob
+  const tags = contact.ai_tags || {};
+  return {
+    ...contact,
+    ai_tags: undefined,
+    ai_tags_summary: {
+      relationship_proximity: tags.relationship_proximity,
+      giving_capacity: tags.giving_capacity,
+      topical_affinity: tags.topical_affinity,
+      sales_fit: tags.sales_fit,
+      outreach_context: tags.outreach_context,
+    },
+  };
+}
+
+async function getOutreachContext(input: any): Promise<any> {
+  const { data, error } = await supabase
+    .from('contacts')
+    .select(
+      'id, first_name, last_name, company, position, headline, city, state, email, linkedin_url, ' +
+        'ai_proximity_score, ai_proximity_tier, ai_capacity_tier, ai_tags'
+    )
+    .eq('id', input.contact_id)
+    .single();
+
+  if (error || !data) {
+    throw new Error(`Contact ${input.contact_id} not found`);
+  }
+
+  const contact = data as any;
+  const tags = contact.ai_tags || {};
+  const outreach = tags.outreach_context || {};
+  const proximity = tags.relationship_proximity || {};
+  const affinity = tags.topical_affinity || {};
+
+  return {
+    name: `${contact.first_name} ${contact.last_name}`,
+    company: contact.company,
+    position: contact.position,
+    headline: contact.headline,
+    location: [contact.city, contact.state].filter(Boolean).join(', '),
+    email: contact.email,
+    linkedin_url: contact.linkedin_url,
+    proximity_tier: contact.ai_proximity_tier,
+    proximity_score: contact.ai_proximity_score,
+    capacity_tier: contact.ai_capacity_tier,
+    shared_context: {
+      shared_employers: proximity.shared_employers || [],
+      shared_schools: proximity.shared_schools || [],
+      shared_boards: proximity.shared_boards || [],
+    },
+    topics: (affinity.topics || []).slice(0, 8),
+    primary_interests: affinity.primary_interests || [],
+    talking_points: affinity.talking_points || [],
+    personalization_hooks: outreach.personalization_hooks || [],
+    suggested_opener: outreach.suggested_opener || '',
+    best_approach: outreach.best_approach || '',
+  };
+}
+
+function escapeCSVValue(val: any): string {
+  if (val == null) return '';
+  const str = String(val);
+  if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
+async function exportContacts(input: any): Promise<any> {
+  const ids = input.contact_ids || [];
+  if (ids.length === 0) {
+    return { error: true, message: 'No contact IDs provided' };
+  }
+
+  const { data, error } = await supabase
+    .from('contacts')
+    .select(NETWORK_SELECT_COLS)
+    .in('id', ids);
+
+  if (error) throw new Error(`Export failed: ${error.message}`);
+
+  const contacts = data || [];
+  const headers = [
+    'First Name', 'Last Name', 'Email', 'LinkedIn URL', 'Company', 'Position',
+    'City', 'State', 'Proximity Score', 'Proximity Tier', 'Capacity Score',
+    'Capacity Tier', 'Kindora Score', 'Kindora Type', 'Outdoorithm Fit',
+  ];
+
+  const rows = contacts.map((c: any) =>
+    [
+      c.first_name, c.last_name, c.email, c.linkedin_url, c.company, c.position,
+      c.city, c.state, c.ai_proximity_score, c.ai_proximity_tier, c.ai_capacity_score,
+      c.ai_capacity_tier, c.ai_kindora_prospect_score, c.ai_kindora_prospect_type,
+      c.ai_outdoorithm_fit,
+    ].map(escapeCSVValue).join(',')
+  );
+
+  const csvContent = [headers.join(','), ...rows].join('\n');
+  const timestamp = new Date().toISOString().split('T')[0];
+  const label = input.label ? input.label.replace(/[^a-z0-9_-]/gi, '_') : 'network_export';
+  const filename = `${label}_${timestamp}.csv`;
+
+  return {
+    csv_content: csvContent,
+    filename,
+    row_count: contacts.length,
+  };
+}
+
+// ── Tool Executor ────────────────────────────────────────────────────
+
+export async function executeNetworkToolCall(
+  toolName: string,
+  toolInput: any
+): Promise<any> {
+  console.log(`[Network] Executing tool: ${toolName}`, toolInput);
+  try {
+    switch (toolName) {
+      case 'search_network':
+        return await searchNetwork(toolInput);
+      case 'semantic_search':
+        return await semanticSearch(toolInput);
+      case 'find_similar':
+        return await findSimilar(toolInput);
+      case 'hybrid_search':
+        return await hybridSearch(toolInput);
+      case 'get_contact_detail':
+        return await getContactDetail(toolInput);
+      case 'get_outreach_context':
+        return await getOutreachContext(toolInput);
+      case 'export_contacts':
+        return await exportContacts(toolInput);
+      default:
+        throw new Error(`Unknown network tool: ${toolName}`);
+    }
+  } catch (error: any) {
+    console.error(`[Network] Error in ${toolName}:`, error);
+    return { error: true, message: error.message || 'Tool execution failed' };
+  }
+}
