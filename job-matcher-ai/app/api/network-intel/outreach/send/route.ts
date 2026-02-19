@@ -73,9 +73,10 @@ interface SendResult {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { draft_id, draft_ids } = body as {
+    const { draft_id, draft_ids, overrides } = body as {
       draft_id?: string;
       draft_ids?: string[];
+      overrides?: Record<string, { subject?: string; body?: string }>;
     };
 
     // Normalize to array
@@ -183,15 +184,33 @@ export async function POST(req: Request) {
       }
 
       try {
-        const htmlBody = textToHtml(d.body);
+        // Apply local edits if provided
+        const draftOverride = overrides?.[d.id];
+        const finalSubject = draftOverride?.subject ?? d.subject;
+        const finalBody = draftOverride?.body ?? d.body;
+
+        // Persist overrides to DB before sending
+        if (draftOverride) {
+          const updates: Record<string, string> = {};
+          if (draftOverride.subject) updates.subject = draftOverride.subject;
+          if (draftOverride.body) updates.body = draftOverride.body;
+          if (Object.keys(updates).length > 0) {
+            await supabase
+              .from('outreach_drafts')
+              .update(updates)
+              .eq('id', d.id);
+          }
+        }
+
+        const htmlBody = textToHtml(finalBody);
 
         const { data: sendData, error: sendError } = await getResend().emails.send({
           from: FROM_EMAIL,
           to: [toEmail],
           replyTo: REPLY_TO,
-          subject: d.subject,
+          subject: finalSubject,
           html: htmlBody,
-          text: d.body,
+          text: finalBody,
           headers: {
             'List-Unsubscribe': `<mailto:${REPLY_TO}?subject=unsubscribe>`,
           },

@@ -38,8 +38,12 @@ async function executeStructuredSearch(filters: FilterState) {
     query = query.ilike('company', `%${filters.company_keyword}%`);
   }
   if (filters.name_search) {
-    const term = `%${filters.name_search}%`;
-    query = query.or(`first_name.ilike.${term},last_name.ilike.${term}`);
+    // Sanitize to prevent PostgREST filter syntax injection (commas, parens, dots as delimiters)
+    const sanitized = filters.name_search.replace(/[,().]/g, ' ').trim();
+    if (sanitized) {
+      const term = `%${sanitized}%`;
+      query = query.or(`first_name.ilike.${term},last_name.ilike.${term}`);
+    }
   }
   if (filters.location_state) {
     query = query.ilike('state', `%${filters.location_state}%`);

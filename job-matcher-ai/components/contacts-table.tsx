@@ -44,14 +44,15 @@ const PROXIMITY_TIER_COLORS: Record<string, string> = {
   close: 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800',
   warm: 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-800',
   familiar: 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/40 dark:text-orange-300 dark:border-orange-800',
+  acquaintance: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800/40 dark:text-slate-300 dark:border-slate-700',
   distant: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800/40 dark:text-gray-400 dark:border-gray-700',
 };
 
 const CAPACITY_TIER_COLORS: Record<string, string> = {
-  high: 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/40 dark:text-green-300 dark:border-green-800',
-  medium: 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800',
-  low: 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-800',
-  none: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800/40 dark:text-gray-400 dark:border-gray-700',
+  major_donor: 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/40 dark:text-green-300 dark:border-green-800',
+  mid_level: 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800',
+  grassroots: 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-300 dark:border-yellow-800',
+  unknown: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800/40 dark:text-gray-400 dark:border-gray-700',
 };
 
 const OUTDOORITHM_COLORS: Record<string, string> = {
@@ -66,17 +67,20 @@ const TIER_DISPLAY: Record<string, string> = {
   close: 'Close',
   warm: 'Warm',
   familiar: 'Familiar',
+  acquaintance: 'Acquaintance',
   distant: 'Distant',
+  major_donor: 'Major Donor',
+  mid_level: 'Mid-Level',
+  grassroots: 'Grassroots',
+  unknown: 'Unknown',
   high: 'High',
   medium: 'Medium',
   low: 'Low',
   none: 'None',
-  enterprise_prospect: 'Enterprise',
-  sme_prospect: 'SME',
-  partner: 'Partner',
-  investor: 'Investor',
-  advisor: 'Advisor',
-  talent: 'Talent',
+  enterprise_buyer: 'Enterprise Buyer',
+  champion: 'Champion',
+  influencer: 'Influencer',
+  not_relevant: 'Not Relevant',
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────

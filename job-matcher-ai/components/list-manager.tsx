@@ -28,7 +28,6 @@ interface ListManagerProps {
 
 export function ListManager({ selectedIds, onLoadList }: ListManagerProps) {
   const [lists, setLists] = useState<ProspectList[]>([]);
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [newListName, setNewListName] = useState('');
@@ -104,13 +103,8 @@ export function ListManager({ selectedIds, onLoadList }: ListManagerProps) {
   );
 
   const handleLoadList = useCallback(
-    async (list: ProspectList) => {
-      setLoading(true);
-      try {
-        onLoadList(list);
-      } finally {
-        setLoading(false);
-      }
+    (list: ProspectList) => {
+      onLoadList(list);
     },
     [onLoadList]
   );
@@ -214,12 +208,8 @@ export function ListManager({ selectedIds, onLoadList }: ListManagerProps) {
       {/* Load List dropdown */}
       <DropdownMenu onOpenChange={(open) => { if (open) fetchLists(); }}>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" disabled={loading} className="gap-1.5">
-            {loading ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <FolderOpen className="w-3.5 h-3.5" />
-            )}
+          <Button variant="ghost" size="sm" className="gap-1.5">
+            <FolderOpen className="w-3.5 h-3.5" />
             Load List
             <ChevronDown className="w-3 h-3 opacity-50" />
           </Button>

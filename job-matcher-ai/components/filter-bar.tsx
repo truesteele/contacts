@@ -24,7 +24,12 @@ const TIER_LABELS: Record<string, string> = {
   close: 'Close',
   warm: 'Warm',
   familiar: 'Familiar',
+  acquaintance: 'Acquaintance',
   distant: 'Distant',
+  major_donor: 'Major Donor',
+  mid_level: 'Mid-Level',
+  grassroots: 'Grassroots',
+  unknown: 'Unknown',
   high: 'High',
   medium: 'Medium',
   low: 'Low',
@@ -32,12 +37,10 @@ const TIER_LABELS: Record<string, string> = {
 };
 
 const KINDORA_LABELS: Record<string, string> = {
-  enterprise_prospect: 'Enterprise',
-  sme_prospect: 'SME',
-  partner: 'Partner',
-  investor: 'Investor',
-  advisor: 'Advisor',
-  talent: 'Talent',
+  enterprise_buyer: 'Enterprise Buyer',
+  champion: 'Champion',
+  influencer: 'Influencer',
+  not_relevant: 'Not Relevant',
 };
 
 function formatTierList(tiers: string[]): string {

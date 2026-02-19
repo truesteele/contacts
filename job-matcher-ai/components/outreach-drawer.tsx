@@ -124,11 +124,17 @@ export function OutreachDrawer({
   const handleSendDraft = useCallback(async (draftId: string) => {
     setSendingIds((prev) => new Set(prev).add(draftId));
 
+    const draft = drafts.find((d) => d.id === draftId);
     try {
       const res = await fetch('/api/network-intel/outreach/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ draft_id: draftId }),
+        body: JSON.stringify({
+          draft_id: draftId,
+          overrides: draft
+            ? { [draftId]: { subject: draft.subject, body: draft.body } }
+            : undefined,
+        }),
       });
 
       if (!res.ok) {
@@ -157,7 +163,7 @@ export function OutreachDrawer({
         return next;
       });
     }
-  }, []);
+  }, [drafts]);
 
   const handleSendAll = useCallback(async () => {
     const unsent = drafts.filter((d) => d.status === 'draft');
@@ -166,10 +172,15 @@ export function OutreachDrawer({
     setSendingAll(true);
 
     try {
+      const overrides: Record<string, { subject: string; body: string }> = {};
+      for (const d of unsent) {
+        overrides[d.id] = { subject: d.subject, body: d.body };
+      }
+
       const res = await fetch('/api/network-intel/outreach/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ draft_ids: unsent.map((d) => d.id) }),
+        body: JSON.stringify({ draft_ids: unsent.map((d) => d.id), overrides }),
       });
 
       if (!res.ok) {

@@ -63,7 +63,7 @@ export function NetworkCopilot() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [outreachOpen, detailOpen]);
 
-  const executeSearch = useCallback(async (searchFilters: FilterState) => {
+  const executeSearch = useCallback(async (searchFilters: FilterState, signal?: AbortSignal) => {
     setPhase('searching');
     setError('');
 
@@ -72,6 +72,7 @@ export function NetworkCopilot() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ filters: searchFilters }),
+        signal,
       });
 
       if (!res.ok) {
@@ -93,7 +94,8 @@ export function NetworkCopilot() {
     async (query: string) => {
       // Cancel any in-flight request
       abortRef.current?.abort();
-      abortRef.current = new AbortController();
+      const controller = new AbortController();
+      abortRef.current = controller;
 
       // Exit list mode on new search
       setActiveList(null);
@@ -110,6 +112,7 @@ export function NetworkCopilot() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ query }),
+          signal: controller.signal,
         });
 
         if (!res.ok) {
@@ -122,7 +125,7 @@ export function NetworkCopilot() {
         setExplanation(data.explanation || '');
 
         // Now execute search with the parsed filters
-        await executeSearch(data.filters || {});
+        await executeSearch(data.filters || {}, controller.signal);
       } catch (err: any) {
         if (err.name === 'AbortError') return;
         setError(err.message || 'Failed to process query');
@@ -134,8 +137,11 @@ export function NetworkCopilot() {
 
   const handleFilterChange = useCallback(
     (updatedFilters: FilterState) => {
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
       setFilters(updatedFilters);
-      executeSearch(updatedFilters);
+      executeSearch(updatedFilters, controller.signal);
     },
     [executeSearch]
   );
