@@ -11,6 +11,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
 import {
   Building2,
   MapPin,
@@ -23,6 +24,7 @@ import {
   Lightbulb,
   Loader2,
   AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
 
 interface ContactDetail {
@@ -157,16 +159,58 @@ export function ContactDetailSheet({
         className="w-full sm:max-w-lg p-0 flex flex-col"
       >
         {loading && (
-          <div className="flex-1 flex items-center justify-center">
-            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+          <div className="flex-1 px-6 pt-6 space-y-5">
+            {/* Skeleton header */}
+            <div className="space-y-2">
+              <div className="h-6 w-48 rounded bg-muted animate-pulse" />
+              <div className="h-4 w-64 rounded bg-muted animate-pulse" />
+            </div>
+            {/* Skeleton info rows */}
+            <div className="space-y-3">
+              <div className="h-4 w-56 rounded bg-muted animate-pulse" />
+              <div className="h-4 w-40 rounded bg-muted animate-pulse" />
+              <div className="h-4 w-48 rounded bg-muted animate-pulse" />
+            </div>
+            {/* Skeleton score cards */}
+            <div className="grid grid-cols-2 gap-3">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="rounded-lg border p-3 space-y-2">
+                  <div className="h-3 w-16 rounded bg-muted animate-pulse" />
+                  <div className="h-6 w-20 rounded bg-muted animate-pulse" />
+                </div>
+              ))}
+            </div>
+            {/* Skeleton sections */}
+            <div className="space-y-3">
+              <div className="h-4 w-32 rounded bg-muted animate-pulse" />
+              <div className="flex gap-2">
+                <div className="h-5 w-20 rounded-full bg-muted animate-pulse" />
+                <div className="h-5 w-24 rounded-full bg-muted animate-pulse" />
+                <div className="h-5 w-16 rounded-full bg-muted animate-pulse" />
+              </div>
+            </div>
           </div>
         )}
 
         {error && (
           <div className="flex-1 flex items-center justify-center p-6">
-            <div className="text-center space-y-2">
+            <div className="text-center space-y-3">
               <AlertCircle className="w-8 h-8 text-destructive mx-auto" />
-              <p className="text-sm text-destructive">{error}</p>
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-destructive">Failed to load contact</p>
+                <p className="text-xs text-muted-foreground">{error}</p>
+              </div>
+              {contactId != null && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fetchDetail(contactId)}
+                  className="gap-1.5"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  Retry
+                </Button>
+              )}
             </div>
           </div>
         )}

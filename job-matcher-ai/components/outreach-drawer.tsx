@@ -299,6 +299,16 @@ export function OutreachDrawer({
                   />
                 </div>
 
+                {/* No email warning */}
+                {contacts.length > 0 && contacts.every((c) => !c.email) && (
+                  <div className="flex items-start gap-2 rounded-lg border border-amber-500/50 bg-amber-50 dark:bg-amber-900/10 p-3 text-xs">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <span className="text-amber-700 dark:text-amber-300">
+                      None of the selected contacts have email addresses. Drafts will be generated but cannot be sent.
+                    </span>
+                  </div>
+                )}
+
                 {/* Generate button */}
                 <Button
                   onClick={handleGenerateDrafts}

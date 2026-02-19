@@ -48,7 +48,7 @@ export function NLQueryBar({ onSearch, isLoading }: NLQueryBarProps) {
   return (
     <div className="space-y-3">
       <div className="relative">
-        <div className="flex items-start gap-2 rounded-lg border bg-background p-2 shadow-sm focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-1 transition-shadow">
+        <div className="flex items-start gap-2 rounded-lg border bg-background p-2 shadow-sm focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-1 transition-all duration-200">
           <Sparkles className="w-5 h-5 mt-2 ml-1 text-muted-foreground shrink-0" />
           <textarea
             value={query}

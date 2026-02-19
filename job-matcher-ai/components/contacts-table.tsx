@@ -188,15 +188,11 @@ export function ContactsTable({
   }
 
   if (contacts.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-48 text-muted-foreground text-sm">
-        No contacts to display. Try a different search query.
-      </div>
-    );
+    return null;
   }
 
   return (
-    <ScrollArea className="h-[calc(100vh-360px)] rounded-md border">
+    <ScrollArea className="h-[calc(100vh-360px)] min-h-[300px] rounded-md border">
       <table className="w-full text-sm">
         <thead className="bg-muted/50 sticky top-0 z-10">
           <tr className="border-b">
@@ -205,7 +201,6 @@ export function ContactsTable({
                 checked={allSelected}
                 ref={(el) => {
                   if (el) {
-                    // Set indeterminate via DOM since Radix doesn't support it as a prop
                     const input = el.querySelector('button');
                     if (input) input.setAttribute('data-indeterminate', someSelected ? 'true' : 'false');
                   }
@@ -227,7 +222,12 @@ export function ContactsTable({
               <th key={field} className="text-left p-2">
                 <button
                   onClick={() => handleSort(field)}
-                  className="flex items-center font-medium text-xs uppercase tracking-wide hover:text-foreground text-muted-foreground transition-colors"
+                  className={cn(
+                    'flex items-center font-medium text-xs uppercase tracking-wide transition-colors',
+                    sortBy === field
+                      ? 'text-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
                 >
                   {label}
                   {getSortIcon(field)}
@@ -252,10 +252,10 @@ export function ContactsTable({
               <tr
                 key={cid}
                 className={cn(
-                  'border-b transition-colors cursor-pointer',
+                  'border-b transition-colors duration-150 cursor-pointer group',
                   isSelected
                     ? 'bg-primary/5 hover:bg-primary/10'
-                    : 'hover:bg-muted/50'
+                    : 'hover:bg-muted/50 active:bg-muted/70'
                 )}
                 onClick={() => onContactClick(cid)}
               >

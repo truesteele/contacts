@@ -1,7 +1,7 @@
 # Personal Network Intelligence System
 
 **Last updated:** 2026-02-18
-**Status:** Phase 1-2 COMPLETE, Phase 4 in progress
+**Status:** Phase 1-2 COMPLETE, Phase 4 COMPLETE (Copilot UI)
 
 ---
 
@@ -898,53 +898,67 @@ LIMIT 25;
 
 **Output:** Rich communication context for ~500+ contacts who Justin has actually emailed.
 
-### Phase 4: Agentic Chat Interface — IN PROGRESS
-**Goal:** Natural language query interface using Claude as an agentic backbone with tools.
+### Phase 4: AI Filter Co-pilot UI — COMPLETE
+**Status:** Done (2026-02-18)
+**Goal:** Replace the agentic chat interface with a structured AI Filter Co-pilot — natural language query → structured filters → interactive table → prospect lists → outreach drafting → email sending.
 
-**Architecture:**
-- Extend existing `job-matcher-ai` Next.js app with a "Network Intelligence" tab
-- Claude (Anthropic API) as the agentic backbone with tool use
-- SSE streaming for real-time responses (existing pattern in `app/api/chat/route.ts`)
-- Supabase as data layer (existing `lib/supabase.ts` pattern)
-- OpenAI embeddings API for real-time query embedding generation
+**Architecture (final):**
+- **AI Filter Parsing:** Claude Sonnet 4.6 with forced `tool_use` translates NL queries into structured `FilterState` JSON
+- **Search Execution:** Separate search endpoint applies filters via Supabase queries or hybrid search (semantic + keyword + RRF)
+- **Interactive Table:** Sortable columns, checkbox selection, tier badges, pipeline status tracking
+- **Prospect Lists:** Save/load named lists with outreach status per contact (Supabase `prospect_lists` + `prospect_list_members` tables)
+- **Outreach Drafting:** Claude Sonnet 4.6 generates personalized emails using contact context, shared history, and personalization hooks
+- **Email Sending:** Resend API for HTML email delivery from `justin@truesteele.com`
 
-**Claude Tools (Skills):**
+**Key Components Built:**
+| Component | File | Description |
+|-----------|------|-------------|
+| NLQueryBar | `components/nl-query-bar.tsx` | Natural language input with suggested queries |
+| FilterBar | `components/filter-bar.tsx` | Editable filter chips, color-coded by category |
+| ContactsTable | `components/contacts-table.tsx` | Sortable data table with selection and tier badges |
+| ContactDetailSheet | `components/contact-detail-sheet.tsx` | Slide-out panel with full contact profile |
+| ListManager | `components/list-manager.tsx` | Save/load prospect lists |
+| PipelineStatus | `components/pipeline-status.tsx` | Per-contact outreach status tracking |
+| OutreachDrawer | `components/outreach-drawer.tsx` | Draft generation, editing, and sending |
+| NetworkCopilot | `components/network-copilot.tsx` | Main orchestrator container |
 
-| Tool | Description | Backend |
-|------|-------------|---------|
-| `search_network` | Structured filter search (proximity, capacity, prospect type, location, Outdoorithm fit) | Supabase `.select().gte().in_()` |
-| `semantic_search` | Find contacts by topic/interests via natural language | OpenAI embed query → `match_contacts_by_interests` RPC |
-| `find_similar` | Find contacts similar to a given contact | `match_contacts_by_profile` RPC with contact's embedding |
-| `hybrid_search` | Combined semantic + keyword + structured filters | `hybrid_contact_search` RPC |
-| `get_contact_detail` | Full contact profile with AI tags, scores, personalization hooks | Supabase `.select('*').eq('id', id)` |
-| `get_outreach_context` | Personalization hooks, suggested opener, talking points for a contact | Extract from ai_tags JSONB |
-| `list_by_tier` | Quick tier-based lists ("show me all inner_circle", "major_donor prospects") | Supabase filter by tier columns |
-| `export_contacts` | Export a filtered list to CSV | Generate CSV from query results |
+**API Routes Built:**
+| Route | Method | Description |
+|-------|--------|-------------|
+| `/api/network-intel/parse-filters` | POST | NL query → FilterState via Claude |
+| `/api/network-intel/search` | POST | FilterState → matching contacts |
+| `/api/network-intel/contact/[id]` | GET | Full contact detail with ai_tags extraction |
+| `/api/network-intel/prospect-lists` | GET/POST | List all or create prospect list |
+| `/api/network-intel/prospect-lists/[id]` | GET/PATCH/DELETE | CRUD on individual list |
+| `/api/network-intel/outreach/draft` | POST | AI draft generation for selected contacts |
+| `/api/network-intel/outreach/send` | POST | Send drafts via Resend |
 
-**Example queries the agent handles:**
-- "Who should I invite to the Outdoorithm fundraiser?"
-- "Find Kindora enterprise prospects at foundations"
-- "Who do I know who cares about outdoor equity?"
-- "Show me my inner circle I haven't tagged yet for Kindora"
-- "Find people similar to Fred Blackwell"
-- "Draft an outreach message to Judith Bell about the fundraiser"
-- "Export all major donor prospects with high Outdoorithm fit to CSV"
+**Database Tables Added:**
+- `prospect_lists` — saved prospect list metadata
+- `prospect_list_members` — list membership with outreach status tracking
+- `outreach_drafts` — generated email drafts with send status
 
-**System prompt design:**
-- Include Justin's profile context (career, boards, organizations)
-- Include available tool descriptions
-- Include scoring tier definitions so Claude can interpret results
-- Instruct Claude to explain its search strategy before executing
-- Instruct Claude to present results in a scannable format with key scores
+**Complete User Flow:**
+1. Type natural language query (e.g., "Who should I invite to the fundraiser?")
+2. Claude parses query into structured filters (proximity, capacity, Outdoorithm fit, etc.)
+3. Filters appear as editable chips — remove or modify to refine results
+4. Results display in sortable table with AI scores and tier badges
+5. Click row to see full contact detail (shared context, outreach hooks, topics)
+6. Select contacts and save to prospect list
+7. Load list to track outreach pipeline status per contact
+8. Draft personalized outreach emails (5 tone options, optional context)
+9. Review, edit, and send emails via Resend
 
-### Phase 5: Outreach Generation (Future)
-**Goal:** Draft personalized outreach emails using all the context.
+### Phase 5: Communication History (Future)
+**Goal:** Map Justin's email/calendar history to contacts.
 
-For a given list of contacts:
-1. Pull their ai_tags + communication_history
-2. Feed to an LLM with outreach template and Justin's voice
-3. Generate personalized email drafts
-4. Review and send via Gmail MCP tools
+1. Write script that uses MCP Google Workspace tools to search Gmail across all 5 accounts
+2. Process high-priority contacts first (proximity >= 40)
+3. Summarize threads with GPT-5 mini
+4. Store in `communication_history` JSONB column
+5. Integrate into contact detail sheet and outreach context
+
+**Output:** Rich communication context for ~500+ contacts who Justin has actually emailed.
 
 ---
 

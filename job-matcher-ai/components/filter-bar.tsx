@@ -159,13 +159,13 @@ export function FilterBar({ filters, explanation, totalCount, onFilterChange }: 
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-2 flex-wrap">
+      <div className="flex items-center gap-2 flex-wrap transition-all duration-200">
         {chips.map((chip) => (
           <Badge
             key={chip.key}
             variant="outline"
             className={cn(
-              'gap-1 py-1 pl-2.5 pr-1.5 text-xs font-medium transition-all',
+              'gap-1 py-1 pl-2.5 pr-1.5 text-xs font-medium transition-all duration-150',
               chip.colorClass
             )}
           >
