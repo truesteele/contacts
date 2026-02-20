@@ -1,12 +1,26 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { DM_Sans, DM_Serif_Display, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  variable: "--font-sans",
+});
+
+const dmSerif = DM_Serif_Display({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-display",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+});
 
 export const metadata: Metadata = {
-  title: "AI Job Search Agent",
-  description: "Intelligent candidate matching from your personal network",
+  title: "True Steele | Network Command",
+  description: "AI-powered network intelligence for Justin Steele",
 };
 
 export default function RootLayout({
@@ -16,7 +30,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>{children}</body>
+      <body
+        className={`${dmSans.variable} ${dmSerif.variable} ${jetbrainsMono.variable} font-sans`}
+      >
+        {children}
+      </body>
     </html>
   );
 }
