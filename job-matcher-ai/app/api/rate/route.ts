@@ -29,17 +29,15 @@ export async function GET(request: NextRequest) {
     const sort = (searchParams.get('sort') || 'ai_close') as SortOption;
     const mode = (searchParams.get('mode') || 'unrated') as ModeOption;
 
-    // Build query
+    // Build contacts query
     let query = supabase.from('contacts').select(SELECT_FIELDS);
 
-    // Mode filter
     if (mode === 'rerate') {
       query = query.not('familiarity_rating', 'is', null);
     } else {
       query = query.is('familiarity_rating', null);
     }
 
-    // Sort order
     switch (sort) {
       case 'ai_distant':
         query = query.order('ai_proximity_score', { ascending: true, nullsFirst: false });
@@ -53,60 +51,38 @@ export async function GET(request: NextRequest) {
         break;
     }
 
-    const { data: contacts, error: contactsError } = await query.limit(BATCH_SIZE);
+    // Run all queries in parallel instead of sequentially
+    const [contactsResult, unratedResult, ratedResult, ...breakdownResults] = await Promise.all([
+      query.limit(BATCH_SIZE),
+      supabase.from('contacts').select('id', { count: 'exact', head: true }).is('familiarity_rating', null),
+      supabase.from('contacts').select('id', { count: 'exact', head: true }).not('familiarity_rating', 'is', null),
+      ...([0, 1, 2, 3, 4] as const).map(level =>
+        supabase.from('contacts').select('id', { count: 'exact', head: true }).eq('familiarity_rating', level)
+      ),
+    ]);
 
-    if (contactsError) {
-      console.error('[Rate GET] Contacts query error:', contactsError);
-      return NextResponse.json(
-        { error: contactsError.message },
-        { status: 500 }
-      );
+    if (contactsResult.error) {
+      console.error('[Rate GET] Contacts query error:', contactsResult.error);
+      return NextResponse.json({ error: contactsResult.error.message }, { status: 500 });
     }
 
-    // Get counts for progress tracking
-    const { count: unratedCount, error: unratedError } = await supabase
-      .from('contacts')
-      .select('id', { count: 'exact', head: true })
-      .is('familiarity_rating', null);
-
-    if (unratedError) {
-      console.error('[Rate GET] Unrated count error:', unratedError);
-      return NextResponse.json(
-        { error: unratedError.message },
-        { status: 500 }
-      );
+    if (unratedResult.error || ratedResult.error) {
+      const err = unratedResult.error || ratedResult.error;
+      console.error('[Rate GET] Count query error:', err);
+      return NextResponse.json({ error: err!.message }, { status: 500 });
     }
 
-    const { count: ratedCount, error: ratedError } = await supabase
-      .from('contacts')
-      .select('id', { count: 'exact', head: true })
-      .not('familiarity_rating', 'is', null);
-
-    if (ratedError) {
-      console.error('[Rate GET] Rated count error:', ratedError);
-      return NextResponse.json(
-        { error: ratedError.message },
-        { status: 500 }
-      );
-    }
-
-    // Get breakdown by familiarity level (0-4)
     const breakdown: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 };
-    for (let level = 0; level <= 4; level++) {
-      const { count, error } = await supabase
-        .from('contacts')
-        .select('id', { count: 'exact', head: true })
-        .eq('familiarity_rating', level);
-
-      if (!error && count !== null) {
-        breakdown[level] = count;
+    breakdownResults.forEach((result, i) => {
+      if (!result.error && result.count !== null) {
+        breakdown[i] = result.count;
       }
-    }
+    });
 
     return NextResponse.json({
-      contacts: contacts || [],
-      unrated_count: unratedCount ?? 0,
-      rated_count: ratedCount ?? 0,
+      contacts: contactsResult.data || [],
+      unrated_count: unratedResult.count ?? 0,
+      rated_count: ratedResult.count ?? 0,
       breakdown,
     });
   } catch (err: unknown) {
@@ -121,10 +97,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { contact_id, rating } = body;
 
-    // Validate contact_id
-    if (contact_id === undefined || contact_id === null) {
+    // Validate contact_id is a number (contacts.id is INTEGER)
+    if (typeof contact_id !== 'number' || !Number.isInteger(contact_id)) {
       return NextResponse.json(
-        { error: 'contact_id is required' },
+        { error: 'contact_id must be an integer' },
         { status: 400 }
       );
     }
@@ -137,20 +113,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { error: updateError } = await supabase
+    const { data: updated, error: updateError } = await supabase
       .from('contacts')
       .update({
         familiarity_rating: rating,
         familiarity_rated_at: rating !== null ? new Date().toISOString() : null,
       })
-      .eq('id', contact_id);
+      .eq('id', contact_id)
+      .select('id');
 
     if (updateError) {
       console.error('[Rate POST] Update error:', updateError);
-      return NextResponse.json(
-        { error: updateError.message },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: updateError.message }, { status: 500 });
+    }
+
+    if (!updated || updated.length === 0) {
+      return NextResponse.json({ error: 'Contact not found' }, { status: 404 });
     }
 
     return NextResponse.json({ success: true });

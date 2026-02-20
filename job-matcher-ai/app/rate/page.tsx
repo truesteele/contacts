@@ -32,7 +32,7 @@ const SORT_OPTIONS = [
 ];
 
 interface RateContact {
-  id: string;
+  id: number;
   first_name: string;
   last_name: string;
   enrich_profile_pic_url: string | null;
@@ -152,7 +152,7 @@ export default function RatePage() {
   const [animatingOut, setAnimatingOut] = useState(false);
   const [animatingIn, setAnimatingIn] = useState(false);
   const [undoState, setUndoState] = useState<UndoState | null>(null);
-  const [skippedIds, setSkippedIds] = useState<Set<string>>(new Set());
+  const [skippedIds, setSkippedIds] = useState<Set<number>>(new Set());
   const [allDone, setAllDone] = useState(false);
   const [sessionCount, setSessionCount] = useState(0);
   const [statsExpanded, setStatsExpanded] = useState(false);
@@ -160,16 +160,16 @@ export default function RatePage() {
   const [sortBy, setSortBy] = useState('ai_close');
   const [mode, setMode] = useState<'unrated' | 'rerate'>('unrated');
   const [errorToast, setErrorToast] = useState<string | null>(null);
-  const [imgError, setImgError] = useState<string | null>(null);
+  const [imgError, setImgError] = useState<number | null>(null);
   const fetchingRef = useRef(false);
   // Queue for failed requests to retry
-  const retryQueueRef = useRef<Array<{ contact_id: string; rating: number | null }>>([]);
+  const retryQueueRef = useRef<Array<{ contact_id: number; rating: number | null }>>([]);
 
   const showError = useCallback((msg: string) => {
     setErrorToast(msg);
   }, []);
 
-  const saveRating = useCallback(async (contact_id: string, rating: number | null) => {
+  const saveRating = useCallback(async (contact_id: number, rating: number | null) => {
     try {
       const res = await fetch('/api/rate', {
         method: 'POST',
@@ -345,6 +345,10 @@ export default function RatePage() {
   function handleSkip() {
     if (!contact || animatingOut) return;
 
+    const newSkippedCount = skippedIds.size + 1;
+    const totalInBatch = contacts.length;
+    const willExhaustBatch = newSkippedCount >= totalInBatch;
+
     setSkippedIds(prev => new Set(prev).add(contact.id));
 
     setContacts(prev => {
@@ -357,7 +361,7 @@ export default function RatePage() {
     setAnimatingOut(true);
     setTimeout(() => {
       setAnimatingOut(false);
-      if (skippedIds.size + 1 >= contacts.length) {
+      if (willExhaustBatch) {
         fetchContacts();
       } else {
         setAnimatingIn(true);
