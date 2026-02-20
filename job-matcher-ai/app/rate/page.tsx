@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, Undo2, SkipForward, ChevronDown, ChevronUp, ExternalLink, SlidersHorizontal } from 'lucide-react';
+import { ArrowLeft, Undo2, SkipForward, ChevronDown, ChevronUp, ExternalLink, SlidersHorizontal, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 
 // Justin's schools and companies for shared context matching
@@ -51,6 +51,7 @@ interface RateContact {
 interface UndoState {
   contact: RateContact;
   previousRating: number | null;
+  appliedRating: number;
 }
 
 type Breakdown = Record<number, number>;
@@ -115,6 +116,32 @@ function ContactCardSkeleton() {
   );
 }
 
+function ErrorToast({ message, onDismiss }: { message: string; onDismiss: () => void }) {
+  useEffect(() => {
+    const timer = setTimeout(onDismiss, 4000);
+    return () => clearTimeout(timer);
+  }, [onDismiss]);
+
+  return (
+    <div className="fixed bottom-20 left-4 right-4 z-50 flex justify-center pointer-events-none">
+      <div
+        className="pointer-events-auto flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-200 text-red-700 rounded-lg shadow-lg text-sm max-w-[400px] w-full animate-in fade-in slide-in-from-bottom-2 duration-200"
+        role="alert"
+      >
+        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+        <span className="flex-1">{message}</span>
+        <button
+          onClick={onDismiss}
+          className="text-red-400 hover:text-red-600 flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center -mr-2"
+          aria-label="Dismiss"
+        >
+          &times;
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function RatePage() {
   const [contacts, setContacts] = useState<RateContact[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -132,7 +159,56 @@ export default function RatePage() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortBy, setSortBy] = useState('ai_close');
   const [mode, setMode] = useState<'unrated' | 'rerate'>('unrated');
+  const [errorToast, setErrorToast] = useState<string | null>(null);
+  const [imgError, setImgError] = useState<string | null>(null);
   const fetchingRef = useRef(false);
+  // Queue for failed requests to retry
+  const retryQueueRef = useRef<Array<{ contact_id: string; rating: number | null }>>([]);
+
+  const showError = useCallback((msg: string) => {
+    setErrorToast(msg);
+  }, []);
+
+  const saveRating = useCallback(async (contact_id: string, rating: number | null) => {
+    try {
+      const res = await fetch('/api/rate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contact_id, rating }),
+      });
+      if (!res.ok) {
+        throw new Error(`Server error ${res.status}`);
+      }
+    } catch {
+      // Queue for retry
+      retryQueueRef.current.push({ contact_id, rating });
+      showError('Rating failed to save. Will retry automatically.');
+    }
+  }, [showError]);
+
+  // Retry queued saves periodically
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      if (retryQueueRef.current.length === 0) return;
+      const batch = [...retryQueueRef.current];
+      retryQueueRef.current = [];
+      for (const item of batch) {
+        try {
+          const res = await fetch('/api/rate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(item),
+          });
+          if (!res.ok) {
+            retryQueueRef.current.push(item);
+          }
+        } catch {
+          retryQueueRef.current.push(item);
+        }
+      }
+    }, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   const fetchContacts = useCallback(async (sort?: string, fetchMode?: string) => {
     if (fetchingRef.current) return;
@@ -143,6 +219,7 @@ export default function RatePage() {
       params.set('sort', sort ?? sortBy);
       params.set('mode', fetchMode ?? mode);
       const res = await fetch(`/api/rate?${params.toString()}`);
+      if (!res.ok) throw new Error(`Failed to fetch (${res.status})`);
       const data = await res.json();
       const newContacts: RateContact[] = data.contacts || [];
       setContacts(newContacts);
@@ -153,6 +230,7 @@ export default function RatePage() {
       }
       setCurrentIndex(0);
       setSkippedIds(new Set());
+      setImgError(null);
       if (newContacts.length === 0) {
         setAllDone(true);
       } else {
@@ -160,6 +238,7 @@ export default function RatePage() {
       }
     } catch (err) {
       console.error('Failed to fetch contacts:', err);
+      showError('Failed to load contacts. Check your connection.');
     } finally {
       setLoading(false);
       fetchingRef.current = false;
@@ -206,6 +285,11 @@ export default function RatePage() {
     : [];
   const hasSharedContext = sharedSchools.length > 0 || sharedCompanies.length > 0;
 
+  // Reset image error state when contact changes
+  useEffect(() => {
+    setImgError(null);
+  }, [contact?.id]);
+
   function advanceToNext() {
     const nextIndex = currentIndex + 1;
     if (nextIndex >= contacts.length) {
@@ -225,7 +309,7 @@ export default function RatePage() {
     if (!contact || animatingOut) return;
 
     // Save undo state (preserve existing rating for re-rate mode)
-    setUndoState({ contact, previousRating: contact.familiarity_rating ?? null });
+    setUndoState({ contact, previousRating: contact.familiarity_rating ?? null, appliedRating: rating });
 
     // Session counter
     setSessionCount(prev => prev + 1);
@@ -247,19 +331,15 @@ export default function RatePage() {
       return updated;
     });
 
-    // Fire-and-forget POST
-    fetch('/api/rate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contact_id: contact.id, rating }),
-    }).catch(err => console.error('Failed to save rating:', err));
+    // Save with retry support
+    saveRating(contact.id, rating);
 
     // Animate out then advance
     setAnimatingOut(true);
     setTimeout(() => {
       setAnimatingOut(false);
       advanceToNext();
-    }, 200);
+    }, 250);
   }
 
   function handleSkip() {
@@ -287,13 +367,13 @@ export default function RatePage() {
           });
         });
       }
-    }, 200);
+    }, 250);
   }
 
   function handleUndo() {
     if (!undoState || animatingOut) return;
 
-    const { contact: prevContact, previousRating } = undoState;
+    const { contact: prevContact, previousRating, appliedRating } = undoState;
 
     // Revert session counter
     setSessionCount(prev => Math.max(0, prev - 1));
@@ -304,24 +384,20 @@ export default function RatePage() {
       setUnratedCount(prev => prev + 1);
     }
 
-    // Revert breakdown (undo the last rating, restore previous)
+    // Revert breakdown accurately using the applied rating
     setBreakdown(prev => {
       const updated = { ...prev };
-      // We don't know the rating that was just applied, but we can restore from previous
-      // The simplest approach: decrement current counts will happen on next fetch
-      // For now, just restore the previous rating level
-      if (previousRating !== null && updated[previousRating] !== undefined) {
+      // Decrement the rating that was just applied
+      updated[appliedRating] = Math.max(0, (updated[appliedRating] || 0) - 1);
+      // Restore the previous rating level
+      if (previousRating !== null) {
         updated[previousRating] = (updated[previousRating] || 0) + 1;
       }
       return updated;
     });
 
     // Re-save with previous value
-    fetch('/api/rate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contact_id: prevContact.id, rating: previousRating }),
-    }).catch(err => console.error('Failed to undo rating:', err));
+    saveRating(prevContact.id, previousRating);
 
     setContacts(prev => {
       const updated = [...prev];
@@ -351,16 +427,22 @@ export default function RatePage() {
     fetchContacts(sortBy, newMode);
   }
 
+  const showInitials = !contact?.enrich_profile_pic_url || imgError === contact?.id;
+
   return (
     <div className="min-h-dvh bg-gray-50 flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-white border-b">
-        <Link href="/" className="p-1 -ml-1 text-muted-foreground hover:text-foreground">
+      {/* Header — all touch targets ≥44px */}
+      <div className="flex items-center justify-between px-2 py-1 bg-white border-b">
+        <Link
+          href="/"
+          className="min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+          aria-label="Back to dashboard"
+        >
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <button
           onClick={() => setStatsExpanded(!statsExpanded)}
-          className="flex items-center gap-1 text-sm text-muted-foreground font-medium hover:text-foreground transition-colors"
+          className="flex items-center gap-1 text-sm text-muted-foreground font-medium hover:text-foreground transition-colors min-h-[44px] px-2"
         >
           {total > 0 ? `${ratedCount} / ${total} rated` : '...'}
           {total > 0 && (
@@ -369,19 +451,21 @@ export default function RatePage() {
               : <ChevronDown className="w-3.5 h-3.5" />
           )}
         </button>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center">
           <button
             onClick={() => setFilterOpen(!filterOpen)}
-            className={`p-1 text-muted-foreground hover:text-foreground transition-colors ${filterOpen ? 'text-foreground' : ''}`}
+            className={`min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors ${filterOpen ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
             title="Filter & sort"
+            aria-label="Filter and sort options"
           >
             <SlidersHorizontal className="w-5 h-5" />
           </button>
           <button
             onClick={handleUndo}
             disabled={!undoState || animatingOut}
-            className="p-1 -mr-1 text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             title="Undo last rating (u)"
+            aria-label="Undo last rating"
           >
             <Undo2 className="w-5 h-5" />
           </button>
@@ -425,12 +509,12 @@ export default function RatePage() {
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Sort order</label>
             <Select value={sortBy} onValueChange={handleSortChange}>
-              <SelectTrigger className="h-8 text-sm">
+              <SelectTrigger className="h-10 text-sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {SORT_OPTIONS.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value}>
+                  <SelectItem key={opt.value} value={opt.value} className="min-h-[44px] flex items-center">
                     {opt.label}
                   </SelectItem>
                 ))}
@@ -442,7 +526,7 @@ export default function RatePage() {
             <div className="flex gap-2">
               <button
                 onClick={() => handleModeChange('unrated')}
-                className={`flex-1 py-1.5 px-3 rounded-md text-sm font-medium transition-colors ${
+                className={`flex-1 min-h-[44px] py-2 px-3 rounded-md text-sm font-medium transition-colors ${
                   mode === 'unrated'
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-gray-100 text-muted-foreground hover:bg-gray-200'
@@ -452,7 +536,7 @@ export default function RatePage() {
               </button>
               <button
                 onClick={() => handleModeChange('rerate')}
-                className={`flex-1 py-1.5 px-3 rounded-md text-sm font-medium transition-colors ${
+                className={`flex-1 min-h-[44px] py-2 px-3 rounded-md text-sm font-medium transition-colors ${
                   mode === 'rerate'
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-gray-100 text-muted-foreground hover:bg-gray-200'
@@ -481,30 +565,31 @@ export default function RatePage() {
             </p>
             <Link
               href="/"
-              className="inline-block mt-4 text-sm text-primary hover:underline"
+              className="inline-block mt-4 text-sm text-primary hover:underline min-h-[44px] leading-[44px]"
             >
               Back to dashboard
             </Link>
           </div>
         ) : (
           <div
-            className={`w-full max-w-[400px] transition-all duration-200 ease-out ${
+            className={`w-full max-w-[400px] transition-all duration-250 ${
               animatingOut
-                ? 'opacity-0 -translate-y-8'
+                ? 'opacity-0 -translate-y-6 scale-[0.98] ease-in'
                 : animatingIn
-                  ? 'opacity-0 translate-y-4'
-                  : 'opacity-100 translate-y-0'
+                  ? 'opacity-0 translate-y-4 scale-[0.98]'
+                  : 'opacity-100 translate-y-0 scale-100 ease-out'
             }`}
           >
             <Card>
               <CardContent className="p-5">
                 <div className="flex flex-col items-center text-center gap-2.5">
-                  {/* Profile photo or initials */}
-                  {contact.enrich_profile_pic_url ? (
+                  {/* Profile photo or initials fallback */}
+                  {!showInitials ? (
                     <img
-                      src={contact.enrich_profile_pic_url}
+                      src={contact.enrich_profile_pic_url!}
                       alt={`${contact.first_name} ${contact.last_name}`}
-                      className="w-20 h-20 rounded-full object-cover"
+                      className="w-20 h-20 rounded-full object-cover bg-muted"
+                      onError={() => setImgError(contact.id)}
                     />
                   ) : (
                     <div className="w-20 h-20 rounded-full bg-primary/10 text-primary flex items-center justify-center text-2xl font-semibold">
@@ -522,21 +607,26 @@ export default function RatePage() {
                         href={contact.linkedin_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-muted-foreground/50 hover:text-blue-600 transition-colors flex-shrink-0"
+                        className="text-muted-foreground/50 hover:text-blue-600 transition-colors flex-shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center -my-2"
                         title="View LinkedIn profile"
+                        aria-label="View LinkedIn profile"
                       >
                         <ExternalLink className="w-4 h-4" />
                       </a>
                     )}
                   </div>
 
-                  {/* Title @ company */}
-                  {(contact.enrich_current_title || contact.enrich_current_company) && (
+                  {/* Title @ company, or dash if both missing */}
+                  {(contact.enrich_current_title || contact.enrich_current_company) ? (
                     <p className="text-sm text-muted-foreground">
-                      {contact.enrich_current_title}
+                      {contact.enrich_current_title || ''}
                       {contact.enrich_current_title && contact.enrich_current_company && ' @ '}
-                      {contact.enrich_current_company}
+                      {contact.enrich_current_company || ''}
                     </p>
+                  ) : (
+                    !contact.headline && (
+                      <p className="text-sm text-muted-foreground/40">&mdash;</p>
+                    )
                   )}
 
                   {/* Headline */}
@@ -554,7 +644,7 @@ export default function RatePage() {
                   )}
 
                   {/* AI proximity tier badge + current rating in re-rate mode */}
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex flex-wrap items-center justify-center gap-1.5">
                     {contact.ai_proximity_tier ? (
                       <Badge className={`${tierColor(contact.ai_proximity_tier)} border-0 text-xs`}>
                         AI: {contact.ai_proximity_tier}
@@ -598,15 +688,15 @@ export default function RatePage() {
         )}
       </div>
 
-      {/* Rating buttons + Skip */}
+      {/* Rating buttons + Skip — safe area padding for iPhone home indicator */}
       {!loading && !allDone && contact && (
-        <div className="px-4 pb-4 pt-0 w-full max-w-[400px] mx-auto space-y-2">
+        <div className="px-4 pb-4 pt-0 w-full max-w-[400px] mx-auto space-y-2" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
           {RATING_LEVELS.map(({ level, label, color }) => (
             <button
               key={level}
               onClick={() => handleRate(level)}
               disabled={animatingOut}
-              className={`w-full min-h-[48px] px-4 py-3 rounded-lg text-left font-medium text-sm transition-colors ${color} disabled:opacity-50`}
+              className={`w-full min-h-[48px] px-4 py-3 rounded-lg text-left font-medium text-sm transition-colors select-none ${color} disabled:opacity-50`}
             >
               <span className="font-bold mr-2">{level}</span>
               {label}
@@ -615,12 +705,17 @@ export default function RatePage() {
           <button
             onClick={handleSkip}
             disabled={animatingOut}
-            className="w-full min-h-[44px] px-4 py-2.5 rounded-lg text-sm text-muted-foreground hover:bg-gray-100 active:bg-gray-200 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
+            className="w-full min-h-[44px] px-4 py-2.5 rounded-lg text-sm text-muted-foreground hover:bg-gray-100 active:bg-gray-200 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 select-none"
           >
             <SkipForward className="w-4 h-4" />
             Skip
           </button>
         </div>
+      )}
+
+      {/* Error toast */}
+      {errorToast && (
+        <ErrorToast message={errorToast} onDismiss={() => setErrorToast(null)} />
       )}
     </div>
   );
