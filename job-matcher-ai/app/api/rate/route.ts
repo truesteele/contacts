@@ -89,10 +89,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate rating is 0-4
-    if (typeof rating !== 'number' || !Number.isInteger(rating) || rating < 0 || rating > 4) {
+    // Validate rating is 0-4 or null (null = undo)
+    if (rating !== null && (typeof rating !== 'number' || !Number.isInteger(rating) || rating < 0 || rating > 4)) {
       return NextResponse.json(
-        { error: 'rating must be an integer between 0 and 4' },
+        { error: 'rating must be an integer between 0 and 4, or null' },
         { status: 400 }
       );
     }
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
       .from('contacts')
       .update({
         familiarity_rating: rating,
-        familiarity_rated_at: new Date().toISOString(),
+        familiarity_rated_at: rating !== null ? new Date().toISOString() : null,
       })
       .eq('id', contact_id);
 
