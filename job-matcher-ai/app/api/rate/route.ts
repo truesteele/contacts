@@ -17,17 +17,43 @@ const SELECT_FIELDS = [
   'enrich_schools',
   'enrich_companies_worked',
   'connected_on',
+  'familiarity_rating',
 ].join(', ');
+
+type SortOption = 'ai_close' | 'ai_distant' | 'recent' | 'default';
+type ModeOption = 'unrated' | 'rerate';
 
 export async function GET(request: NextRequest) {
   try {
-    // Fetch batch of unrated contacts, ordered by AI proximity score descending
-    const { data: contacts, error: contactsError } = await supabase
-      .from('contacts')
-      .select(SELECT_FIELDS)
-      .is('familiarity_rating', null)
-      .order('ai_proximity_score', { ascending: false, nullsFirst: false })
-      .limit(BATCH_SIZE);
+    const { searchParams } = new URL(request.url);
+    const sort = (searchParams.get('sort') || 'ai_close') as SortOption;
+    const mode = (searchParams.get('mode') || 'unrated') as ModeOption;
+
+    // Build query
+    let query = supabase.from('contacts').select(SELECT_FIELDS);
+
+    // Mode filter
+    if (mode === 'rerate') {
+      query = query.not('familiarity_rating', 'is', null);
+    } else {
+      query = query.is('familiarity_rating', null);
+    }
+
+    // Sort order
+    switch (sort) {
+      case 'ai_distant':
+        query = query.order('ai_proximity_score', { ascending: true, nullsFirst: false });
+        break;
+      case 'recent':
+        query = query.order('connected_on', { ascending: false, nullsFirst: false });
+        break;
+      case 'ai_close':
+      default:
+        query = query.order('ai_proximity_score', { ascending: false, nullsFirst: false });
+        break;
+    }
+
+    const { data: contacts, error: contactsError } = await query.limit(BATCH_SIZE);
 
     if (contactsError) {
       console.error('[Rate GET] Contacts query error:', contactsError);
@@ -64,10 +90,24 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Get breakdown by familiarity level (0-4)
+    const breakdown: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 };
+    for (let level = 0; level <= 4; level++) {
+      const { count, error } = await supabase
+        .from('contacts')
+        .select('id', { count: 'exact', head: true })
+        .eq('familiarity_rating', level);
+
+      if (!error && count !== null) {
+        breakdown[level] = count;
+      }
+    }
+
     return NextResponse.json({
       contacts: contacts || [],
       unrated_count: unratedCount ?? 0,
       rated_count: ratedCount ?? 0,
+      breakdown,
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to fetch contacts';

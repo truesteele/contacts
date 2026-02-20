@@ -3,7 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Undo2, SkipForward } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { ArrowLeft, Undo2, SkipForward, ChevronDown, ChevronUp, ExternalLink, SlidersHorizontal } from 'lucide-react';
 import Link from 'next/link';
 
 // Justin's schools and companies for shared context matching
@@ -11,11 +18,17 @@ const JUSTIN_SCHOOLS = ['Harvard Business School', 'HBS', 'Harvard Kennedy Schoo
 const JUSTIN_COMPANIES = ['Kindora', 'Google.org', 'Year Up', 'Bridgespan', 'Bridgespan Group', 'Bain', 'Bain & Company', 'True Steele', 'Outdoorithm', 'Outdoorithm Collective'];
 
 const RATING_LEVELS = [
-  { level: 0, label: "Don't Know", color: 'bg-gray-100 text-gray-700 active:bg-gray-200' },
-  { level: 1, label: 'Recognize', color: 'bg-blue-50 text-blue-700 active:bg-blue-100' },
-  { level: 2, label: 'Acquaintance', color: 'bg-green-50 text-green-700 active:bg-green-100' },
-  { level: 3, label: 'Solid', color: 'bg-orange-50 text-orange-700 active:bg-orange-100' },
-  { level: 4, label: 'Close', color: 'bg-purple-50 text-purple-700 active:bg-purple-100' },
+  { level: 0, label: "Don't Know", color: 'bg-gray-100 text-gray-700 active:bg-gray-200', dotColor: 'bg-gray-400' },
+  { level: 1, label: 'Recognize', color: 'bg-blue-50 text-blue-700 active:bg-blue-100', dotColor: 'bg-blue-500' },
+  { level: 2, label: 'Acquaintance', color: 'bg-green-50 text-green-700 active:bg-green-100', dotColor: 'bg-green-500' },
+  { level: 3, label: 'Solid', color: 'bg-orange-50 text-orange-700 active:bg-orange-100', dotColor: 'bg-orange-500' },
+  { level: 4, label: 'Close', color: 'bg-purple-50 text-purple-700 active:bg-purple-100', dotColor: 'bg-purple-500' },
+];
+
+const SORT_OPTIONS = [
+  { value: 'ai_close', label: 'AI: Close first' },
+  { value: 'ai_distant', label: 'AI: Distant first' },
+  { value: 'recent', label: 'Recently connected' },
 ];
 
 interface RateContact {
@@ -32,12 +45,15 @@ interface RateContact {
   enrich_schools: unknown;
   enrich_companies_worked: unknown;
   connected_on: string | null;
+  familiarity_rating: number | null;
 }
 
 interface UndoState {
   contact: RateContact;
   previousRating: number | null;
 }
+
+type Breakdown = Record<number, number>;
 
 function getInitials(first: string, last: string): string {
   return `${(first || '')[0] || ''}${(last || '')[0] || ''}`.toUpperCase();
@@ -105,28 +121,42 @@ export default function RatePage() {
   const [loading, setLoading] = useState(true);
   const [unratedCount, setUnratedCount] = useState(0);
   const [ratedCount, setRatedCount] = useState(0);
+  const [breakdown, setBreakdown] = useState<Breakdown>({ 0: 0, 1: 0, 2: 0, 3: 0, 4: 0 });
   const [animatingOut, setAnimatingOut] = useState(false);
   const [animatingIn, setAnimatingIn] = useState(false);
   const [undoState, setUndoState] = useState<UndoState | null>(null);
   const [skippedIds, setSkippedIds] = useState<Set<string>>(new Set());
   const [allDone, setAllDone] = useState(false);
+  const [sessionCount, setSessionCount] = useState(0);
+  const [statsExpanded, setStatsExpanded] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [sortBy, setSortBy] = useState('ai_close');
+  const [mode, setMode] = useState<'unrated' | 'rerate'>('unrated');
   const fetchingRef = useRef(false);
 
-  const fetchContacts = useCallback(async () => {
+  const fetchContacts = useCallback(async (sort?: string, fetchMode?: string) => {
     if (fetchingRef.current) return;
     fetchingRef.current = true;
     setLoading(true);
     try {
-      const res = await fetch('/api/rate');
+      const params = new URLSearchParams();
+      params.set('sort', sort ?? sortBy);
+      params.set('mode', fetchMode ?? mode);
+      const res = await fetch(`/api/rate?${params.toString()}`);
       const data = await res.json();
       const newContacts: RateContact[] = data.contacts || [];
       setContacts(newContacts);
       setUnratedCount(data.unrated_count ?? 0);
       setRatedCount(data.rated_count ?? 0);
+      if (data.breakdown) {
+        setBreakdown(data.breakdown);
+      }
       setCurrentIndex(0);
       setSkippedIds(new Set());
       if (newContacts.length === 0) {
         setAllDone(true);
+      } else {
+        setAllDone(false);
       }
     } catch (err) {
       console.error('Failed to fetch contacts:', err);
@@ -134,7 +164,8 @@ export default function RatePage() {
       setLoading(false);
       fetchingRef.current = false;
     }
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sortBy, mode]);
 
   useEffect(() => {
     fetchContacts();
@@ -143,7 +174,6 @@ export default function RatePage() {
   // Keyboard shortcuts: 0-4 to rate, u for undo, s for skip
   useEffect(() => {
     function handleKeydown(e: KeyboardEvent) {
-      // Don't capture if typing in an input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       if (animatingOut || loading || allDone) return;
 
@@ -179,10 +209,8 @@ export default function RatePage() {
   function advanceToNext() {
     const nextIndex = currentIndex + 1;
     if (nextIndex >= contacts.length) {
-      // Batch exhausted — fetch next batch
       fetchContacts();
     } else {
-      // Animate next card in
       setAnimatingIn(true);
       setCurrentIndex(nextIndex);
       requestAnimationFrame(() => {
@@ -196,12 +224,28 @@ export default function RatePage() {
   function handleRate(rating: number) {
     if (!contact || animatingOut) return;
 
-    // Save undo state
-    setUndoState({ contact, previousRating: null });
+    // Save undo state (preserve existing rating for re-rate mode)
+    setUndoState({ contact, previousRating: contact.familiarity_rating ?? null });
 
-    // Optimistic UI: update counts immediately
-    setRatedCount(prev => prev + 1);
-    setUnratedCount(prev => Math.max(0, prev - 1));
+    // Session counter
+    setSessionCount(prev => prev + 1);
+
+    // Optimistic UI: update counts
+    if (mode === 'unrated') {
+      setRatedCount(prev => prev + 1);
+      setUnratedCount(prev => Math.max(0, prev - 1));
+    }
+
+    // Optimistic breakdown update
+    setBreakdown(prev => {
+      const updated = { ...prev };
+      // If re-rating, decrement old level
+      if (contact.familiarity_rating !== null && updated[contact.familiarity_rating] !== undefined) {
+        updated[contact.familiarity_rating] = Math.max(0, updated[contact.familiarity_rating] - 1);
+      }
+      updated[rating] = (updated[rating] || 0) + 1;
+      return updated;
+    });
 
     // Fire-and-forget POST
     fetch('/api/rate', {
@@ -221,10 +265,8 @@ export default function RatePage() {
   function handleSkip() {
     if (!contact || animatingOut) return;
 
-    // Add to skipped set
     setSkippedIds(prev => new Set(prev).add(contact.id));
 
-    // Move this contact to end of the queue
     setContacts(prev => {
       const updated = [...prev];
       const [skipped] = updated.splice(currentIndex, 1);
@@ -232,14 +274,10 @@ export default function RatePage() {
       return updated;
     });
 
-    // Animate transition
     setAnimatingOut(true);
     setTimeout(() => {
       setAnimatingOut(false);
-      // Since we spliced and re-appended, currentIndex now points to the next contact
-      // But if we're at the end of original contacts (all skipped), fetch new batch
       if (skippedIds.size + 1 >= contacts.length) {
-        // All contacts in batch have been skipped — fetch fresh
         fetchContacts();
       } else {
         setAnimatingIn(true);
@@ -257,34 +295,60 @@ export default function RatePage() {
 
     const { contact: prevContact, previousRating } = undoState;
 
-    // Revert counts
-    setRatedCount(prev => Math.max(0, prev - 1));
-    setUnratedCount(prev => prev + 1);
+    // Revert session counter
+    setSessionCount(prev => Math.max(0, prev - 1));
 
-    // Re-save with null (undo)
+    // Revert counts
+    if (mode === 'unrated') {
+      setRatedCount(prev => Math.max(0, prev - 1));
+      setUnratedCount(prev => prev + 1);
+    }
+
+    // Revert breakdown (undo the last rating, restore previous)
+    setBreakdown(prev => {
+      const updated = { ...prev };
+      // We don't know the rating that was just applied, but we can restore from previous
+      // The simplest approach: decrement current counts will happen on next fetch
+      // For now, just restore the previous rating level
+      if (previousRating !== null && updated[previousRating] !== undefined) {
+        updated[previousRating] = (updated[previousRating] || 0) + 1;
+      }
+      return updated;
+    });
+
+    // Re-save with previous value
     fetch('/api/rate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ contact_id: prevContact.id, rating: previousRating }),
     }).catch(err => console.error('Failed to undo rating:', err));
 
-    // Insert the previous contact back at current position
     setContacts(prev => {
       const updated = [...prev];
       updated.splice(currentIndex, 0, prevContact);
       return updated;
     });
 
-    // Clear undo state (can only undo once)
     setUndoState(null);
 
-    // Animate in
     setAnimatingIn(true);
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         setAnimatingIn(false);
       });
     });
+  }
+
+  function handleSortChange(value: string) {
+    setSortBy(value);
+    setFilterOpen(false);
+    fetchContacts(value, mode);
+  }
+
+  function handleModeChange(newMode: 'unrated' | 'rerate') {
+    setMode(newMode);
+    setFilterOpen(false);
+    fetchContacts(sortBy, newMode);
   }
 
   return (
@@ -294,17 +358,34 @@ export default function RatePage() {
         <Link href="/" className="p-1 -ml-1 text-muted-foreground hover:text-foreground">
           <ArrowLeft className="w-5 h-5" />
         </Link>
-        <span className="text-sm text-muted-foreground font-medium">
-          {total > 0 ? `${ratedCount} / ${total} rated` : ''}
-        </span>
         <button
-          onClick={handleUndo}
-          disabled={!undoState || animatingOut}
-          className="p-1 -mr-1 text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
-          title="Undo last rating (u)"
+          onClick={() => setStatsExpanded(!statsExpanded)}
+          className="flex items-center gap-1 text-sm text-muted-foreground font-medium hover:text-foreground transition-colors"
         >
-          <Undo2 className="w-5 h-5" />
+          {total > 0 ? `${ratedCount} / ${total} rated` : '...'}
+          {total > 0 && (
+            statsExpanded
+              ? <ChevronUp className="w-3.5 h-3.5" />
+              : <ChevronDown className="w-3.5 h-3.5" />
+          )}
         </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setFilterOpen(!filterOpen)}
+            className={`p-1 text-muted-foreground hover:text-foreground transition-colors ${filterOpen ? 'text-foreground' : ''}`}
+            title="Filter & sort"
+          >
+            <SlidersHorizontal className="w-5 h-5" />
+          </button>
+          <button
+            onClick={handleUndo}
+            disabled={!undoState || animatingOut}
+            className="p-1 -mr-1 text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
+            title="Undo last rating (u)"
+          >
+            <Undo2 className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       {/* Progress bar */}
@@ -317,15 +398,86 @@ export default function RatePage() {
         </div>
       )}
 
+      {/* Collapsible stats panel */}
+      {statsExpanded && (
+        <div className="bg-white border-b px-4 py-3 space-y-2">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>{progressPct.toFixed(1)}% complete</span>
+            <span>Session: {sessionCount} rated</span>
+          </div>
+          <div className="flex gap-1.5">
+            {RATING_LEVELS.map(({ level, label, dotColor }) => (
+              <div key={level} className="flex-1 text-center">
+                <div className="flex items-center justify-center gap-1 mb-0.5">
+                  <div className={`w-2 h-2 rounded-full ${dotColor}`} />
+                  <span className="text-xs font-medium">{breakdown[level] ?? 0}</span>
+                </div>
+                <span className="text-[10px] text-muted-foreground leading-none">{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Filter panel */}
+      {filterOpen && (
+        <div className="bg-white border-b px-4 py-3 space-y-3">
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Sort order</label>
+            <Select value={sortBy} onValueChange={handleSortChange}>
+              <SelectTrigger className="h-8 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SORT_OPTIONS.map(opt => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Mode</label>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleModeChange('unrated')}
+                className={`flex-1 py-1.5 px-3 rounded-md text-sm font-medium transition-colors ${
+                  mode === 'unrated'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-gray-100 text-muted-foreground hover:bg-gray-200'
+                }`}
+              >
+                Unrated
+              </button>
+              <button
+                onClick={() => handleModeChange('rerate')}
+                className={`flex-1 py-1.5 px-3 rounded-md text-sm font-medium transition-colors ${
+                  mode === 'rerate'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-gray-100 text-muted-foreground hover:bg-gray-200'
+                }`}
+              >
+                Re-rate
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Card area */}
       <div className="flex-1 flex items-center justify-center px-4 py-4">
         {loading ? (
           <ContactCardSkeleton />
         ) : allDone || !contact ? (
           <div className="text-center text-muted-foreground">
-            <p className="text-2xl font-semibold mb-2">Done!</p>
+            <p className="text-2xl font-semibold mb-2">
+              {mode === 'rerate' ? 'No rated contacts' : 'Done!'}
+            </p>
             <p className="text-sm">
-              All {total.toLocaleString()} contacts have been rated.
+              {mode === 'rerate'
+                ? 'Rate some contacts first, then come back to re-rate.'
+                : `All ${total.toLocaleString()} contacts have been rated.`}
             </p>
             <Link
               href="/"
@@ -360,10 +512,23 @@ export default function RatePage() {
                     </div>
                   )}
 
-                  {/* Name */}
-                  <h2 className="text-xl font-semibold leading-tight">
-                    {contact.first_name} {contact.last_name}
-                  </h2>
+                  {/* Name with LinkedIn link */}
+                  <div className="flex items-center gap-1.5">
+                    <h2 className="text-xl font-semibold leading-tight">
+                      {contact.first_name} {contact.last_name}
+                    </h2>
+                    {contact.linkedin_url && (
+                      <a
+                        href={contact.linkedin_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-muted-foreground/50 hover:text-blue-600 transition-colors flex-shrink-0"
+                        title="View LinkedIn profile"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    )}
+                  </div>
 
                   {/* Title @ company */}
                   {(contact.enrich_current_title || contact.enrich_current_company) && (
@@ -388,16 +553,23 @@ export default function RatePage() {
                     </p>
                   )}
 
-                  {/* AI proximity tier badge */}
-                  {contact.ai_proximity_tier ? (
-                    <Badge className={`${tierColor(contact.ai_proximity_tier)} border-0 text-xs`}>
-                      AI: {contact.ai_proximity_tier}
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="text-xs text-muted-foreground">
-                      Not scored
-                    </Badge>
-                  )}
+                  {/* AI proximity tier badge + current rating in re-rate mode */}
+                  <div className="flex items-center gap-1.5">
+                    {contact.ai_proximity_tier ? (
+                      <Badge className={`${tierColor(contact.ai_proximity_tier)} border-0 text-xs`}>
+                        AI: {contact.ai_proximity_tier}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs text-muted-foreground">
+                        Not scored
+                      </Badge>
+                    )}
+                    {mode === 'rerate' && contact.familiarity_rating !== null && (
+                      <Badge variant="outline" className="text-xs">
+                        Current: {contact.familiarity_rating} — {RATING_LEVELS[contact.familiarity_rating]?.label}
+                      </Badge>
+                    )}
+                  </div>
 
                   {/* Shared context */}
                   {hasSharedContext && (
