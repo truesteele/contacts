@@ -110,6 +110,8 @@ export interface NetworkContact {
   ai_tags?: Record<string, any>;
   profile_embedding?: string;
   interests_embedding?: string;
+  familiarity_rating?: number | null;
+  familiarity_rated_at?: string | null;
 }
 
 export async function getContactById(id: string): Promise<Contact | null> {
