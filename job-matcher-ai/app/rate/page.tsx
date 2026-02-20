@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, Undo2, SkipForward, ChevronDown, ChevronUp, ExternalLink, SlidersHorizontal, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Undo2, SkipForward, ChevronDown, ChevronUp, ExternalLink, SlidersHorizontal, AlertCircle, Search, ChevronLeft, X } from 'lucide-react';
 import Link from 'next/link';
 
 // Justin's schools and companies for shared context matching
@@ -162,6 +162,16 @@ export default function RatePage() {
   const [errorToast, setErrorToast] = useState<string | null>(null);
   const [imgError, setImgError] = useState<number | null>(null);
   const [selectedRating, setSelectedRating] = useState<number | null>(null);
+  // History of rated contacts for back navigation
+  const [history, setHistory] = useState<RateContact[]>([]);
+  const [viewingHistory, setViewingHistory] = useState(false);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  // Search
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<RateContact[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const fetchingRef = useRef(false);
   // Queue for failed requests to retry
   const retryQueueRef = useRef<Array<{ contact_id: number; rating: number | null }>>([]);
@@ -211,6 +221,50 @@ export default function RatePage() {
     return () => clearInterval(interval);
   }, []);
 
+  // Search contacts by name
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleSearch = useCallback((query: string) => {
+    setSearchQuery(query);
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    if (query.trim().length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    searchTimerRef.current = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const res = await fetch(`/api/rate?search=${encodeURIComponent(query.trim())}`);
+        if (!res.ok) throw new Error('Search failed');
+        const data = await res.json();
+        setSearchResults(data.contacts || []);
+      } catch {
+        showError('Search failed');
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 300);
+  }, [showError]);
+
+  // Select a search result to rate/re-rate
+  function handleSearchSelect(selected: RateContact) {
+    setSearchOpen(false);
+    setSearchQuery('');
+    setSearchResults([]);
+    // Exit history mode if in it
+    setViewingHistory(false);
+    setHistoryIndex(-1);
+    // Insert at current position so it becomes the active card
+    setContacts(prev => {
+      const updated = [...prev];
+      updated.splice(currentIndex, 0, selected);
+      return updated;
+    });
+    setAnimatingIn(true);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => setAnimatingIn(false));
+    });
+  }
+
   const fetchContacts = useCallback(async (sort?: string, fetchMode?: string) => {
     if (fetchingRef.current) return;
     fetchingRef.current = true;
@@ -254,7 +308,17 @@ export default function RatePage() {
   // Keyboard shortcuts: 0-4 to rate, u for undo, s for skip
   useEffect(() => {
     function handleKeydown(e: KeyboardEvent) {
+      // Escape closes search from anywhere
+      if (e.key === 'Escape' && searchOpen) {
+        e.preventDefault();
+        setSearchOpen(false);
+        setSearchQuery('');
+        setSearchResults([]);
+        return;
+      }
+
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (searchOpen) return;
       if (animatingOut || loading || allDone) return;
 
       const key = e.key;
@@ -267,14 +331,23 @@ export default function RatePage() {
       } else if (key === 's' || key === 'S') {
         e.preventDefault();
         handleSkip();
+      } else if (key === 'b' || key === 'B') {
+        e.preventDefault();
+        handleBack();
+      } else if (key === '/') {
+        e.preventDefault();
+        setSearchOpen(true);
+        setTimeout(() => searchInputRef.current?.focus(), 100);
       }
     }
     window.addEventListener('keydown', handleKeydown);
     return () => window.removeEventListener('keydown', handleKeydown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [animatingOut, loading, allDone, currentIndex, contacts, undoState]);
+  }, [animatingOut, loading, allDone, currentIndex, contacts, undoState, searchOpen, history, viewingHistory, historyIndex]);
 
-  const contact = contacts[currentIndex] ?? null;
+  const contact = viewingHistory && historyIndex >= 0 && historyIndex < history.length
+    ? history[historyIndex]
+    : contacts[currentIndex] ?? null;
   const total = unratedCount + ratedCount;
   const progressPct = total > 0 ? (ratedCount / total) * 100 : 0;
 
@@ -311,6 +384,48 @@ export default function RatePage() {
 
     // Flash the selected button
     setSelectedRating(rating);
+
+    if (viewingHistory) {
+      // Re-rating a history contact
+      saveRating(contact.id, rating);
+      setSessionCount(prev => prev + 1);
+
+      // Optimistic breakdown update
+      setBreakdown(prev => {
+        const updated = { ...prev };
+        if (contact.familiarity_rating !== null && updated[contact.familiarity_rating] !== undefined) {
+          updated[contact.familiarity_rating] = Math.max(0, updated[contact.familiarity_rating] - 1);
+        }
+        updated[rating] = (updated[rating] || 0) + 1;
+        return updated;
+      });
+
+      // Update the history entry's rating
+      setHistory(prev => {
+        const updated = [...prev];
+        updated[historyIndex] = { ...updated[historyIndex], familiarity_rating: rating };
+        return updated;
+      });
+
+      // Brief flash then exit history mode back to queue
+      setTimeout(() => {
+        setAnimatingOut(true);
+        setTimeout(() => {
+          setAnimatingOut(false);
+          setSelectedRating(null);
+          setViewingHistory(false);
+          setHistoryIndex(-1);
+          setAnimatingIn(true);
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => setAnimatingIn(false));
+          });
+        }, 200);
+      }, 150);
+      return;
+    }
+
+    // Push to history for back navigation
+    setHistory(prev => [...prev, contact]);
 
     // Save undo state (preserve existing rating for re-rate mode)
     setUndoState({ contact, previousRating: contact.familiarity_rating ?? null, appliedRating: rating });
@@ -349,8 +464,45 @@ export default function RatePage() {
     }, 150);
   }
 
+  function handleBack() {
+    if (animatingOut || history.length === 0) return;
+
+    const targetIndex = viewingHistory ? historyIndex - 1 : history.length - 1;
+    if (targetIndex < 0) return;
+
+    setAnimatingOut(true);
+    setTimeout(() => {
+      setAnimatingOut(false);
+      setViewingHistory(true);
+      setHistoryIndex(targetIndex);
+      setAnimatingIn(true);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => setAnimatingIn(false));
+      });
+    }, 200);
+  }
+
+  function exitHistoryMode() {
+    if (animatingOut) return;
+    setAnimatingOut(true);
+    setTimeout(() => {
+      setAnimatingOut(false);
+      setViewingHistory(false);
+      setHistoryIndex(-1);
+      setAnimatingIn(true);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => setAnimatingIn(false));
+      });
+    }, 200);
+  }
+
   function handleSkip() {
     if (!contact || animatingOut) return;
+
+    if (viewingHistory) {
+      exitHistoryMode();
+      return;
+    }
 
     const newSkippedCount = skippedIds.size + 1;
     const totalInBatch = contacts.length;
@@ -444,25 +596,46 @@ export default function RatePage() {
     <div className="min-h-dvh bg-gray-50 flex flex-col">
       {/* Header — all touch targets ≥44px */}
       <div className="flex items-center justify-between px-2 py-1 bg-white border-b">
-        <Link
-          href="/"
-          className="min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-          aria-label="Back to dashboard"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </Link>
+        <div className="flex items-center">
+          <Link
+            href="/"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Back to dashboard"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Link>
+          <button
+            onClick={handleBack}
+            disabled={history.length === 0 || animatingOut || (viewingHistory && historyIndex <= 0)}
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            title="Back to previous contact (b)"
+            aria-label="Back to previous contact"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+        </div>
         <button
           onClick={() => setStatsExpanded(!statsExpanded)}
           className="flex items-center gap-1 text-sm text-muted-foreground font-medium hover:text-foreground transition-colors min-h-[44px] px-2"
         >
-          {total > 0 ? `${ratedCount} / ${total} rated` : '...'}
-          {total > 0 && (
+          {viewingHistory
+            ? `Viewing #${historyIndex + 1} of ${history.length}`
+            : total > 0 ? `${ratedCount} / ${total} rated` : '...'}
+          {!viewingHistory && total > 0 && (
             statsExpanded
               ? <ChevronUp className="w-3.5 h-3.5" />
               : <ChevronDown className="w-3.5 h-3.5" />
           )}
         </button>
         <div className="flex items-center">
+          <button
+            onClick={() => { setSearchOpen(true); setTimeout(() => searchInputRef.current?.focus(), 100); }}
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+            title="Search contacts (/)"
+            aria-label="Search contacts"
+          >
+            <Search className="w-5 h-5" />
+          </button>
           <button
             onClick={() => setFilterOpen(!filterOpen)}
             className={`min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors ${filterOpen ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
@@ -665,7 +838,7 @@ export default function RatePage() {
                         Not scored
                       </Badge>
                     )}
-                    {mode === 'rerate' && contact.familiarity_rating !== null && (
+                    {(mode === 'rerate' || viewingHistory) && contact.familiarity_rating !== null && (
                       <Badge variant="outline" className="text-xs">
                         Current: {contact.familiarity_rating} — {RATING_LEVELS[contact.familiarity_rating]?.label}
                       </Badge>
@@ -727,9 +900,91 @@ export default function RatePage() {
             disabled={animatingOut}
             className="w-full min-h-[44px] px-4 py-2.5 rounded-lg text-sm text-muted-foreground hover:bg-gray-100 active:bg-gray-200 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 select-none"
           >
-            <SkipForward className="w-4 h-4" />
-            Skip
+            {viewingHistory ? (
+              <>
+                <ArrowLeft className="w-4 h-4" />
+                Resume queue
+              </>
+            ) : (
+              <>
+                <SkipForward className="w-4 h-4" />
+                Skip
+              </>
+            )}
           </button>
+        </div>
+      )}
+
+      {/* Search overlay */}
+      {searchOpen && (
+        <div className="fixed inset-0 z-50 bg-white flex flex-col">
+          <div className="flex items-center gap-2 px-3 py-2 border-b">
+            <Search className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+              placeholder="Search by name..."
+              className="flex-1 text-base outline-none bg-transparent min-h-[44px]"
+              autoComplete="off"
+            />
+            <button
+              onClick={() => { setSearchOpen(false); setSearchQuery(''); setSearchResults([]); }}
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Close search"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            {searchLoading && (
+              <div className="px-4 py-8 text-center text-muted-foreground text-sm">Searching...</div>
+            )}
+            {!searchLoading && searchQuery.length >= 2 && searchResults.length === 0 && (
+              <div className="px-4 py-8 text-center text-muted-foreground text-sm">No contacts found</div>
+            )}
+            {!searchLoading && searchQuery.length < 2 && searchQuery.length > 0 && (
+              <div className="px-4 py-8 text-center text-muted-foreground text-sm">Type at least 2 characters</div>
+            )}
+            {searchResults.map(result => (
+              <button
+                key={result.id}
+                onClick={() => handleSearchSelect(result)}
+                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 active:bg-gray-100 transition-colors border-b text-left"
+              >
+                {result.enrich_profile_pic_url ? (
+                  <img
+                    src={result.enrich_profile_pic_url}
+                    alt=""
+                    className="w-10 h-10 rounded-full object-cover bg-muted flex-shrink-0"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold flex-shrink-0">
+                    {getInitials(result.first_name, result.last_name)}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-sm truncate">
+                    {result.first_name} {result.last_name}
+                  </div>
+                  {(result.enrich_current_title || result.enrich_current_company) && (
+                    <div className="text-xs text-muted-foreground truncate">
+                      {result.enrich_current_title || ''}
+                      {result.enrich_current_title && result.enrich_current_company ? ' @ ' : ''}
+                      {result.enrich_current_company || ''}
+                    </div>
+                  )}
+                </div>
+                {result.familiarity_rating !== null && result.familiarity_rating !== undefined && (
+                  <Badge className={`${RATING_LEVELS[result.familiarity_rating]?.activeColor || 'bg-gray-400 text-white'} text-xs flex-shrink-0`}>
+                    {result.familiarity_rating}
+                  </Badge>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 

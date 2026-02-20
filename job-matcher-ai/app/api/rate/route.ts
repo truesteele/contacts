@@ -26,6 +26,25 @@ type ModeOption = 'unrated' | 'rerate';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+    const search = searchParams.get('search')?.trim();
+
+    // Search mode: return matching contacts across all records
+    if (search && search.length >= 2) {
+      const { data, error } = await supabase
+        .from('contacts')
+        .select(SELECT_FIELDS)
+        .or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%`)
+        .order('last_name', { ascending: true })
+        .limit(20);
+
+      if (error) {
+        console.error('[Rate GET] Search error:', error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+
+      return NextResponse.json({ contacts: data || [], search: true });
+    }
+
     const sort = (searchParams.get('sort') || 'ai_close') as SortOption;
     const mode = (searchParams.get('mode') || 'unrated') as ModeOption;
 
