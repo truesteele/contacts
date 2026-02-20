@@ -18,11 +18,11 @@ const JUSTIN_SCHOOLS = ['Harvard Business School', 'HBS', 'Harvard Kennedy Schoo
 const JUSTIN_COMPANIES = ['Kindora', 'Google.org', 'Year Up', 'Bridgespan', 'Bridgespan Group', 'Bain', 'Bain & Company', 'True Steele', 'Outdoorithm', 'Outdoorithm Collective'];
 
 const RATING_LEVELS = [
-  { level: 0, label: "Don't Know", color: 'bg-gray-100 text-gray-700 active:bg-gray-200', dotColor: 'bg-gray-400' },
-  { level: 1, label: 'Recognize', color: 'bg-blue-50 text-blue-700 active:bg-blue-100', dotColor: 'bg-blue-500' },
-  { level: 2, label: 'Acquaintance', color: 'bg-green-50 text-green-700 active:bg-green-100', dotColor: 'bg-green-500' },
-  { level: 3, label: 'Solid', color: 'bg-orange-50 text-orange-700 active:bg-orange-100', dotColor: 'bg-orange-500' },
-  { level: 4, label: 'Close', color: 'bg-purple-50 text-purple-700 active:bg-purple-100', dotColor: 'bg-purple-500' },
+  { level: 0, label: "Don't Know", color: 'bg-gray-100 text-gray-700', activeColor: 'bg-gray-400 text-white', dotColor: 'bg-gray-400' },
+  { level: 1, label: 'Recognize', color: 'bg-blue-50 text-blue-700', activeColor: 'bg-blue-500 text-white', dotColor: 'bg-blue-500' },
+  { level: 2, label: 'Acquaintance', color: 'bg-green-50 text-green-700', activeColor: 'bg-green-500 text-white', dotColor: 'bg-green-500' },
+  { level: 3, label: 'Solid', color: 'bg-orange-50 text-orange-700', activeColor: 'bg-orange-500 text-white', dotColor: 'bg-orange-500' },
+  { level: 4, label: 'Close', color: 'bg-purple-50 text-purple-700', activeColor: 'bg-purple-500 text-white', dotColor: 'bg-purple-500' },
 ];
 
 const SORT_OPTIONS = [
@@ -161,6 +161,7 @@ export default function RatePage() {
   const [mode, setMode] = useState<'unrated' | 'rerate'>('unrated');
   const [errorToast, setErrorToast] = useState<string | null>(null);
   const [imgError, setImgError] = useState<number | null>(null);
+  const [selectedRating, setSelectedRating] = useState<number | null>(null);
   const fetchingRef = useRef(false);
   // Queue for failed requests to retry
   const retryQueueRef = useRef<Array<{ contact_id: number; rating: number | null }>>([]);
@@ -308,6 +309,9 @@ export default function RatePage() {
   function handleRate(rating: number) {
     if (!contact || animatingOut) return;
 
+    // Flash the selected button
+    setSelectedRating(rating);
+
     // Save undo state (preserve existing rating for re-rate mode)
     setUndoState({ contact, previousRating: contact.familiarity_rating ?? null, appliedRating: rating });
 
@@ -334,12 +338,15 @@ export default function RatePage() {
     // Save with retry support
     saveRating(contact.id, rating);
 
-    // Animate out then advance
-    setAnimatingOut(true);
+    // Brief delay to show the selected state, then animate out
     setTimeout(() => {
-      setAnimatingOut(false);
-      advanceToNext();
-    }, 250);
+      setAnimatingOut(true);
+      setTimeout(() => {
+        setAnimatingOut(false);
+        setSelectedRating(null);
+        advanceToNext();
+      }, 200);
+    }, 150);
   }
 
   function handleSkip() {
@@ -695,17 +702,26 @@ export default function RatePage() {
       {/* Rating buttons + Skip — safe area padding for iPhone home indicator */}
       {!loading && !allDone && contact && (
         <div className="px-4 pb-4 pt-0 w-full max-w-[400px] mx-auto space-y-2" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
-          {RATING_LEVELS.map(({ level, label, color }) => (
-            <button
-              key={level}
-              onClick={() => handleRate(level)}
-              disabled={animatingOut}
-              className={`w-full min-h-[48px] px-4 py-3 rounded-lg text-left font-medium text-sm transition-colors select-none ${color} disabled:opacity-50`}
-            >
-              <span className="font-bold mr-2">{level}</span>
-              {label}
-            </button>
-          ))}
+          {RATING_LEVELS.map(({ level, label, color, activeColor }) => {
+            const isSelected = selectedRating === level;
+            return (
+              <button
+                key={level}
+                onClick={() => handleRate(level)}
+                disabled={animatingOut || selectedRating !== null}
+                className={`w-full min-h-[48px] px-4 py-3 rounded-lg text-left font-medium text-sm select-none transition-all duration-150 ${
+                  isSelected
+                    ? `${activeColor} scale-[1.03] shadow-md ring-2 ring-offset-1 ring-current`
+                    : selectedRating !== null
+                      ? `${color} opacity-40`
+                      : `${color} active:scale-[0.97]`
+                } disabled:cursor-default`}
+              >
+                <span className="font-bold mr-2">{level}</span>
+                {label}
+              </button>
+            );
+          })}
           <button
             onClick={handleSkip}
             disabled={animatingOut}
