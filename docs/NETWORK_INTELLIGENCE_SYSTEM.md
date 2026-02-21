@@ -1,7 +1,7 @@
 # Personal Network Intelligence System
 
-**Last updated:** 2026-02-18
-**Status:** Phase 1-2 COMPLETE, Phase 4 COMPLETE (Copilot UI)
+**Last updated:** 2026-02-21
+**Status:** Phase 1-5 COMPLETE, Phase 6 IN PROGRESS (Donor Psychology Overhaul)
 
 ---
 
@@ -20,8 +20,9 @@
 11. [Technology Choices](#11-technology-choices)
 12. [Use Cases](#12-use-cases)
 13. [Phase Plan](#13-phase-plan)
-14. [Cost Estimates](#14-cost-estimates)
-15. [Open Questions](#15-open-questions)
+14. [Phase 6: Donor Psychology Overhaul](#14-phase-6-donor-psychology-overhaul-in-progress)
+15. [Cost Estimates](#15-cost-estimates)
+16. [Open Questions](#16-open-questions)
 
 ---
 
@@ -888,15 +889,8 @@ LIMIT 25;
 **Results:** 96 duplicate rows merged and deleted (77 by LinkedIn URL, 16 by manual review of same-name/different-URL pairs, 3 by email). 91 FK references reassigned.
 **Final count:** 2,402 unique contacts (down from 2,498)
 
-### Phase 3: Communication History (Future)
-**Goal:** Map Justin's email/calendar history to contacts.
-
-1. Write script that uses MCP Google Workspace tools to search Gmail
-2. Process high-priority contacts first (proximity >= 40)
-3. Summarize threads with GPT-5 mini
-4. Store in communication_history JSONB
-
-**Output:** Rich communication context for ~500+ contacts who Justin has actually emailed.
+### Phase 3: Communication History
+**Status:** Superseded by Phase 5 (originally planned as Phase 3, implemented as Phase 5 with expanded scope).
 
 ### Phase 4: AI Filter Co-pilot UI — COMPLETE
 **Status:** Done (2026-02-18)
@@ -949,33 +943,444 @@ LIMIT 25;
 8. Draft personalized outreach emails (5 tone options, optional context)
 9. Review, edit, and send emails via Resend
 
-### Phase 5: Communication History (Future)
-**Goal:** Map Justin's email/calendar history to contacts.
+### Phase 5: Communication History — COMPLETE
+**Status:** Done (2026-02-20)
+**Scripts:**
+- `scripts/intelligence/gather_comms_history.py` — Gmail collection + LLM summarization
+- `scripts/intelligence/discover_emails.py` — Email discovery for contacts without email addresses
 
-1. Write script that uses MCP Google Workspace tools to search Gmail across all 5 accounts
-2. Process high-priority contacts first (proximity >= 40)
-3. Summarize threads with GPT-5 mini
-4. Store in `communication_history` JSONB column
-5. Integrate into contact detail sheet and outreach context
+**Approach:** Python scripts using Gmail API directly via OAuth credentials (stored at `~/.google_workspace_mcp/credentials/`) across 5 Google Workspace accounts. Two-phase pipeline: Phase A collects raw Gmail thread data, Phase B summarizes with GPT-5 mini.
 
-**Output:** Rich communication context for ~500+ contacts who Justin has actually emailed.
+**5 Google Workspace Accounts Searched:**
+| Account | Email |
+|---------|-------|
+| Primary | justinrsteele@gmail.com |
+| True Steele | justin@truesteele.com |
+| Outdoorithm | justin@outdoorithm.com |
+| Outdoorithm Collective | justin@outdoorithmcollective.org |
+| Kindora | justin@kindora.co |
+
+**Results:**
+- **628 contacts** with email thread history (out of ~1,900 with email addresses)
+- **9,425 email threads** stored with full raw message data (headers, body text, dates, participants)
+- **628 LLM-generated summaries** with per-thread summaries and relationship overviews
+- **73 email addresses discovered** for contacts that had no email (via name-based Gmail search + LLM verification)
+- **0 errors** across all runs
+- **Total LLM cost:** ~$1.35 (GPT-5 mini structured output)
+
+**Database:**
+- New table: `contact_email_threads` — raw thread data with `UNIQUE(contact_id, thread_id, account_email)`
+- Existing column: `contacts.communication_history` JSONB — aggregate summaries per contact
+- Existing column: `contacts.comms_last_gathered_at` — timestamp of last collection
+
+**Email Discovery:**
+- Searched Gmail by name for 579 contacts without email addresses
+- Multi-signal scoring: display name match, company domain match, thread count, multi-account appearance
+- LLM verification (GPT-5 mini) with confidence threshold of 80%
+- Rules: distinctive names accepted with name match; company domain emails rejected if not current employer; common names require domain match or strong contextual evidence
+
+**CLI:**
+```bash
+# Collect Gmail threads
+python scripts/intelligence/gather_comms_history.py --collect-only
+python scripts/intelligence/gather_comms_history.py --min-proximity 40  # Warm+ only
+python scripts/intelligence/gather_comms_history.py --ids-file ids.json  # Specific contacts
+
+# Summarize with GPT-5 mini
+python scripts/intelligence/gather_comms_history.py --summarize-only
+
+# Discover emails
+python scripts/intelligence/discover_emails.py --test --dry-run
+python scripts/intelligence/discover_emails.py  # Full run
+```
 
 ---
 
-## 14. Cost Estimates
+## 14. Phase 6: Donor Psychology Overhaul (IN PROGRESS)
 
-| Component | Est. Cost | Notes |
-|-----------|-----------|-------|
-| GPT-5 mini tagging (2,500 contacts) | ~$2.50 | Structured output, ~3K input + 800 output tokens each |
-| Embeddings (5,000 calls) | ~$0.05 | text-embedding-3-small is very cheap |
-| Gmail summarization (~1,000 contacts x ~5 threads) | ~$5-10 | LLM cost for summarization |
-| **Total Phase 1-3** | **~$8-13** | |
+**Status:** Planning complete, implementation via Ralph loop
+**Plan file:** `/Users/Justin/.claude/plans/cozy-munching-dongarra.md`
+**Ralph loop:** `.ralph/network-intel-overhaul/`
 
-This is remarkably cheap. The entire pipeline costs less than a single Perplexity deep research call.
+### 14.1 Motivation
+
+The existing system has two key gaps:
+1. **Justin's human signals are underused.** 1,499 contacts have familiarity ratings (0-4), 628 have communication history — but the UI still sorts by AI proximity score (GPT's guess) instead of Justin's actual assessment.
+2. **No wealth data beyond LinkedIn proxy.** Capacity scoring relies entirely on job titles and career trajectory. Two free/cheap public data sources — FEC political donations and real estate records — can provide behavioral proof of wealth.
+
+The overhaul rewires everything so Justin's human signals (familiarity, comms) are primary, AI signals supplement, and a donor psychology reasoning model assesses ask-readiness.
+
+### 14.2 New Database Columns
+
+```sql
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS shared_institutions JSONB DEFAULT NULL;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS comms_last_date DATE DEFAULT NULL;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS comms_thread_count SMALLINT DEFAULT 0;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS fec_donations JSONB DEFAULT NULL;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS real_estate_data JSONB DEFAULT NULL;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS ask_readiness JSONB DEFAULT NULL;
+```
+
+### 14.3 FEC Political Donation Enrichment (FREE)
+
+Federal campaign contributions are public record via the **OpenFEC API** (free, rate limit 1,000 req/hr). Anyone who donates $200+ to a political campaign is searchable by name. This is the strongest free wealth indicator:
+
+- Someone giving $2,800/candidate (max individual contribution) has significant disposable income
+- Aggregate patterns reveal both capacity and philanthropic propensity
+- FEC data includes employer and occupation, providing cross-validation
+
+**API tested and validated (2026-02-20):**
+- Endpoint: `GET https://api.open.fec.gov/v1/schedules/schedule_a/`
+- Params: `contributor_name`, `contributor_state`, `is_individual=true`, `two_year_transaction_period`
+- Successfully returned data for known donors (Reid Hoffman: 1,906 records)
+- State filtering effectively reduces false positives for common names
+- GPT-5 mini verification handles disambiguation excellently (see 14.6)
+
+**JSONB schema:**
+```json
+{
+  "total_amount": 15400,
+  "donation_count": 8,
+  "max_single": 2800,
+  "cycles": ["2024", "2022", "2020"],
+  "recent_donations": [
+    {"committee": "ActBlue", "amount": 2800, "date": "2024-03-15"}
+  ],
+  "employer_from_fec": "Google LLC",
+  "occupation_from_fec": "Software Engineer",
+  "last_checked": "2026-02-20"
+}
+```
+
+**Cost:** $0 (free API). ~2.5 hours for 2,400 contacts at 1,000 req/hr.
+
+### 14.4 Real Estate Enrichment — Three-Step Pipeline (VALIDATED)
+
+Property ownership is one of the strongest wealth indicators. Achieved via a validated three-step pipeline that costs **~$0.01/contact**.
+
+#### API Research & Testing Summary (2026-02-20 through 2026-02-21)
+
+**Services REJECTED after testing:**
+- **BatchData** — Reverse owner name search requires $500/mo tier. `searchCriteria.ownerName` returns garbage data. `owner-profile` endpoint returns 403. ~$49.40 credit remains for address-based lookups only.
+- **Melissa Personator Consumer** — Goes address→person, NOT name→address. Research agents got this wrong. GitHub examples confirm input is address components.
+- **EnformionGO** — Signup blocked ("unable to allow you to sign-up for an account right now").
+- **Open People Search** — Discontinued. Dev docs site (dev.openpeoplesearch.com) returns DNS error.
+- **Trestle (TrestleIQ)** — No "Find Person by name" endpoint. Only offers Reverse Phone, Reverse Address, Caller ID. All go wrong direction.
+- **Apify Zillow scrapers (4 tested):** `aknahin/zillow-property-info-scraper` (ImportError), `burbn/zillow-address-scraper` (returns random listings), `jupri/zillow-scraper` (requires paid rental), `maxcopell/zillow-scraper` (needs searchQueryState URL).
+
+#### Validated Pipeline (tested 2026-02-21)
+
+**Step 1: Name → Home Address — Apify Skip Trace ($0.007/result)**
+
+Actor: `one-api/skip-trace` on Apify marketplace (1.5M+ runs, 3,600+ users, 3.5/5 rating)
+
+Scrapes TruePeopleSearch, FastPeopleSearch, Spokeo, BeenVerified, and PeopleFinders. Returns current address, previous addresses, phone numbers, emails, relatives, age/DOB.
+
+```python
+# Input format (array of "Name; City, ST" strings)
+body = {"name": ["Adrian Schurr; San Francisco, CA"]}
+
+# Output fields
+{
+  "First Name": "Adrian", "Last Name": "Schurr",
+  "Street Address": "1873 Wayne Ave",
+  "Address Locality": "San Leandro", "Address Region": "CA", "Postal Code": "94577",
+  "Age": "36", "Born": "November 1989",
+  "Email-1": "adrianschurr@yahoo.com",
+  "Phone-1": "(650) 875-4352", "Phone-1 Type": "Landline",
+  "Previous Addresses": [...], "Relatives": [...], "Associates": [...]
+}
+```
+
+**Step 2: Address → Zillow ZPID — Zillow Autocomplete API (FREE)**
+
+Undocumented but stable Zillow autocomplete endpoint. No API key needed.
+
+```python
+url = "https://www.zillowstatic.com/autocomplete/v3/suggestions"
+params = {"q": "1873 Wayne Ave, San Leandro, CA 94577", "resultTypes": "allAddress", "resultCount": 3}
+# Returns: {"results": [{"metaData": {"zpid": "24882391"}, "display": "1873 Wayne Ave San Leandro, CA 94577"}]}
+```
+
+**Step 3: ZPID → Property Data — Apify `happitap/zillow-detail-scraper` (~$0.003/result)**
+
+Takes Zillow detail URLs, returns full property data including Zestimate.
+
+```python
+body = {"startUrls": [{"url": "https://www.zillow.com/homedetails/1873-Wayne-Ave-San-Leandro-CA-94577/24882391_zpid/"}]}
+# Returns: zestimate, rentZestimate, bedrooms, bathrooms, livingArea, yearBuilt, homeType, propertyTaxRate
+```
+
+#### Scaled Test Results (2026-02-21, 15 contacts)
+
+**Script:** `scripts/intelligence/test_real_estate_pipeline.py`
+
+| Metric | Result |
+|--------|--------|
+| Addresses found (skip-trace) | 13/15 (87%) |
+| GPT-5 mini validated as correct person | 9/13 (69%) |
+| Zillow ZPIDs found | 9/9 (100%) |
+| Zestimates obtained | 7/9 (78%) |
+| **End-to-end success rate** | **7/15 (47%)** |
+| Total cost | $0.16 |
+
+**Sample results:**
+| Contact | Address | Zestimate | Validation |
+|---------|---------|-----------|------------|
+| Adrian Schurr (SF) | 1873 Wayne Ave, San Leandro, CA | $838,600 | ✅ high |
+| Taj James (Oakland) | 4347 Leach Ave #3, Oakland, CA | $686,200 | ✅ high |
+| Rob Gitin (SF) | 177 Granada Ave, San Francisco, CA | — | ✅ high |
+| Freada Kapor Klein (Oakland) | 222 Broadway #1504, Oakland, CA | — | ✅ high |
+| Jeff Kositsky (Denver) | 749 S Grant St, Denver, CO | $1,057,100 | ✅ medium |
+| Trina Villanueva (Oakland) | 4629 Mountain Blvd, Oakland, CA | $1,572,300 | ✅ medium |
+
+**Correct rejections (validation working):**
+- Gina Clayton-Johnson: Skip-trace returned 68yo in Tennessee (contact is in LA, much younger)
+- Kamau Bobb: Different first name returned (Damu, not Kamau), wrong state
+- Neela Pal: Different first name (Nilanjana), wrong state (MA not NY)
+- Jake Edwards: Age implausible for career stage, common name
+
+#### Cost Summary
+
+| Step | Service | Cost/contact | For 600 contacts |
+|------|---------|-------------|-----------------|
+| Name → Address | Apify `one-api/skip-trace` | $0.007 | $4.20 |
+| Address → ZPID | Zillow autocomplete | FREE | $0 |
+| ZPID → Zestimate | Apify `happitap/zillow-detail-scraper` | ~$0.003 | $1.80 |
+| **Total** | | **~$0.01** | **~$6.00** |
+
+**Scope:** Top contacts — familiarity >= 2 OR capacity tier = major_donor (~500-700 contacts).
+
+#### Address Validation (GPT-5 mini)
+
+Each skip-trace result is verified against the contact's known profile data (city, state, employer, LinkedIn data) using GPT-5 mini to confirm the address belongs to the right person — critical for common names. See section 14.6 for verification methodology.
+
+**JSONB schema:**
+```json
+{
+  "address": "123 Main St, Palo Alto, CA 94301",
+  "zestimate": 2100000,
+  "beds": 4,
+  "baths": 3,
+  "sqft": 2400,
+  "lot_size": 6000,
+  "year_built": 1965,
+  "property_type": "single_family",
+  "confidence": "high",
+  "source": "zillow",
+  "last_checked": "2026-02-21"
+}
+```
+
+### 14.5 Structured Institutional Overlap (GPT-5 mini)
+
+For ~1,200 contacts with shared institutions, run GPT-5 mini with Justin's exact career timeline to produce structured overlap data replacing freetext in `ai_tags`.
+
+**Output JSONB:**
+```json
+[{
+  "name": "Google / Google.org",
+  "type": "employer",
+  "overlap": "confirmed",
+  "justin_period": "2014-2019",
+  "contact_period": "2016-2020",
+  "temporal_overlap": true,
+  "depth": "same_org",
+  "notes": "Both in social impact roles, 3 years overlap"
+}]
+```
+
+**Cost:** ~$2.40
+
+### 14.6 GPT-5 Mini Match Verification
+
+All enrichment scripts use GPT-5 mini to verify API matches against contact profiles. Tested and validated (2026-02-20):
+
+**Key findings from testing:**
+- Correctly matched unique names (Olatunde Sobomehin → StreetCode Academy FEC records)
+- Correctly rejected ALL 11 false positives for common name (Manuel Lopez — 60 FEC results in NY)
+- Correctly matched despite city mismatch (Gina Clayton-Johnson in Altadena vs LA metro area)
+- Uses employer, occupation, city/state, and career context for disambiguation
+
+**Important:** GPT-5 mini does NOT support `temperature=0`. Use default temperature (1) only.
+
+**Cost:** ~$0.002/contact for verification pass.
+
+### 14.7 AI Ask-Readiness Scoring (Donor Psychology)
+
+Instead of hardcoded composite scoring, uses a strong AI reasoning model with a deep donor psychology prompt to holistically assess each contact's ask-readiness for a given goal. The prompt encodes a comprehensive donor psychology framework that the model applies to each contact's full data profile.
+
+**Donor Psychology Framework — Four Pillars:**
+
+**1. Relationship Depth (most important for individual fundraising)**
+
+The #1 predictor of individual giving is trust in the person asking. Warm outreach converts at 10x the rate of cold approaches. Assessed via:
+- **Familiarity rating** (0-4): Justin's personal assessment of how well he knows them
+- **Communication recency/frequency**: Recent email contact signals active relationship vs dormant connection
+- **Shared formative experiences**: People who worked together, went to school together, or served on boards together share identity-level bonds. Temporal overlap amplifies this — being at Google at the SAME TIME creates a fundamentally different bond than both having worked there in different decades
+- **Reciprocity history**: Prior favors, shared projects, mutual support create giving obligations
+
+**2. Giving Capacity**
+
+Financial ability to give, assessed from:
+- Career level and trajectory (C-suite, VP, director, IC)
+- Company size and type (tech exec vs nonprofit staff)
+- Board positions (signal wealth and philanthropic identity)
+- **FEC political donations**: If someone donated $5,000+ to political campaigns, they demonstrably have disposable income AND willingness to write checks. This is the strongest behavioral signal of capacity — it's not estimated, it's proven.
+- **Real estate holdings**: Property ownership is a factual wealth indicator. Someone with $2M+ in assessed property value has fundamentally different capacity than a renter.
+- Capacity WITHOUT relationship is meaningless for individual asks — a billionaire who doesn't know Justin won't give
+
+**3. Philanthropic Propensity**
+
+Likelihood of giving based on values and identity alignment:
+- **Philanthropic identity**: Board service, volunteer history, nonprofit work
+- **Values alignment**: Do they post/talk about causes, equity, giving back?
+- **Cause alignment**: Specific alignment with outdoor equity, youth access, environmental justice
+- **Identity-based giving**: "People like me give to causes like this" — shared social circles, similar career arcs, peer effects
+- **Prior support**: Have they supported similar organizations?
+
+**4. Psychological Readiness**
+
+Timing and receptivity:
+- **Life stage**: New role = less capacity but possibly more openness; recently retired = more time and philanthropic interest
+- **Communication warmth**: Was the last exchange positive, collaborative, friendly?
+- **Cultivation state**: Has Justin already cultivated this relationship, or would the ask come out of nowhere?
+- **Authenticity**: Would this person feel the ask is genuine from Justin, or would it feel transactional?
+- **Warm glow factor**: Will giving to this cause make them feel good about themselves?
+
+**Critical Behavioral Insights (encoded in prompt):**
+- **Insider effect**: Donors who feel like insiders give more. Shared institutional membership creates insider feeling.
+- **Identifiable victim effect**: Donors respond to individual stories, not statistics. Contacts who've experienced the outdoors (or have kids) are more likely to empathize.
+- **Social proof**: Contacts who know OTHER supporters in Justin's network are more likely to give. Peer clusters matter.
+- **Loss aversion**: Framing matters. "Don't miss being part of this founding group" > "Please donate."
+- **Second-gift psychology**: If someone has already given to Outdoorithm or supported Justin's ventures, they're 2-3x more likely to give again.
+- **Monthly giving**: Converts best within 30-90 days of first gift or engagement.
+- **Cultivation timelines**: Major donors need 12-18 months of cultivation before a large ask. Mid-level donors need 2-4 touchpoints.
+
+**Scoring Tiers:**
+- 80-100 (`ready_now`): Close relationship + capacity + alignment + recent positive contact. Justin could call today.
+- 60-79 (`cultivate_first`): Good relationship foundation but needs a touchpoint before asking. Reconnect first, share the mission, then ask.
+- 40-59 (`long_term`): Has capacity and some alignment, but relationship too thin for direct ask. Needs multiple cultivation touchpoints.
+- 20-39 (`long_term`): Distant connection or misaligned values. Only worth pursuing if capacity is very high.
+- 0-19 (`not_a_fit`): No relationship, no alignment, or no capacity. Don't waste effort.
+
+**Realistic expectations**: Most LinkedIn connections are NOT ready for a fundraising ask. A 2,400-person network might yield 50-100 people who are genuinely ready, 200-300 worth cultivating, and the rest are too distant.
+
+**Per-contact context sent to the model:**
+
+Each contact is evaluated with their full data profile:
+- Familiarity rating (Justin's personal 0-4 assessment)
+- Current role, company, headline, location
+- Shared institutions (structured overlap from Phase 2c)
+- AI capacity tier and score, AI Outdoorithm fit
+- FEC political donations summary (if any)
+- Real estate holdings summary (if any)
+- Topics of interest, philanthropic signals
+- Communication history: last contact date, thread count, relationship summary, recent thread subjects
+- LinkedIn connection date
+
+**Output schema per contact:**
+```json
+{
+  "score": 82,
+  "tier": "ready_now",
+  "reasoning": "2-3 sentence explanation citing specific evidence",
+  "recommended_approach": "personal_email | phone_call | in_person | linkedin | intro_via_mutual",
+  "ask_timing": "now | after_cultivation | after_reconnection | not_recommended",
+  "cultivation_needed": "None — ready for direct ask | description of cultivation needed",
+  "suggested_ask_range": "$X-$Y | volunteer/attend first",
+  "personalization_angle": "Single strongest personalization hook for this person and goal",
+  "risk_factors": ["reasons this ask could backfire or damage the relationship"]
+}
+```
+
+**JSONB schema (stored in `ask_readiness`):**
+```json
+{
+  "outdoorithm_fundraising": {
+    "score": 82,
+    "tier": "ready_now",
+    "reasoning": "Close relationship (4/4), shared Google.org tenure...",
+    "recommended_approach": "personal_email",
+    "ask_timing": "now",
+    "cultivation_needed": "None — ready for direct ask",
+    "suggested_ask_range": "$500-$2,000",
+    "personalization_angle": "Your shared Google.org work on equity...",
+    "risk_factors": [],
+    "scored_at": "2026-02-21T..."
+  }
+}
+```
+
+Can be re-run for multiple goals (kindora_sales, etc.) — results stack in same JSONB. Goal is parameterized in the script via `--goal` flag.
+
+**Cost:** ~$7.20 for 2,400 contacts (GPT-5 mini structured output, ~$0.003/contact)
+
+### 14.8 Search System Overhaul
+
+The AI Filter Co-pilot (Phase 4) is rewired:
+- **Primary signal:** `familiarity_rating` (Justin's human assessment) replaces `ai_proximity_score` (GPT's guess)
+- **New filters:** `familiarity_min`, `has_comms`, `comms_since`, `shared_institution`, `goal`
+- **New sort options:** familiarity, comms_recency, ask_readiness
+- **New tool:** `goal_search` — finds contacts ranked by ask-readiness for a specific goal
+- **Default sort:** `familiarity_rating DESC, comms_last_date DESC NULLS LAST`
+
+### 14.9 UI Updates
+
+- Contacts table: Replace "Proximity" with "Familiarity" (0-4 visual), add "Last Contact" column, add "Ask Readiness" column when goal filter active
+- Contact detail: Add "Your Relationship" section (familiarity + comms), "Institutional Overlap" with temporal badges, "Ask Readiness" card with tier/reasoning/approach
+- Filter bar: New chips for familiarity, comms, goal
+
+### 14.10 Implementation Status
+
+17 user stories in Ralph loop (`.ralph/network-intel-overhaul/prd.md`):
+
+| Story | Description | Status |
+|-------|-------------|--------|
+| US-001 | Documentation update | Done |
+| US-002 | Database migration (new columns + indexes) | Pending |
+| US-003 | Backfill comms fields | Pending |
+| US-004 | FEC enrichment script | Pending |
+| US-005 | Real estate enrichment script (two-step) | Pending |
+| US-006 | Structured overlap scoring | Pending |
+| US-007 | Ask-readiness scoring | Pending |
+| US-008 | Update FilterState + types | Pending |
+| US-009 | Update search route + select cols | Pending |
+| US-010 | Add goal_search tool | Pending |
+| US-011 | Update agent system prompt | Pending |
+| US-012 | Update parse-filters | Pending |
+| US-013 | Update contact detail + outreach | Pending |
+| US-014 | Update contacts table UI | Pending |
+| US-015 | Update contact detail sheet UI | Pending |
+| US-016 | Update filter bar UI | Pending |
+| US-017 | Tag remaining 527 contacts | Pending |
+
+**Total enrichment cost: ~$17** ($0 FEC + $0-30 real estate + $2.40 overlap + $7.20 ask-readiness + $1.60 tagging)
 
 ---
 
-## 15. Open Questions
+## 15. Cost Estimates (All Phases)
+
+| Component | Actual Cost | Notes |
+|-----------|-------------|-------|
+| GPT-5 mini tagging (2,402 contacts) | ~$5-7 | Structured output, Phase 1 |
+| Embeddings (4,804 calls) | ~$0.03 | text-embedding-3-small, Phase 2 |
+| Gmail thread summarization (628 contacts) | ~$1.30 | GPT-5 mini structured output |
+| Email discovery (579 contacts) | ~$0.05 | GPT-5 mini verification |
+| **Total Phases 1-5** | **~$6.50-8.50** | |
+| FEC political donations (2,400 contacts) | $0 | Free OpenFEC API |
+| Real estate (600 contacts, three-step) | ~$6 | Apify skip-trace + Zillow autocomplete + Apify Zillow detail |
+| Structured overlap (1,200 contacts) | ~$2.40 | GPT-5 mini |
+| Ask-readiness scoring (2,400 contacts) | ~$7.20 | GPT-5 mini donor psychology |
+| Tag remaining 527 contacts | ~$1.60 | GPT-5 mini + embeddings |
+| **Total Phase 6** | **~$17** | |
+| **Grand Total (all phases)** | **~$24-26** | |
+
+The entire 6-phase pipeline costs less than a month of any commercial wealth screening tool.
+
+---
+
+## 16. Open Questions
 
 1. **Overwrite existing scoring?** The current `donor_capacity_score`, `warmth_level`, `shared_institutions` columns have data for 1,305 contacts (from Perplexity). Should we overwrite them with the new AI-tagged values, or keep both? Recommendation: **Keep old columns, write to new `ai_*` columns**, then deprecate old ones after validating the new scores are better.
 
