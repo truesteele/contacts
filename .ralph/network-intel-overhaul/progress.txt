@@ -1,0 +1,42 @@
+# Ralph Progress Log
+Loop: network-intel-overhaul
+Started: 2026-02-20
+---
+
+## Iteration 1: US-001 — Update Network Intelligence System Documentation
+**Date:** 2026-02-20
+**Status:** COMPLETE
+**Commit:** 774a87a
+
+**What was done:**
+- Expanded Phase 6 section (14) of `docs/NETWORK_INTELLIGENCE_SYSTEM.md` with full donor psychology framework
+- Added detailed documentation for all 4 pillars: Relationship Depth, Giving Capacity, Philanthropic Propensity, Psychological Readiness
+- Added Critical Behavioral Insights section (insider effect, identifiable victim effect, social proof, loss aversion, second-gift psychology, cultivation timelines)
+- Added per-contact context template and output schema for ask-readiness scoring
+- Added detailed scoring tier descriptions with guidance
+- All JSONB schemas already documented (fec_donations, real_estate_data, shared_institutions, ask_readiness)
+- Implementation order and cost estimates already present
+
+**Learnings:**
+- The doc already had a comprehensive Phase 6 section (14.1-14.10) from prior planning work. The main gap was that section 14.7 (Ask-Readiness) only had brief bullet points for the 4 pillars — needed expansion with full framework details and behavioral insights from the plan file.
+- The JSONB schemas, search system overhaul, UI updates, and implementation status were already well-documented.
+
+## Iteration 2: US-002 — Database Migration — New Columns & Indexes
+**Date:** 2026-02-20
+**Status:** COMPLETE
+
+**What was done:**
+- Created migration file `supabase/migrations/20260220_network_intel_overhaul.sql`
+- Added 5 new columns: `comms_last_date` (DATE), `comms_thread_count` (SMALLINT default 0), `fec_donations` (JSONB), `real_estate_data` (JSONB), `ask_readiness` (JSONB)
+- Renamed existing `shared_institutions` TEXT[] column to `shared_institutions_legacy` (contained freetext like "Location: SF", "Current employer: Google")
+- Created new `shared_institutions` JSONB column for structured overlap data (to be populated by score_overlap.py in US-006)
+- Created 3 indexes: `idx_contacts_familiarity` (btree DESC), `idx_contacts_comms_last` (btree DESC), `idx_contacts_ask_readiness` (GIN)
+- Applied migration via Supabase MCP `apply_migration`
+- Verified all columns and indexes exist via SQL queries
+- `familiarity_rating` already existed from prior migration (20260219)
+
+**Learnings:**
+- The `shared_institutions` column already existed as TEXT[] with freetext data from the tagging script. Renamed to `shared_institutions_legacy` to preserve data while creating the new JSONB column. The legacy data is mostly location strings and employer names — the new structured format will have temporal overlap analysis.
+- No TypeScript code referenced `shared_institutions` yet, so the rename was safe. The only Python reference is in `deduplicate_contacts.py` (a completed one-time script).
+- `familiarity_rating` column already existed from migration 20260219120000, so the plan's `ADD COLUMN IF NOT EXISTS` for that was unnecessary — just added the index.
+
