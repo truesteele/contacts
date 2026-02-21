@@ -43,6 +43,19 @@ const KINDORA_LABELS: Record<string, string> = {
   not_relevant: 'Not Relevant',
 };
 
+const GOAL_LABELS: Record<string, string> = {
+  outdoorithm_fundraising: 'Outdoorithm Fundraising',
+  kindora_sales: 'Kindora Sales',
+};
+
+const FAMILIARITY_LABELS: Record<number, string> = {
+  0: "Don't Know",
+  1: 'Recognize',
+  2: 'Know Them',
+  3: 'Good Relationship',
+  4: 'Close/Trusted',
+};
+
 function formatTierList(tiers: string[]): string {
   return tiers.map((t) => TIER_LABELS[t] || t).join(', ');
 }
@@ -141,6 +154,44 @@ function buildChips(filters: FilterState): FilterChip[] {
       label: 'Topic',
       value: filters.semantic_query,
       colorClass: 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800',
+    });
+  }
+
+  if (filters.familiarity_min != null) {
+    chips.push({
+      key: 'familiarity_min',
+      label: 'Familiarity',
+      value: `≥ ${filters.familiarity_min} (${FAMILIARITY_LABELS[filters.familiarity_min] || filters.familiarity_min})`,
+      colorClass: 'bg-sky-100 text-sky-800 border-sky-200 dark:bg-sky-900/40 dark:text-sky-300 dark:border-sky-800',
+    });
+  }
+
+  if (filters.has_comms) {
+    chips.push({
+      key: 'has_comms',
+      label: 'Comms',
+      value: 'Has Email History',
+      colorClass: 'bg-teal-100 text-teal-800 border-teal-200 dark:bg-teal-900/40 dark:text-teal-300 dark:border-teal-800',
+    });
+  }
+
+  if (filters.comms_since) {
+    const date = new Date(filters.comms_since + 'T00:00:00');
+    const formatted = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    chips.push({
+      key: 'comms_since',
+      label: 'Contacted Since',
+      value: formatted,
+      colorClass: 'bg-teal-100 text-teal-800 border-teal-200 dark:bg-teal-900/40 dark:text-teal-300 dark:border-teal-800',
+    });
+  }
+
+  if (filters.goal) {
+    chips.push({
+      key: 'goal',
+      label: 'Goal',
+      value: GOAL_LABELS[filters.goal] || filters.goal,
+      colorClass: 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/40 dark:text-orange-300 dark:border-orange-800',
     });
   }
 
