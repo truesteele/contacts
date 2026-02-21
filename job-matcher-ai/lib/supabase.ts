@@ -112,6 +112,10 @@ export interface NetworkContact {
   interests_embedding?: string;
   familiarity_rating?: number | null;
   familiarity_rated_at?: string | null;
+  comms_last_date?: string | null;
+  comms_thread_count?: number | null;
+  shared_institutions?: Record<string, any>[] | null;
+  ask_readiness?: Record<string, any> | null;
 }
 
 export async function getContactById(id: string): Promise<Contact | null> {

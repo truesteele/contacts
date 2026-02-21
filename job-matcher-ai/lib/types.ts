@@ -11,7 +11,12 @@ export interface FilterState {
   name_search?: string;
   location_state?: string;
   semantic_query?: string;
-  sort_by?: 'proximity' | 'capacity' | 'name' | 'company';
+  familiarity_min?: number;
+  has_comms?: boolean;
+  comms_since?: string;
+  shared_institution?: string;
+  goal?: 'outdoorithm_fundraising' | 'kindora_sales';
+  sort_by?: 'proximity' | 'capacity' | 'name' | 'company' | 'familiarity' | 'comms_recency' | 'ask_readiness';
   sort_order?: 'asc' | 'desc';
   limit?: number;
 }
