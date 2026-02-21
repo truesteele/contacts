@@ -14,15 +14,36 @@ const SET_FILTERS_TOOL: Anthropic.Tool = {
   input_schema: {
     type: 'object' as const,
     properties: {
+      familiarity_min: {
+        type: 'number',
+        description:
+          'Minimum familiarity rating (0-4). 0=don\'t know, 1=recognize name, 2=know them, 3=good relationship, 4=close/trusted. This is Justin\'s personal rating and the PRIMARY relationship signal. Use 2+ for "people I know", 3+ for "good contacts" or fundraising, 4 for "close friends".',
+      },
+      has_comms: {
+        type: 'boolean',
+        description:
+          'If true, only include contacts Justin has email history with. Use for queries about "people I\'ve been in touch with" or "active relationships".',
+      },
+      comms_since: {
+        type: 'string',
+        description:
+          'ISO date string (YYYY-MM-DD). Only include contacts Justin has emailed since this date. Use for "recently in touch" or "contacted this year" queries.',
+      },
+      goal: {
+        type: 'string',
+        enum: ['outdoorithm_fundraising', 'kindora_sales'],
+        description:
+          'Set the fundraising/outreach goal. When set, contacts are ranked by AI ask-readiness score for that goal. ALWAYS set this for fundraising, donation, outreach, or "who should I ask" queries. outdoorithm_fundraising = Outdoorithm Collective nonprofit donations. kindora_sales = Kindora enterprise sales prospects.',
+      },
       proximity_min: {
         type: 'number',
         description:
-          'Minimum proximity score (0-100). inner_circle=80+, close=60+, warm=40+, familiar=20+, acquaintance=10+. Leave unset to include everyone.',
+          'Legacy: Minimum AI proximity score (0-100). Superseded by familiarity_min. Only use if query explicitly mentions "proximity score".',
       },
       proximity_tiers: {
         type: 'array',
         items: { type: 'string', enum: ['inner_circle', 'close', 'warm', 'familiar', 'acquaintance', 'distant'] },
-        description: 'Filter by specific proximity tiers. Only use if the query asks for specific tiers.',
+        description: 'Legacy: Filter by AI proximity tiers. Superseded by familiarity_min.',
       },
       capacity_min: {
         type: 'number',
@@ -63,8 +84,8 @@ const SET_FILTERS_TOOL: Anthropic.Tool = {
       },
       sort_by: {
         type: 'string',
-        enum: ['proximity', 'capacity', 'name', 'company'],
-        description: 'How to sort results. Default: proximity.',
+        enum: ['familiarity', 'ask_readiness', 'comms_recency', 'capacity', 'proximity', 'name', 'company'],
+        description: 'How to sort results. Default: familiarity. Use ask_readiness when goal is set. Use comms_recency for "recent contacts" queries.',
       },
       sort_order: {
         type: 'string',
@@ -96,15 +117,32 @@ ABOUT JUSTIN:
 - Former: Google.org Director Americas, Year Up, Bridgespan Group, Bain & Company
 - Schools: Harvard Business School, Harvard Kennedy School, University of Virginia
 
-SCORING TIERS:
+PRIMARY SIGNAL — FAMILIARITY RATING (Justin's personal assessment):
+- 0: Don't know / no relationship
+- 1: Recognize the name but no real interaction
+- 2: Know them — have met, some interaction
+- 3: Good relationship — regular contact, mutual respect
+- 4: Close / trusted — inner circle, would call anytime
 
-Proximity (how close to Justin):
-- inner_circle (80-100): Close collaborators, deep trust
-- close (60-79): Regular contact, shared projects
-- warm (40-59): Meaningful connection, periodic interaction
-- familiar (20-39): Met but limited interaction
-- acquaintance (10-19): One-time meeting or LinkedIn-only
-- distant (0-9): No real interaction
+This is the MOST IMPORTANT filter. Use familiarity_min instead of proximity_min for relationship-based queries.
+
+ASK-READINESS (AI donor psychology scoring):
+Each contact has been assessed by AI for ask-readiness toward specific goals. Tiers:
+- ready_now (80-100): Strong relationship + capacity + values alignment. Can ask directly.
+- cultivate_first (60-79): Good foundation but needs a touchpoint before asking.
+- long_term (20-59): Has potential but relationship is too thin for a direct ask.
+- not_a_fit (0-19): No relationship, alignment, or capacity. Skip.
+
+When the user asks about fundraising, donations, outreach, "who should I ask", or anything related to approaching people for a specific purpose, ALWAYS set the goal parameter and sort_by: ask_readiness.
+
+GOALS:
+- outdoorithm_fundraising: Outdoorithm Collective nonprofit individual donor fundraising (DEFAULT for fundraising queries)
+- kindora_sales: Kindora enterprise sales prospect outreach
+
+COMMUNICATION HISTORY:
+- ~628 contacts have email thread history with Justin
+- has_comms=true filters to only contacts with email history
+- comms_since filters to contacts emailed since a specific date
 
 Capacity (giving potential):
 - major_donor (70+): Senior executive, significant wealth
@@ -120,10 +158,17 @@ Kindora Prospect Type:
 
 Outdoorithm Fit: high / medium / low / none
 
+Proximity (LEGACY — AI-estimated closeness, superseded by familiarity):
+- inner_circle (80-100), close (60-79), warm (40-59), familiar (20-39), acquaintance (10-19), distant (0-9)
+- Only use proximity_min if the query explicitly mentions "proximity score"
+
 GUIDELINES:
 - Be GENEROUS with filters — include more contacts rather than fewer. Justin can always narrow down.
-- For fundraiser/event queries, cast a wide net: include warm+ proximity and medium+ fit.
-- For "top" or "best" queries, use higher thresholds (close+ proximity, major_donor capacity).
+- For fundraising/outreach queries: set goal='outdoorithm_fundraising', sort_by='ask_readiness', familiarity_min=2, limit=100.
+- For Kindora sales queries: set goal='kindora_sales', sort_by='ask_readiness'.
+- For "who do I know at X" or relationship queries: use familiarity_min=2 and sort_by='familiarity'.
+- For "who have I been in touch with": use has_comms=true and sort_by='comms_recency'.
+- For "top" or "best" queries, use familiarity_min=3 and/or major_donor capacity.
 - For topic-based queries ("who cares about X"), use semantic_query instead of structured filters.
 - Use higher limits (100-200) for broad queries. Use lower limits (20-50) for specific queries.
 - When in doubt, prefer semantic_query over overly narrow structured filters.
@@ -170,6 +215,10 @@ export async function POST(req: Request) {
     const explanation = input.explanation || '';
     const filters: FilterState = {};
 
+    if (input.familiarity_min != null) filters.familiarity_min = input.familiarity_min;
+    if (input.has_comms != null) filters.has_comms = input.has_comms;
+    if (input.comms_since) filters.comms_since = input.comms_since;
+    if (input.goal) filters.goal = input.goal;
     if (input.proximity_min != null) filters.proximity_min = input.proximity_min;
     if (input.proximity_tiers?.length) filters.proximity_tiers = input.proximity_tiers;
     if (input.capacity_min != null) filters.capacity_min = input.capacity_min;
