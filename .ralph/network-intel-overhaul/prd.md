@@ -77,21 +77,21 @@ Create and run a script to denormalize `communication_history` JSONB into the ne
 
 ### US-004: FEC Political Donation Enrichment Script
 **Priority:** 4
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Create a script that queries the OpenFEC API to find federal campaign contribution records for each contact, storing results in the `fec_donations` JSONB column. This is the strongest free wealth indicator available.
 
 **Acceptance Criteria:**
-- [ ] Script created at `scripts/intelligence/enrich_fec_donations.py`
-- [ ] Queries OpenFEC `/schedules/schedule_a/` endpoint by contributor name (first + last)
-- [ ] Filters by recent cycles (2020-2026)
-- [ ] Disambiguates common names using state/city match
-- [ ] Stores results in `contacts.fec_donations` JSONB matching schema in plan (total_amount, donation_count, max_single, cycles, recent_donations, employer_from_fec, occupation_from_fec, last_checked)
-- [ ] Supports `--test` flag (1 contact), `--batch N` flag, `--start-from` flag
-- [ ] Rate limits to stay under 1,000 req/hour
-- [ ] Test run succeeds with `--test` flag on a known contact
-- [ ] Uses env var `OPENFEC_API_KEY` from `.env`
+- [x] Script created at `scripts/intelligence/enrich_fec_donations.py`
+- [x] Queries OpenFEC `/schedules/schedule_a/` endpoint by contributor name (first + last)
+- [x] Filters by recent cycles (2020-2026)
+- [x] Disambiguates common names using state/city match
+- [x] Stores results in `contacts.fec_donations` JSONB matching schema in plan (total_amount, donation_count, max_single, cycles, recent_donations, employer_from_fec, occupation_from_fec, last_checked)
+- [x] Supports `--test` flag (1 contact), `--batch N` flag, `--start-from` flag
+- [x] Rate limits to stay under 1,000 req/hour
+- [x] Test run succeeds with `--test` flag on a known contact
+- [x] Uses env var `OPENFEC_API_KEY` from `.env`
 
 **Notes:**
 - API docs: https://api.open.fec.gov/developers/
@@ -102,7 +102,7 @@ Create a script that queries the OpenFEC API to find federal campaign contributi
 
 ### US-005: Real Estate Holdings Enrichment Script (Three-Step Pipeline)
 **Priority:** 5
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Create a production script that uses the validated three-step pipeline to get real estate data for top contacts: (1) Apify `one-api/skip-trace` for home address by name, (2) Zillow autocomplete API for ZPID, (3) Apify `happitap/zillow-detail-scraper` for Zestimate + property data. GPT-5 mini validates each skip-trace result matches the correct person. Stores results in `real_estate_data` JSONB column.
@@ -111,18 +111,18 @@ Create a production script that uses the validated three-step pipeline to get re
 Three-step pipeline tested at 15 contacts: 87% address found, 69% validated by GPT-5 mini, 100% ZPID found, 78% Zestimate obtained. ~$0.01/contact total. Test script at `scripts/intelligence/test_real_estate_pipeline.py`.
 
 **Acceptance Criteria:**
-- [ ] Script created at `scripts/intelligence/enrich_real_estate.py`
-- [ ] Step 1: Apify `one-api/skip-trace` — input `{"name": ["FirstName LastName; City, ST"]}` — returns home address, age, phones, emails
-- [ ] Step 2: Zillow autocomplete — `https://www.zillowstatic.com/autocomplete/v3/suggestions?q={address}&resultTypes=allAddress` — returns ZPID
-- [ ] Step 3: Apify `happitap/zillow-detail-scraper` — input `{"startUrls": [{"url": "https://www.zillow.com/homedetails/{slug}/{zpid}_zpid/"}]}` — returns Zestimate + property data
-- [ ] GPT-5 mini validates skip-trace result matches contact (name match, location consistency, age plausibility) — NOTE: does NOT support temperature=0, use default
-- [ ] Only processes contacts with `familiarity_rating >= 2 OR ai_capacity_tier = 'major_donor'`
-- [ ] Stores results in `contacts.real_estate_data` JSONB: {address, zestimate, rent_zestimate, beds, baths, sqft, year_built, property_type, confidence, source, last_checked}
-- [ ] Batch skip-trace (send multiple names per Apify run, ~25 per batch for efficiency)
-- [ ] Batch Zillow detail (send multiple URLs per Apify run)
-- [ ] Supports `--test`, `--batch N`, `--start-from` flags
-- [ ] Test run succeeds with `--test` flag
-- [ ] Contacts with failed validation are logged but not stored (or stored with confidence: "rejected")
+- [x] Script created at `scripts/intelligence/enrich_real_estate.py`
+- [x] Step 1: Apify `one-api/skip-trace` — input `{"name": ["FirstName LastName; City, ST"]}` — returns home address, age, phones, emails
+- [x] Step 2: Zillow autocomplete — `https://www.zillowstatic.com/autocomplete/v3/suggestions?q={address}&resultTypes=allAddress` — returns ZPID
+- [x] Step 3: Apify `happitap/zillow-detail-scraper` — input `{"startUrls": [{"url": "https://www.zillow.com/homedetails/{slug}/{zpid}_zpid/"}]}` — returns Zestimate + property data
+- [x] GPT-5 mini validates skip-trace result matches contact (name match, location consistency, age plausibility) — NOTE: does NOT support temperature=0, use default
+- [x] Only processes contacts with `familiarity_rating >= 2 OR ai_capacity_tier = 'major_donor'`
+- [x] Stores results in `contacts.real_estate_data` JSONB: {address, zestimate, rent_zestimate, beds, baths, sqft, year_built, property_type, confidence, source, last_checked}
+- [x] Batch skip-trace (send multiple names per Apify run, ~25 per batch for efficiency)
+- [x] Batch Zillow detail (send multiple URLs per Apify run)
+- [x] Supports `--test`, `--batch N`, `--start-from` flags
+- [x] Test run succeeds with `--test` flag
+- [x] Contacts with failed validation are logged but not stored (or stored with confidence: "rejected")
 
 **Notes:**
 - APIFY_API_KEY already in .env

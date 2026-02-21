@@ -57,3 +57,53 @@ Started: 2026-02-20
 - The `comms_last_date` DATE column accepts the "YYYY-MM-DD" string directly from the JSONB without conversion.
 - Data spans from 2007-07-16 to 2026-02-19, with avg 2.7 threads per contact and max 50.
 
+## Iteration 4: US-004 — FEC Political Donation Enrichment Script
+**Date:** 2026-02-21
+**Status:** COMPLETE
+**Commit:** 242b07d
+
+**What was done:**
+- Created `scripts/intelligence/enrich_fec_donations.py` — queries OpenFEC `/schedules/schedule_a/` for each contact
+- Filters by cycles 2020-2026, paginates through all results
+- Disambiguates results with name matching (handles compound last names like "Kapor Klein" → FEC stores as "KLEIN" with "KAPOR" in middle name)
+- For compound last names, verifies all name parts appear in `contributor_name` field
+- State-based disambiguation for common names (>10 results → prefer state matches)
+- Stores JSONB with: total_amount, donation_count, max_single, cycles, recent_donations (top 10), employer_from_fec, occupation_from_fec, last_checked
+- Rate limited to 3.7s between calls (~970/hr, safely under 1,000/hr limit)
+- Sequential processing (parallelism not useful due to rate limit)
+- Supports --test (1 contact), --batch N, --start-from flags
+- Tested: batch of 3 contacts all found FEC records (e.g., Freada Kapor Klein: $233K across 83 donations)
+
+**Learnings:**
+- OpenFEC API uses `contributor_name` field for full-text search in "LAST, FIRST MIDDLE" format. The search is fuzzy/keyword — searching "KAPOR KLEIN, FREADA" returns results where name is "KLEIN, FREADA KAPOR".
+- `contributor_first_name` and `contributor_last_name` are decomposed fields but don't handle compound names well — "KLEIN" is the last name while "KAPOR" ends up in the middle/first name area.
+- The API supports `is_individual=true` to filter out PAC-to-PAC transfers.
+- Pagination uses `last_index` + `last_contribution_receipt_date` cursor-based approach, not offset-based.
+- Results include employer and occupation from FEC filings, which can cross-validate LinkedIn data.
+- Rate limit: 1,000 requests/hour with API key. At 3.7s delay, full 2,400 contacts will take ~2.5 hours.
+
+## Iteration 5: US-005 — Real Estate Holdings Enrichment Script
+**Date:** 2026-02-21
+**Status:** COMPLETE
+
+**What was done:**
+- Created `scripts/intelligence/enrich_real_estate.py` — production three-step pipeline script
+- Step 1: Batch skip-trace via Apify `one-api/skip-trace` (25 names per batch, $0.007/result)
+- Step 2: Zillow autocomplete API for ZPID (free, per-address sequential)
+- Step 3: Batch Zillow detail via Apify `happitap/zillow-detail-scraper` (25 URLs per batch, ~$0.003/result)
+- GPT-5 mini validates each skip-trace result — correctly rejects wrong-person matches
+- Only processes contacts with `familiarity_rating >= 2 OR ai_capacity_tier = 'major_donor'`
+- Stores full JSONB: address, zestimate, rent_zestimate, beds, baths, sqft, year_built, property_type, confidence, source, last_checked
+- Three confidence/source states: "zillow_via_skip_trace" (full success), "skip_trace_only" (address but no ZPID), "skip_trace_rejected" (wrong person), "skip_trace_failed" (no result)
+- Supports --test (1 contact), --batch N, --start-from flags
+- Tested: batch of 5 contacts → 4 addresses found, 4/4 validated, 4/4 ZPIDs, 4/4 Zestimates (80% end-to-end)
+- Results: Zestimates ranged $462K-$1.1M across test contacts
+
+**Learnings:**
+- The skip-trace API returns results keyed by "Input Given" field matching the input name string. Must try multiple key formats (name + city + state, name + state, name alone) to match.
+- GPT-5 mini validation works well — the first test contact (Kay Fernandez Smith) was correctly rejected because the skip-trace found someone in Travelers Rest, SC when contact is in a different location.
+- Batch skip-trace is efficient — 5 contacts in a single Apify run takes ~8s. The Zillow detail batch also handles multiple URLs in one run.
+- Zillow autocomplete is very reliable — 100% ZPID found for all validated addresses in testing.
+- The `$ ` prefix in the Zillow detail print was a minor bug (should be contact name not dollar sign) but doesn't affect functionality.
+- Rejected and no-result contacts get stored with appropriate markers so they won't be re-processed on subsequent runs.
+
