@@ -61,17 +61,17 @@ Create Supabase migration adding new columns for wealth signals, structured over
 
 ### US-003: Backfill Comms Summary Fields
 **Priority:** 3
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Create and run a script to denormalize `communication_history` JSONB into the new `comms_last_date` and `comms_thread_count` columns for fast filtering/sorting.
 
 **Acceptance Criteria:**
-- [ ] Script created at `scripts/intelligence/backfill_comms_fields.py`
-- [ ] Reads `communication_history` JSONB for contacts that have it (~628 contacts)
-- [ ] Extracts `last_contact` → `comms_last_date` and `total_threads` → `comms_thread_count`
-- [ ] Script runs successfully and updates all 628 contacts
-- [ ] Verify with sample query: `SELECT count(*) FROM contacts WHERE comms_last_date IS NOT NULL` should be ~628
+- [x] Script created at `scripts/intelligence/backfill_comms_fields.py`
+- [x] Reads `communication_history` JSONB for contacts that have it (~628 contacts)
+- [x] Extracts `last_contact` → `comms_last_date` and `total_threads` → `comms_thread_count`
+- [x] Script runs successfully and updates all 628 contacts
+- [x] Verify with sample query: `SELECT count(*) FROM contacts WHERE comms_last_date IS NOT NULL` should be ~628
 
 ---
 

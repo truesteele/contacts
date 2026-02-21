@@ -40,3 +40,20 @@ Started: 2026-02-20
 - No TypeScript code referenced `shared_institutions` yet, so the rename was safe. The only Python reference is in `deduplicate_contacts.py` (a completed one-time script).
 - `familiarity_rating` column already existed from migration 20260219120000, so the plan's `ADD COLUMN IF NOT EXISTS` for that was unnecessary — just added the index.
 
+## Iteration 3: US-003 — Backfill Comms Summary Fields
+**Date:** 2026-02-20
+**Status:** COMPLETE
+
+**What was done:**
+- Created `scripts/intelligence/backfill_comms_fields.py` — simple script to denormalize `communication_history` JSONB into `comms_last_date` and `comms_thread_count` columns
+- Reads `communication_history->>'last_contact'` → `comms_last_date` (DATE) and `communication_history->>'total_threads'` → `comms_thread_count` (SMALLINT)
+- Uses Supabase pagination with `.range()` pattern for fetching contacts
+- Supports `--test` flag (preview 5 contacts without writing)
+- Full run: 628 contacts updated, 0 errors, 34.4s
+- Verified: `SELECT count(*) FROM contacts WHERE comms_last_date IS NOT NULL` = 628
+
+**Learnings:**
+- The `communication_history` JSONB stores `total_threads` and `last_contact` as strings (JSON text), so parsing `int(total_threads)` is needed for the SMALLINT column.
+- The `comms_last_date` DATE column accepts the "YYYY-MM-DD" string directly from the JSONB without conversion.
+- Data spans from 2007-07-16 to 2026-02-19, with avg 2.7 threads per contact and max 50.
+
