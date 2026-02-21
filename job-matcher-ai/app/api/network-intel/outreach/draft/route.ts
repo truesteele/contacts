@@ -48,12 +48,19 @@ interface ContactContext {
   headline: string | null;
   location: string;
   email: string | null;
+  familiarity_rating: number | null;
   proximity_tier: string | null;
   proximity_score: number | null;
   capacity_tier: string | null;
   shared_employers: string[];
   shared_schools: string[];
   shared_boards: string[];
+  institutional_overlap: Array<{ name: string; type: string; temporal_overlap: boolean; justin_period: string; contact_period: string }>;
+  last_email_date: string | null;
+  email_thread_count: number | null;
+  last_email_subject: string | null;
+  relationship_summary: string | null;
+  ask_readiness: Record<string, any> | null;
   topics: string[];
   primary_interests: string[];
   talking_points: string[];
@@ -67,7 +74,9 @@ async function fetchContactContext(contactId: number): Promise<ContactContext> {
     .from('contacts')
     .select(
       'id, first_name, last_name, company, position, headline, city, state, email, personal_email, work_email, ' +
-        'ai_proximity_score, ai_proximity_tier, ai_capacity_tier, ai_tags'
+        'ai_proximity_score, ai_proximity_tier, ai_capacity_tier, ai_tags, ' +
+        'familiarity_rating, comms_last_date, comms_thread_count, communication_history, ' +
+        'shared_institutions, ask_readiness'
     )
     .eq('id', contactId)
     .single();
@@ -81,6 +90,22 @@ async function fetchContactContext(contactId: number): Promise<ContactContext> {
   const outreach = tags.outreach_context || {};
   const proximity = tags.relationship_proximity || {};
   const affinity = tags.topical_affinity || {};
+  const commsHistory = c.communication_history || {};
+
+  // Build structured institutional overlap
+  const structuredOverlap = Array.isArray(c.shared_institutions)
+    ? c.shared_institutions.map((inst: any) => ({
+        name: inst.name,
+        type: inst.type,
+        temporal_overlap: inst.temporal_overlap,
+        justin_period: inst.justin_period,
+        contact_period: inst.contact_period,
+      }))
+    : [];
+
+  // Extract last email subject
+  const recentThreads = (commsHistory.recent_threads || commsHistory.threads || []).slice(0, 3);
+  const lastThread = recentThreads[0] || null;
 
   return {
     name: `${c.first_name} ${c.last_name}`,
@@ -89,12 +114,19 @@ async function fetchContactContext(contactId: number): Promise<ContactContext> {
     headline: c.headline,
     location: [c.city, c.state].filter(Boolean).join(', '),
     email: c.email || c.personal_email || c.work_email,
+    familiarity_rating: c.familiarity_rating,
     proximity_tier: c.ai_proximity_tier,
     proximity_score: c.ai_proximity_score,
     capacity_tier: c.ai_capacity_tier,
     shared_employers: proximity.shared_employers || [],
     shared_schools: proximity.shared_schools || [],
     shared_boards: proximity.shared_boards || [],
+    institutional_overlap: structuredOverlap,
+    last_email_date: c.comms_last_date,
+    email_thread_count: c.comms_thread_count,
+    last_email_subject: lastThread?.subject || null,
+    relationship_summary: commsHistory.relationship_summary || null,
+    ask_readiness: c.ask_readiness || null,
     topics: (affinity.topics || []).slice(0, 8),
     primary_interests: affinity.primary_interests || [],
     talking_points: affinity.talking_points || [],
@@ -111,25 +143,69 @@ function buildDraftPrompt(
 ): string {
   const toneDesc = TONE_DESCRIPTIONS[tone] || TONE_DESCRIPTIONS.warm_professional;
 
+  const familiarityLabels: Record<number, string> = {
+    0: "Don't know",
+    1: 'Recognize name',
+    2: 'Know them',
+    3: 'Good relationship',
+    4: 'Close/trusted',
+  };
+
   const parts: string[] = [
     `RECIPIENT: ${contact.name}`,
     contact.company ? `Company: ${contact.company}` : null,
     contact.position ? `Position: ${contact.position}` : null,
     contact.headline ? `Headline: ${contact.headline}` : null,
     contact.location ? `Location: ${contact.location}` : null,
-    contact.proximity_tier ? `Relationship: ${contact.proximity_tier} (score: ${contact.proximity_score})` : null,
+    contact.familiarity_rating != null
+      ? `Familiarity: ${contact.familiarity_rating}/4 (${familiarityLabels[contact.familiarity_rating] || 'Unknown'})`
+      : null,
     contact.capacity_tier ? `Capacity: ${contact.capacity_tier}` : null,
+    contact.proximity_tier ? `Legacy proximity: ${contact.proximity_tier}` : null,
   ].filter(Boolean) as string[];
 
-  if (contact.shared_employers.length > 0) {
-    parts.push(`Shared employers: ${contact.shared_employers.join(', ')}`);
+  // Communication history
+  if (contact.last_email_date) {
+    parts.push(`Last email: ${contact.last_email_date}${contact.last_email_subject ? ` — "${contact.last_email_subject}"` : ''}`);
   }
-  if (contact.shared_schools.length > 0) {
-    parts.push(`Shared schools: ${contact.shared_schools.join(', ')}`);
+  if (contact.email_thread_count && contact.email_thread_count > 0) {
+    parts.push(`Total email threads: ${contact.email_thread_count}`);
   }
-  if (contact.shared_boards.length > 0) {
-    parts.push(`Shared boards: ${contact.shared_boards.join(', ')}`);
+  if (contact.relationship_summary) {
+    parts.push(`Relationship summary: ${contact.relationship_summary}`);
   }
+
+  // Structured institutional overlap (preferred over legacy shared_*)
+  if (contact.institutional_overlap.length > 0) {
+    const overlapLines = contact.institutional_overlap.map((inst) => {
+      const temporal = inst.temporal_overlap ? '(overlapping periods)' : '(different periods)';
+      return `  - ${inst.name} [${inst.type}] ${temporal}: Justin ${inst.justin_period}, Contact ${inst.contact_period}`;
+    });
+    parts.push(`Institutional overlap:\n${overlapLines.join('\n')}`);
+  } else {
+    // Fall back to legacy shared context
+    if (contact.shared_employers.length > 0) {
+      parts.push(`Shared employers: ${contact.shared_employers.join(', ')}`);
+    }
+    if (contact.shared_schools.length > 0) {
+      parts.push(`Shared schools: ${contact.shared_schools.join(', ')}`);
+    }
+    if (contact.shared_boards.length > 0) {
+      parts.push(`Shared boards: ${contact.shared_boards.join(', ')}`);
+    }
+  }
+
+  // Ask-readiness context (if available for any goal)
+  if (contact.ask_readiness) {
+    const goals = Object.keys(contact.ask_readiness);
+    for (const goal of goals) {
+      const ar = contact.ask_readiness[goal];
+      if (ar?.personalization_angle) {
+        parts.push(`Ask-readiness (${goal.replace(/_/g, ' ')}): ${ar.tier} (score ${ar.score}) — ${ar.personalization_angle}`);
+      }
+    }
+  }
+
   if (contact.topics.length > 0) {
     parts.push(`Topics of interest: ${contact.topics.join(', ')}`);
   }

@@ -264,3 +264,41 @@ Started: 2026-02-20
 - The prompt is now ~2x longer than before but well within context limits for claude-sonnet-4-6 (16K max_tokens output, system prompt is ~2K tokens).
 - Preserved all existing tool usage patterns (semantic_search, hybrid_search, find_similar, export_contacts) — just reordered to put goal_search first for fundraising queries.
 
+## Iteration 12: US-012 — Update Parse-Filters Route
+**Date:** 2026-02-21
+**Status:** COMPLETE
+**Commit:** de69b0c
+
+**What was done:**
+- Updated `job-matcher-ai/app/api/network-intel/parse-filters/route.ts` with three changes:
+- **Tool schema:** Added `familiarity_min` (0-4 scale), `has_comms` (boolean), `comms_since` (ISO date), `goal` (enum: outdoorithm_fundraising, kindora_sales) as new tool parameters. Updated `sort_by` enum to include `familiarity`, `ask_readiness`, `comms_recency` as new options (before capacity/proximity/name/company). Marked `proximity_min` and `proximity_tiers` as legacy with descriptions explaining they're superseded by familiarity_min.
+- **System prompt:** Rewrote to put familiarity rating (0-4) as PRIMARY SIGNAL section. Added ASK-READINESS section explaining tiers (ready_now, cultivate_first, long_term, not_a_fit) with score ranges. Added GOALS section (outdoorithm_fundraising default, kindora_sales). Added COMMUNICATION HISTORY section. Moved Proximity to LEGACY section. Updated GUIDELINES with specific defaults: fundraising queries → goal='outdoorithm_fundraising' + sort_by='ask_readiness' + familiarity_min=2 + limit=100.
+- **Filter extraction:** Added extraction for `familiarity_min`, `has_comms`, `comms_since`, `goal` from tool output into FilterState.
+- TypeScript compiles cleanly
+
+**Learnings:**
+- The parse-filters route is a clean LLM-as-tool-caller pattern: system prompt teaches the model about filters, tool schema constrains output, extraction maps tool output to FilterState. Adding new filters only requires changes in three parallel spots (schema, prompt, extraction).
+- The `goal` field in the tool schema uses an enum which constrains the LLM to valid values — no free-text goal names possible.
+- Moved new filter parameters to the TOP of the tool schema properties (before legacy proximity fields) so the LLM sees them first and prioritizes them.
+
+## Iteration 13: US-013 — Update Contact Detail & Outreach Context
+**Date:** 2026-02-21
+**Status:** COMPLETE
+
+**What was done:**
+- Updated `getContactDetail` in `network-tools.ts`: added familiarity_rating, comms_last_date, comms_thread_count, communication_history, shared_institutions, ask_readiness, fec_donations, real_estate_data to the SELECT query. Extracts recent threads (top 5) and relationship_summary from communication_history JSONB, returns them as `comms_recent_threads` and `comms_relationship_summary`.
+- Updated `getOutreachContext` in `network-tools.ts`: added familiarity_rating, comms fields, shared_institutions, ask_readiness to SELECT. Returns structured institutional overlap (name, type, temporal_overlap, periods, depth) from JSONB. Falls back to legacy ai_tags shared_* fields when structured overlap is empty. Returns last_email_date, email_thread_count, last_email_subject, relationship_summary, and full ask_readiness JSONB.
+- Updated `contact/[id]/route.ts`: added all new columns to SELECT. Response now includes familiarity_rating, comms_last_date, comms_thread_count, comms_relationship_summary, comms_recent_threads, shared_institutions, ask_readiness, fec_donations, real_estate_data. Moved relationship data above AI scores in response ordering.
+- Updated `outreach/draft/route.ts`:
+  - `ContactContext` interface extended with familiarity_rating, institutional_overlap, last_email_date, email_thread_count, last_email_subject, relationship_summary, ask_readiness
+  - `fetchContactContext` fetches all new columns, builds structured overlap, extracts last thread subject
+  - `buildDraftPrompt` now includes: familiarity level with label, last email date/subject, thread count, relationship summary, structured institutional overlap with temporal analysis (preferred over legacy), ask-readiness personalization angle + tier/score for each goal. Falls back to legacy shared_* only when structured overlap is empty.
+- TypeScript compiles cleanly
+
+**Learnings:**
+- The contact detail endpoint (`contact/[id]/route.ts`) and the agent tool (`getContactDetail` in network-tools.ts) are separate implementations that both needed the same column additions. They serve different consumers: the endpoint serves the UI, the tool serves the agent.
+- The outreach draft route uses its own `fetchContactContext` function with its own SELECT — a third place needing the same column additions. Three parallel implementations to keep in sync.
+- The `communication_history` JSONB has inconsistent structure across contacts — some have `recent_threads`, others have `threads`. The code handles both with fallback: `commsHistory.recent_threads || commsHistory.threads || []`.
+- For the outreach draft prompt, structured institutional overlap with temporal data is much more useful than the legacy "shared_employers" freetext lists. The prompt now shows "Google / Google.org [employer] (overlapping periods): Justin 2014-2019, Contact 2016-2020" which gives Claude much better context for writing personalized emails.
+- Ask-readiness personalization_angle is surfaced in the outreach draft context — this gives Claude a specific hook to reference when drafting emails for fundraising outreach.
+

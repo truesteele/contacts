@@ -432,7 +432,9 @@ async function getContactDetail(input: any): Promise<any> {
       'id, first_name, last_name, company, position, city, state, email, personal_email, work_email, ' +
         'linkedin_url, headline, summary, ' +
         'ai_proximity_score, ai_proximity_tier, ai_capacity_score, ai_capacity_tier, ' +
-        'ai_kindora_prospect_score, ai_kindora_prospect_type, ai_outdoorithm_fit, ai_tags'
+        'ai_kindora_prospect_score, ai_kindora_prospect_type, ai_outdoorithm_fit, ai_tags, ' +
+        'familiarity_rating, comms_last_date, comms_thread_count, communication_history, ' +
+        'shared_institutions, ask_readiness, fec_donations, real_estate_data'
     )
     .eq('id', input.contact_id)
     .single();
@@ -444,9 +446,15 @@ async function getContactDetail(input: any): Promise<any> {
   const contact = data as any;
   // Extract key subfields from ai_tags to avoid sending the full blob
   const tags = contact.ai_tags || {};
+
+  // Extract recent threads from communication_history
+  const commsHistory = contact.communication_history || {};
+  const recentThreads = (commsHistory.recent_threads || commsHistory.threads || []).slice(0, 5);
+
   return {
     ...contact,
     ai_tags: undefined,
+    communication_history: undefined,
     ai_tags_summary: {
       relationship_proximity: tags.relationship_proximity,
       giving_capacity: tags.giving_capacity,
@@ -454,6 +462,9 @@ async function getContactDetail(input: any): Promise<any> {
       sales_fit: tags.sales_fit,
       outreach_context: tags.outreach_context,
     },
+    // Communication history summary
+    comms_relationship_summary: commsHistory.relationship_summary || null,
+    comms_recent_threads: recentThreads,
   };
 }
 
@@ -462,7 +473,9 @@ async function getOutreachContext(input: any): Promise<any> {
     .from('contacts')
     .select(
       'id, first_name, last_name, company, position, headline, city, state, email, linkedin_url, ' +
-        'ai_proximity_score, ai_proximity_tier, ai_capacity_tier, ai_tags'
+        'ai_proximity_score, ai_proximity_tier, ai_capacity_tier, ai_tags, ' +
+        'familiarity_rating, comms_last_date, comms_thread_count, communication_history, ' +
+        'shared_institutions, ask_readiness'
     )
     .eq('id', input.contact_id)
     .single();
@@ -476,6 +489,23 @@ async function getOutreachContext(input: any): Promise<any> {
   const outreach = tags.outreach_context || {};
   const proximity = tags.relationship_proximity || {};
   const affinity = tags.topical_affinity || {};
+  const commsHistory = contact.communication_history || {};
+
+  // Build structured institutional overlap from new JSONB or fall back to ai_tags
+  const structuredOverlap = Array.isArray(contact.shared_institutions)
+    ? contact.shared_institutions.map((inst: any) => ({
+        name: inst.name,
+        type: inst.type,
+        temporal_overlap: inst.temporal_overlap,
+        justin_period: inst.justin_period,
+        contact_period: inst.contact_period,
+        depth: inst.depth,
+      }))
+    : [];
+
+  // Extract last email context
+  const recentThreads = (commsHistory.recent_threads || commsHistory.threads || []).slice(0, 3);
+  const lastThread = recentThreads[0] || null;
 
   return {
     name: `${contact.first_name} ${contact.last_name}`,
@@ -485,14 +515,27 @@ async function getOutreachContext(input: any): Promise<any> {
     location: [contact.city, contact.state].filter(Boolean).join(', '),
     email: contact.email,
     linkedin_url: contact.linkedin_url,
+    // Familiarity (primary relationship signal)
+    familiarity_rating: contact.familiarity_rating,
+    // Legacy proximity (supplementary)
     proximity_tier: contact.ai_proximity_tier,
     proximity_score: contact.ai_proximity_score,
     capacity_tier: contact.ai_capacity_tier,
+    // Shared context — structured overlap with temporal data
     shared_context: {
       shared_employers: proximity.shared_employers || [],
       shared_schools: proximity.shared_schools || [],
       shared_boards: proximity.shared_boards || [],
     },
+    institutional_overlap: structuredOverlap,
+    // Communication history
+    last_email_date: contact.comms_last_date,
+    email_thread_count: contact.comms_thread_count,
+    last_email_subject: lastThread?.subject || null,
+    relationship_summary: commsHistory.relationship_summary || null,
+    // Ask-readiness (if scored)
+    ask_readiness: contact.ask_readiness || null,
+    // Topics and interests
     topics: (affinity.topics || []).slice(0, 8),
     primary_interests: affinity.primary_interests || [],
     talking_points: affinity.talking_points || [],

@@ -21,7 +21,9 @@ export async function GET(
         'id, first_name, last_name, company, position, city, state, email, personal_email, work_email, ' +
         'linkedin_url, headline, summary, ' +
         'ai_proximity_score, ai_proximity_tier, ai_capacity_score, ai_capacity_tier, ' +
-        'ai_kindora_prospect_score, ai_kindora_prospect_type, ai_outdoorithm_fit, ai_tags'
+        'ai_kindora_prospect_score, ai_kindora_prospect_type, ai_outdoorithm_fit, ai_tags, ' +
+        'familiarity_rating, comms_last_date, comms_thread_count, communication_history, ' +
+        'shared_institutions, ask_readiness, fec_donations, real_estate_data'
       )
       .eq('id', contactId)
       .single();
@@ -36,6 +38,10 @@ export async function GET(
     const affinity = tags.topical_affinity || {};
     const outreach = tags.outreach_context || {};
     const salesFit = tags.sales_fit || {};
+    const commsHistory = c.communication_history || {};
+
+    // Extract recent threads from communication_history
+    const recentThreads = (commsHistory.recent_threads || commsHistory.threads || []).slice(0, 5);
 
     return NextResponse.json({
       // Basic info
@@ -51,6 +57,23 @@ export async function GET(
       email: c.email || c.personal_email || c.work_email,
       linkedin_url: c.linkedin_url,
 
+      // Relationship — familiarity is primary signal
+      familiarity_rating: c.familiarity_rating,
+      comms_last_date: c.comms_last_date,
+      comms_thread_count: c.comms_thread_count,
+      comms_relationship_summary: commsHistory.relationship_summary || null,
+      comms_recent_threads: recentThreads,
+
+      // Structured institutional overlap (temporal analysis)
+      shared_institutions: c.shared_institutions || [],
+
+      // Ask-readiness (AI-scored per goal)
+      ask_readiness: c.ask_readiness || null,
+
+      // Wealth signals
+      fec_donations: c.fec_donations || null,
+      real_estate_data: c.real_estate_data || null,
+
       // AI scores
       ai_proximity_score: c.ai_proximity_score,
       ai_proximity_tier: c.ai_proximity_tier,
@@ -60,7 +83,7 @@ export async function GET(
       ai_kindora_prospect_type: c.ai_kindora_prospect_type,
       ai_outdoorithm_fit: c.ai_outdoorithm_fit,
 
-      // Shared context
+      // Shared context (legacy from ai_tags)
       shared_employers: proximity.shared_employers || [],
       shared_schools: proximity.shared_schools || [],
       shared_boards: proximity.shared_boards || [],

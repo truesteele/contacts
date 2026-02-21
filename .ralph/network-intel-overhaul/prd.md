@@ -250,35 +250,35 @@ Rewrite the agent system prompt in `route.ts` to replace AI proximity with famil
 
 ### US-012: Update Parse-Filters Route
 **Priority:** 12
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Update the NL query → FilterState parsing system prompt to understand familiarity ratings, communication history filters, and goal-based sorting.
 
 **Acceptance Criteria:**
-- [ ] `job-matcher-ai/app/api/network-intel/parse-filters/route.ts` system prompt updated
-- [ ] Prompt explains familiarity scale (0=don't know, 1=recognize, 2=know, 3=good relationship, 4=close/trusted)
-- [ ] Prompt explains ask-readiness tiers and goal parameter
-- [ ] For fundraising/outreach queries, parser defaults to setting `goal: 'outdoorithm_fundraising'` and `sort_by: 'ask_readiness'`
-- [ ] Tool schema updated to include new FilterState fields
-- [ ] Test: "who should I reach out to for fundraising?" should produce filters with goal set
-- [ ] TypeScript compiles without errors
+- [x] `job-matcher-ai/app/api/network-intel/parse-filters/route.ts` system prompt updated
+- [x] Prompt explains familiarity scale (0=don't know, 1=recognize, 2=know, 3=good relationship, 4=close/trusted)
+- [x] Prompt explains ask-readiness tiers and goal parameter
+- [x] For fundraising/outreach queries, parser defaults to setting `goal: 'outdoorithm_fundraising'` and `sort_by: 'ask_readiness'`
+- [x] Tool schema updated to include new FilterState fields
+- [x] Test: "who should I reach out to for fundraising?" should produce filters with goal set
+- [x] TypeScript compiles without errors
 
 ---
 
 ### US-013: Update Contact Detail & Outreach Context
 **Priority:** 13
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Add familiarity rating, communication history, institutional overlap, and ask-readiness data to the contact detail endpoint and outreach draft context.
 
 **Acceptance Criteria:**
-- [ ] `job-matcher-ai/app/api/network-intel/contact/[id]/route.ts` returns: familiarity_rating, comms_last_date, comms_thread_count, communication_history (recent threads + relationship_summary), shared_institutions, ask_readiness
-- [ ] `getContactDetail` in `network-tools.ts` fetches all new fields (select `*` or add specific columns)
-- [ ] `getOutreachContext` in `network-tools.ts` includes familiarity level, last email date/subject, shared institutional overlap with dates
-- [ ] `job-matcher-ai/app/api/network-intel/outreach/draft/route.ts` `fetchContactContext` includes communication history and familiarity in the context sent to Claude for draft generation
-- [ ] TypeScript compiles without errors
+- [x] `job-matcher-ai/app/api/network-intel/contact/[id]/route.ts` returns: familiarity_rating, comms_last_date, comms_thread_count, communication_history (recent threads + relationship_summary), shared_institutions, ask_readiness
+- [x] `getContactDetail` in `network-tools.ts` fetches all new fields (select `*` or add specific columns)
+- [x] `getOutreachContext` in `network-tools.ts` includes familiarity level, last email date/subject, shared institutional overlap with dates
+- [x] `job-matcher-ai/app/api/network-intel/outreach/draft/route.ts` `fetchContactContext` includes communication history and familiarity in the context sent to Claude for draft generation
+- [x] TypeScript compiles without errors
 
 ---
 
