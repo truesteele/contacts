@@ -212,39 +212,39 @@ Add the new columns to NETWORK_SELECT_COLS in both `network-tools.ts` and `searc
 
 ### US-010: Add goal_search Tool
 **Priority:** 10
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Add a new `goal_search` tool to the agent's toolkit that queries contacts ranked by AI ask-readiness for a specific goal, returning reasoning alongside results.
 
 **Acceptance Criteria:**
-- [ ] New tool `goal_search` added to `NETWORK_TOOLS` array in `job-matcher-ai/lib/network-tools.ts`
-- [ ] Tool definition includes: goal (enum), tier filter, min_familiarity, limit parameters
-- [ ] Implementation queries contacts WHERE `ask_readiness->{goal}` IS NOT NULL
-- [ ] Filters by tier if specified
-- [ ] Sorts by `(ask_readiness->{goal}->>'score')::int DESC`
-- [ ] Returns contact data + ask_readiness reasoning, tier, score, recommended_approach
-- [ ] Tool handler added to the agent's tool execution in `route.ts`
-- [ ] TypeScript compiles without errors
+- [x] New tool `goal_search` added to `NETWORK_TOOLS` array in `job-matcher-ai/lib/network-tools.ts`
+- [x] Tool definition includes: goal (enum), tier filter, min_familiarity, limit parameters
+- [x] Implementation queries contacts WHERE `ask_readiness->{goal}` IS NOT NULL
+- [x] Filters by tier if specified
+- [x] Sorts by `(ask_readiness->{goal}->>'score')::int DESC`
+- [x] Returns contact data + ask_readiness reasoning, tier, score, recommended_approach
+- [x] Tool handler added to the agent's tool execution in `route.ts`
+- [x] TypeScript compiles without errors
 
 ---
 
 ### US-011: Update Agent System Prompt
 **Priority:** 11
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Rewrite the agent system prompt in `route.ts` to replace AI proximity with familiarity as primary signal, explain ask-readiness tiers, and instruct the agent to use `goal_search` for fundraising queries.
 
 **Acceptance Criteria:**
-- [ ] System prompt in `job-matcher-ai/app/api/network-intel/route.ts` rewritten
-- [ ] Familiarity rating (0-4) explained as primary relationship measure
-- [ ] Ask-readiness tiers explained (ready_now, cultivate_first, long_term, not_a_fit)
-- [ ] Agent instructed to use `goal_search` tool first for fundraising/outreach queries
-- [ ] Agent instructed to show reasoning from ask_readiness alongside results
-- [ ] Communication history context mentioned as available data
-- [ ] Proximity score demoted to supplementary/legacy signal
-- [ ] TypeScript compiles without errors
+- [x] System prompt in `job-matcher-ai/app/api/network-intel/route.ts` rewritten
+- [x] Familiarity rating (0-4) explained as primary relationship measure
+- [x] Ask-readiness tiers explained (ready_now, cultivate_first, long_term, not_a_fit)
+- [x] Agent instructed to use `goal_search` tool first for fundraising/outreach queries
+- [x] Agent instructed to show reasoning from ask_readiness alongside results
+- [x] Communication history context mentioned as available data
+- [x] Proximity score demoted to supplementary/legacy signal
+- [x] TypeScript compiles without errors
 
 ---
 

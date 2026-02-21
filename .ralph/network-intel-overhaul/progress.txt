@@ -218,3 +218,49 @@ Started: 2026-02-20
 - The `nullsFirst: false` option in Supabase's `.order()` is important for familiarity_rating and comms_last_date since many contacts have NULL values — without it, NULLs sort first in DESC order.
 - The search_network tool in network-tools.ts (used by the agent) and the search route (used by the UI) have separate but parallel implementations. Both needed updating with the same filters.
 
+## Iteration 10: US-010 — Add goal_search Tool
+**Date:** 2026-02-20
+**Status:** COMPLETE
+**Commit:** daf7c41
+
+**What was done:**
+- Added `goal_search` tool definition to the `networkTools` array in `network-tools.ts`
+  - Parameters: goal (enum: outdoorithm_fundraising, kindora_sales), tier filter (ready_now/cultivate_first/long_term/not_a_fit/all), min_familiarity, limit
+  - Description explains this is the primary tool for fundraising/outreach planning queries
+- Added `goalSearch` implementation function:
+  - Queries contacts where `ask_readiness` IS NOT NULL
+  - Filters in JS by goal key presence and tier (Supabase can't filter JSONB nested keys easily)
+  - Sorts by `ask_readiness[goal].score` DESC in JS (Supabase can't sort by JSONB nested path)
+  - Over-fetches (limit * 3) to compensate for in-JS filtering
+  - Returns flattened response with ask_readiness fields inline: score, tier, reasoning, recommended_approach, ask_timing, cultivation_needed, suggested_ask_range, personalization_angle, risk_factors
+  - Also includes shared_institutions and communication_history in the fetch for richer context
+- Added `goal_search` case to `executeNetworkToolCall` switch statement
+- No changes needed to `route.ts` — it already dispatches all tools generically through `executeNetworkToolCall`
+- TypeScript compiles cleanly
+
+**Learnings:**
+- The route.ts agent dispatch loop is already generic — it passes all tool calls through `executeNetworkToolCall`, so adding a new tool only requires changes to `network-tools.ts` (definition + implementation + switch case). No route.ts changes needed.
+- The goal_search response flattens ask_readiness fields inline per contact (ask_readiness_score, ask_readiness_tier, reasoning, etc.) rather than nesting them. This makes the data more readable in the agent's tool result context and avoids the agent needing to navigate nested JSONB.
+- Over-fetching by 3x (limit * 3) is needed because the initial query can't filter by specific goal key — we fetch contacts with any ask_readiness data and then filter in JS. This is acceptable since the dataset is small (~2,400 contacts max).
+
+## Iteration 11: US-011 — Update Agent System Prompt
+**Date:** 2026-02-20
+**Status:** COMPLETE
+
+**What was done:**
+- Rewrote `SYSTEM_PROMPT` in `job-matcher-ai/app/api/network-intel/route.ts`
+- Primary signal section: Familiarity Rating (0-4) with clear descriptions of each level
+- Communication History section: explains comms_last_date and comms_thread_count fields, what they signal
+- Ask-Readiness Scoring section: full explanation of tiers (ready_now, cultivate_first, long_term, not_a_fit) with score ranges, plus all output fields (reasoning, recommended_approach, suggested_ask_range, personalization_angle, risk_factors)
+- Supplementary Scores section: capacity, kindora, outdoorithm fit retained; proximity explicitly marked as "Legacy AI-estimated closeness — superseded by familiarity rating"
+- Wealth Signals section: mentions FEC donations and real estate holdings as available data
+- Tool Usage Strategy updated: goal_search is listed FIRST for fundraising/outreach queries with "CRITICAL" instruction to always use it first
+- Result Formatting updated: familiarity (0-4) replaces proximity tier; fundraising results should include tier, score, range, and reasoning
+- TypeScript compiles cleanly
+
+**Learnings:**
+- The system prompt is a pure string constant — no TypeScript types or interfaces involved, so the change is low-risk and doesn't affect compilation.
+- Kept the ABOUT JUSTIN section unchanged since it's factual and still accurate.
+- The prompt is now ~2x longer than before but well within context limits for claude-sonnet-4-6 (16K max_tokens output, system prompt is ~2K tokens).
+- Preserved all existing tool usage patterns (semantic_search, hybrid_search, find_similar, export_contacts) — just reordered to put goal_search first for fundraising queries.
+
