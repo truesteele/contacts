@@ -134,20 +134,20 @@ Three-step pipeline tested at 15 contacts: 87% address found, 69% validated by G
 
 ### US-006: Structured Institutional Overlap Script
 **Priority:** 6
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Create a script that uses GPT-5 mini to analyze institutional overlap between Justin and each contact, with temporal period analysis. Stores structured results in `shared_institutions` JSONB column.
 
 **Acceptance Criteria:**
-- [ ] Script created at `scripts/intelligence/score_overlap.py`
-- [ ] Includes Justin's full career timeline (Bain 2006-2008, Bridgespan 2008-2010, Year Up 2010-2012, HBS/HKS 2012-2014, Google.org 2014-2019, Outdoorithm 2018-present, True Steele 2019-present, Kindora 2020-present, Outdoorithm Collective 2022-present, SF Foundation Board 2021-present, UVA ~2002-2006)
-- [ ] Sends contact's `enrich_employment`, `enrich_education`, `enrich_volunteering` + `connected_on` to GPT-5 mini with structured output
-- [ ] Output schema: `[{name, type, overlap, justin_period, contact_period, temporal_overlap, depth, notes}]`
-- [ ] Only processes contacts with existing shared institutions in ai_tags (~1,200 contacts)
-- [ ] Supports `--test`, `--batch N`, `--start-from` flags
-- [ ] Test run succeeds and produces valid structured overlap data
-- [ ] Uses Pydantic schema for structured output (follow pattern from `tag_contacts_gpt5m.py`)
+- [x] Script created at `scripts/intelligence/score_overlap.py`
+- [x] Includes Justin's full career timeline (Bain 2006-2008, Bridgespan 2008-2010, Year Up 2010-2012, HBS/HKS 2012-2014, Google.org 2014-2019, Outdoorithm 2018-present, True Steele 2019-present, Kindora 2020-present, Outdoorithm Collective 2022-present, SF Foundation Board 2021-present, UVA ~2002-2006)
+- [x] Sends contact's `enrich_employment`, `enrich_education`, `enrich_volunteering` + `connected_on` to GPT-5 mini with structured output
+- [x] Output schema: `[{name, type, overlap, justin_period, contact_period, temporal_overlap, depth, notes}]`
+- [x] Only processes contacts with existing shared institutions in ai_tags (~1,200 contacts)
+- [x] Supports `--test`, `--batch N`, `--start-from` flags
+- [x] Test run succeeds and produces valid structured overlap data
+- [x] Uses Pydantic schema for structured output (follow pattern from `tag_contacts_gpt5m.py`)
 
 ---
 

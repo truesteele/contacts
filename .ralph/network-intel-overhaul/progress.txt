@@ -107,3 +107,29 @@ Started: 2026-02-20
 - The `$ ` prefix in the Zillow detail print was a minor bug (should be contact name not dollar sign) but doesn't affect functionality.
 - Rejected and no-result contacts get stored with appropriate markers so they won't be re-processed on subsequent runs.
 
+## Iteration 6: US-006 — Structured Institutional Overlap Script
+**Date:** 2026-02-21
+**Status:** COMPLETE
+
+**What was done:**
+- Created `scripts/intelligence/score_overlap.py` — uses GPT-5 mini structured output to analyze institutional overlap between Justin and each contact
+- Includes Justin's full career timeline (12 entries: Bain, Bridgespan, Year Up, HBS, HKS, Google.org, Outdoorithm, True Steele, Kindora, Outdoorithm Collective, SF Foundation, UVA)
+- Pydantic schema: `OverlapAnalysis` containing `list[SharedInstitution]` with fields: name, type (employer/school/board/volunteer), overlap status (confirmed/likely/possible/different_era), justin_period, contact_period, temporal_overlap (bool), depth (same_team/same_org/same_field/alumni/adjacent), notes
+- Sends contact's enrich_employment, enrich_education, enrich_volunteering, connected_on, plus existing ai_tags overlap data for reference
+- Filters to contacts with shared institution signals in ai_tags (~1,467 contacts eligible)
+- Concurrent processing with ThreadPoolExecutor (8 workers)
+- Supports --test (1 contact), --batch N, --start-from flags
+- Test results: 4/4 contacts processed successfully
+  - Jeanne Byrd Adams: Year Up (employer, temporal overlap likely)
+  - Eugene Kirpichov: Google/Google.org (employer, temporal overlap confirmed)
+  - Kay Fernandez Smith: SF Foundation (board, temporal overlap) + HKS (school, different era)
+  - Miguel Santana: Harvard/HKS (school, no temporal overlap)
+- Data stored as JSONB array in contacts.shared_institutions column
+
+**Learnings:**
+- The enrich_employment field stores dates inconsistently — some have start_date/end_date, some only have duration strings like "2 yrs", some have nothing. The LLM handles this gracefully by marking contact_period as "unknown" when dates aren't available.
+- Double-parsing is needed: the JSONB fields are sometimes stored as JSON strings within strings (double-encoded), so `parse_jsonb()` may need to be called twice.
+- GPT-5 mini correctly normalizes related org names (e.g., "Google" and "Google.org" → "Google / Google.org") and handles school program distinctions well.
+- The existing ai_tags overlap data provides useful hints that the LLM verifies and enriches with temporal detail — passing it as reference context helps accuracy.
+- ~15s per contact on average with concurrent processing, so full run of ~1,467 contacts would take ~45 min with 8 workers. Cost ~$2.50.
+
