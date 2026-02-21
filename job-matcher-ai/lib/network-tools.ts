@@ -191,6 +191,35 @@ export const networkTools: Anthropic.Tool[] = [
     },
   },
   {
+    name: 'goal_search',
+    description:
+      'Find contacts ranked by AI ask-readiness for a specific goal (e.g., fundraising, sales). Returns contacts with donor psychology reasoning for why they are ready (or not) for an ask, including recommended approach, suggested ask range, and personalization angles. Use this FIRST for any fundraising or outreach planning query.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        goal: {
+          type: 'string',
+          enum: ['outdoorithm_fundraising', 'kindora_sales'],
+          description: 'The goal to rank contacts for.',
+        },
+        tier: {
+          type: 'string',
+          enum: ['ready_now', 'cultivate_first', 'long_term', 'not_a_fit', 'all'],
+          description: 'Filter by ask-readiness tier. Default: "all".',
+        },
+        min_familiarity: {
+          type: 'number',
+          description: 'Minimum familiarity rating (0-4). E.g., 2 to exclude strangers.',
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum results to return (default 50). Use higher values (100+) for comprehensive lists.',
+        },
+      },
+      required: ['goal'],
+    },
+  },
+  {
     name: 'export_contacts',
     description:
       'Export a list of contacts to CSV for download. Provide the contact IDs from a previous search result.',
@@ -473,6 +502,91 @@ async function getOutreachContext(input: any): Promise<any> {
   };
 }
 
+async function goalSearch(input: any): Promise<any> {
+  const goal = input.goal;
+  const tier = input.tier || 'all';
+  const minFamiliarity = input.min_familiarity;
+  const limit = input.limit || 50;
+
+  // Fetch contacts that have ask_readiness data for this goal
+  // Supabase can't sort by JSONB nested path, so we fetch more rows and sort in JS
+  const fetchLimit = limit * 3; // Over-fetch to allow for filtering
+
+  let query = supabase
+    .from('contacts')
+    .select(
+      NETWORK_SELECT_COLS + ', shared_institutions, communication_history'
+    )
+    .not('ask_readiness', 'is', null);
+
+  if (minFamiliarity != null) {
+    query = query.gte('familiarity_rating', minFamiliarity);
+  }
+
+  query = query
+    .order('familiarity_rating', { ascending: false, nullsFirst: false })
+    .limit(fetchLimit);
+
+  const { data, error } = await query;
+  if (error) throw new Error(`Goal search failed: ${error.message}`);
+
+  // Filter to contacts that have scoring for this specific goal, and by tier
+  let results = (data || []).filter((c: any) => {
+    const goalData = c.ask_readiness?.[goal];
+    if (!goalData || goalData.score == null) return false;
+    if (tier !== 'all' && goalData.tier !== tier) return false;
+    return true;
+  });
+
+  // Sort by ask_readiness score DESC for this goal
+  results.sort((a: any, b: any) => {
+    const scoreA = a.ask_readiness?.[goal]?.score ?? 0;
+    const scoreB = b.ask_readiness?.[goal]?.score ?? 0;
+    return scoreB - scoreA;
+  });
+
+  // Trim to limit
+  results = results.slice(0, limit);
+
+  // Shape the response to include ask_readiness reasoning inline
+  const contacts = results.map((c: any) => {
+    const goalData = c.ask_readiness[goal];
+    return {
+      id: c.id,
+      first_name: c.first_name,
+      last_name: c.last_name,
+      company: c.company,
+      position: c.position,
+      city: c.city,
+      state: c.state,
+      email: c.email,
+      linkedin_url: c.linkedin_url,
+      headline: c.headline,
+      familiarity_rating: c.familiarity_rating,
+      comms_last_date: c.comms_last_date,
+      comms_thread_count: c.comms_thread_count,
+      ai_capacity_tier: c.ai_capacity_tier,
+      ai_outdoorithm_fit: c.ai_outdoorithm_fit,
+      ask_readiness_score: goalData.score,
+      ask_readiness_tier: goalData.tier,
+      reasoning: goalData.reasoning,
+      recommended_approach: goalData.recommended_approach,
+      ask_timing: goalData.ask_timing,
+      cultivation_needed: goalData.cultivation_needed,
+      suggested_ask_range: goalData.suggested_ask_range,
+      personalization_angle: goalData.personalization_angle,
+      risk_factors: goalData.risk_factors,
+    };
+  });
+
+  return {
+    goal,
+    tier_filter: tier,
+    count: contacts.length,
+    contacts,
+  };
+}
+
 function escapeCSVValue(val: any): string {
   if (val == null) return '';
   const str = String(val);
@@ -544,6 +658,8 @@ export async function executeNetworkToolCall(
         return await getContactDetail(toolInput);
       case 'get_outreach_context':
         return await getOutreachContext(toolInput);
+      case 'goal_search':
+        return await goalSearch(toolInput);
       case 'export_contacts':
         return await exportContacts(toolInput);
       default:
