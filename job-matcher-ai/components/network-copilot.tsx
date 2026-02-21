@@ -416,6 +416,7 @@ export function NetworkCopilot() {
           selectedIds={selectedIds}
           onSelectionChange={setSelectedIds}
           onContactClick={handleContactClick}
+          activeGoal={filters.goal}
           listId={activeList?.id}
           memberStatuses={activeList ? memberStatuses : undefined}
           onStatusChange={handleStatusChange}
