@@ -153,22 +153,22 @@ Create a script that uses GPT-5 mini to analyze institutional overlap between Ju
 
 ### US-007: Ask-Readiness Scoring Script (Donor Psychology)
 **Priority:** 7
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Create the core scoring script that uses GPT-5 mini with the donor psychology prompt to assess each contact's ask-readiness for Outdoorithm fundraising. This is the most important script — it produces the per-contact reasoning that powers the entire system.
 
 **Acceptance Criteria:**
-- [ ] Script created at `scripts/intelligence/score_ask_readiness.py`
-- [ ] Uses full donor psychology system prompt from plan file (all 4 pillars + behavioral insights + scoring guidance)
-- [ ] Per-contact context includes: familiarity_rating, position/company/headline, shared_institutions, ai_capacity_tier, ai_outdoorithm_fit, fec_donations summary, real_estate_data summary, communication_history summary, connected_on
-- [ ] Uses GPT-5 mini with Pydantic structured output for the response schema (score, tier, reasoning, recommended_approach, ask_timing, cultivation_needed, suggested_ask_range, personalization_angle, risk_factors)
-- [ ] Stores results in `contacts.ask_readiness` JSONB under `outdoorithm_fundraising` key with `scored_at` timestamp
-- [ ] Goal is parameterized (can re-run for `kindora_sales` etc.)
-- [ ] Supports `--test`, `--batch N`, `--start-from`, `--goal` flags
-- [ ] Concurrent batch processing (ThreadPoolExecutor, ~8 workers)
-- [ ] Test run on 1 contact produces valid, reasonable scoring
-- [ ] Prints summary stats at end (count by tier, score distribution)
+- [x] Script created at `scripts/intelligence/score_ask_readiness.py`
+- [x] Uses full donor psychology system prompt from plan file (all 4 pillars + behavioral insights + scoring guidance)
+- [x] Per-contact context includes: familiarity_rating, position/company/headline, shared_institutions, ai_capacity_tier, ai_outdoorithm_fit, fec_donations summary, real_estate_data summary, communication_history summary, connected_on
+- [x] Uses GPT-5 mini with Pydantic structured output for the response schema (score, tier, reasoning, recommended_approach, ask_timing, cultivation_needed, suggested_ask_range, personalization_angle, risk_factors)
+- [x] Stores results in `contacts.ask_readiness` JSONB under `outdoorithm_fundraising` key with `scored_at` timestamp
+- [x] Goal is parameterized (can re-run for `kindora_sales` etc.)
+- [x] Supports `--test`, `--batch N`, `--start-from`, `--goal` flags
+- [x] Concurrent batch processing (ThreadPoolExecutor, ~8 workers)
+- [x] Test run on 1 contact produces valid, reasonable scoring
+- [x] Prints summary stats at end (count by tier, score distribution)
 
 **Notes:**
 - Read the full donor psychology prompt from `/Users/Justin/.claude/plans/cozy-munching-dongarra.md` Phase 3
@@ -179,34 +179,34 @@ Create the core scoring script that uses GPT-5 mini with the donor psychology pr
 
 ### US-008: Update FilterState & Types
 **Priority:** 8
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Add new filter fields to the FilterState type and NetworkContact interface to support familiarity, communication history, and ask-readiness filtering.
 
 **Acceptance Criteria:**
-- [ ] `job-matcher-ai/lib/types.ts` updated: FilterState adds `familiarity_min?: number`, `has_comms?: boolean`, `comms_since?: string`, `shared_institution?: string`, `goal?: string`
-- [ ] FilterState `sort_by` type extended with `'familiarity' | 'comms_recency' | 'ask_readiness'`
-- [ ] `job-matcher-ai/lib/supabase.ts` NetworkContact interface verified to include `familiarity_rating`, `comms_last_date`, `comms_thread_count`, `shared_institutions`, `ask_readiness`
-- [ ] TypeScript compiles without errors (`cd job-matcher-ai && npx tsc --noEmit`)
+- [x] `job-matcher-ai/lib/types.ts` updated: FilterState adds `familiarity_min?: number`, `has_comms?: boolean`, `comms_since?: string`, `shared_institution?: string`, `goal?: string`
+- [x] FilterState `sort_by` type extended with `'familiarity' | 'comms_recency' | 'ask_readiness'`
+- [x] `job-matcher-ai/lib/supabase.ts` NetworkContact interface verified to include `familiarity_rating`, `comms_last_date`, `comms_thread_count`, `shared_institutions`, `ask_readiness`
+- [x] TypeScript compiles without errors (`cd job-matcher-ai && npx tsc --noEmit`)
 
 ---
 
 ### US-009: Update Search Route & NETWORK_SELECT_COLS
 **Priority:** 9
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Add the new columns to NETWORK_SELECT_COLS in both `network-tools.ts` and `search/route.ts`. Add new filter support to the search route for familiarity, comms, and goal-based sorting.
 
 **Acceptance Criteria:**
-- [ ] `NETWORK_SELECT_COLS` in `job-matcher-ai/lib/network-tools.ts` adds: `familiarity_rating, comms_last_date, comms_thread_count, ask_readiness`
-- [ ] `NETWORK_SELECT_COLS` in `job-matcher-ai/app/api/network-intel/search/route.ts` adds same columns
-- [ ] `executeStructuredSearch` handles: `familiarity_min` (gte filter), `has_comms` (comms_thread_count > 0), `comms_since` (comms_last_date gte), `goal` (sorts by ask_readiness->>goal->>score DESC)
-- [ ] New sort options: `familiarity` (familiarity_rating DESC), `comms_recency` (comms_last_date DESC), `ask_readiness` (requires goal)
-- [ ] Default sort changed from `ai_proximity_score` to `familiarity_rating DESC, comms_last_date DESC NULLS LAST`
-- [ ] `applyPostFilters` updated for hybrid search path
-- [ ] TypeScript compiles without errors
+- [x] `NETWORK_SELECT_COLS` in `job-matcher-ai/lib/network-tools.ts` adds: `familiarity_rating, comms_last_date, comms_thread_count, ask_readiness`
+- [x] `NETWORK_SELECT_COLS` in `job-matcher-ai/app/api/network-intel/search/route.ts` adds same columns
+- [x] `executeStructuredSearch` handles: `familiarity_min` (gte filter), `has_comms` (comms_thread_count > 0), `comms_since` (comms_last_date gte), `goal` (sorts by ask_readiness->>goal->>score DESC)
+- [x] New sort options: `familiarity` (familiarity_rating DESC), `comms_recency` (comms_last_date DESC), `ask_readiness` (requires goal)
+- [x] Default sort changed from `ai_proximity_score` to `familiarity_rating DESC, comms_last_date DESC NULLS LAST`
+- [x] `applyPostFilters` updated for hybrid search path
+- [x] TypeScript compiles without errors
 
 ---
 

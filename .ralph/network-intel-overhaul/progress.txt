@@ -133,3 +133,88 @@ Started: 2026-02-20
 - The existing ai_tags overlap data provides useful hints that the LLM verifies and enriches with temporal detail — passing it as reference context helps accuracy.
 - ~15s per contact on average with concurrent processing, so full run of ~1,467 contacts would take ~45 min with 8 workers. Cost ~$2.50.
 
+## Iteration 7: US-007 — Ask-Readiness Scoring Script (Donor Psychology)
+**Date:** 2026-02-21
+**Status:** COMPLETE
+**Commit:** b786822
+
+**What was done:**
+- Created `scripts/intelligence/score_ask_readiness.py` — the core donor psychology scoring script
+- Full donor psychology system prompt with all 4 pillars (Relationship Depth, Giving Capacity, Philanthropic Propensity, Psychological Readiness) + critical behavioral insights + scoring guidance
+- Per-contact context assembles: familiarity_rating, position/company/headline, shared_institutions (structured + fallback to ai_tags), ai_capacity_tier, ai_outdoorithm_fit, fec_donations summary, real_estate_data summary, communication_history (last date, thread count, relationship summary, recent thread subjects), connected_on, topics, philanthropic signals
+- Pydantic structured output: score, tier, reasoning, recommended_approach, ask_timing, cultivation_needed, suggested_ask_range, personalization_angle, risk_factors
+- Goal parameterized with `--goal` flag (defaults to outdoorithm_fundraising, also supports kindora_sales)
+- Results stored in `contacts.ask_readiness` JSONB keyed by goal, with scored_at timestamp
+- Preserves existing goal scores when adding new ones (merges into existing JSONB)
+- Supports `--test`, `--batch N`, `--start-from`, `--goal`, `--force`, `--workers` flags
+- Concurrent batch processing with ThreadPoolExecutor (8 workers default)
+- Color-coded tier output in terminal (green=ready_now, yellow=cultivate_first, gray=long_term, red=not_a_fit)
+- Summary stats: count by tier, score distribution (avg/min/max), token usage, cost
+- Tested: 1 contact test + 3 contact batch, all succeeded
+  - Jeanne Byrd Adams: 72 (cultivate_first) — Year Up connection, DEI alignment, $2.5K-$10K range
+  - Eugene Kirpichov: 74 (cultivate_first) — Google temporal overlap, 5 email threads
+  - Dakarai Aarons: 72 (cultivate_first) — philanthropy background, FEC donor
+  - Dreama Gentry: 65 (cultivate_first) — nonprofit CEO, FEC donor, weak familiarity
+- Performance: ~9s/contact with concurrent processing, ~20s sequential. Full 2,400 contacts would take ~50 min with 8 workers
+
+**Learnings:**
+- The donor psychology prompt produces realistic, evidence-based scoring. All 4 test contacts scored in the 65-74 range (cultivate_first), which is sensible — they have some relationship but aren't inner-circle close friends.
+- The personalization_angle field is particularly valuable — it cites specific shared experiences and connection points that feel authentic.
+- Communication history adds meaningful signal — Eugene scored higher partly because he has 5 email threads with Justin.
+- The FEC data enriches reasoning well — Dreama's 11 FEC donations are cited as evidence of giving propensity.
+- Handle double-encoded JSONB gracefully with the enhanced parse_jsonb() function (tries a second parse if first result is still a string).
+- Cost is low: ~$0.003/contact at current GPT-5 mini rates. Full run would be ~$7.
+- The --force flag correctly re-scores already-scored contacts and the JSONB merge preserves other goal scores.
+
+## Iteration 8: US-008 — Update FilterState & Types
+**Date:** 2026-02-20
+**Status:** COMPLETE
+**Commit:** ee01be9
+
+**What was done:**
+- Updated `job-matcher-ai/lib/types.ts` FilterState interface:
+  - Added `familiarity_min?: number` — minimum familiarity rating filter (0-4)
+  - Added `has_comms?: boolean` — filter for contacts with email history
+  - Added `comms_since?: string` — filter for contacts communicated with since date
+  - Added `shared_institution?: string` — filter by shared institution keyword
+  - Added `goal?: 'outdoorithm_fundraising' | 'kindora_sales'` — goal for ask-readiness sorting
+  - Extended `sort_by` with `'familiarity' | 'comms_recency' | 'ask_readiness'`
+- Updated `job-matcher-ai/lib/supabase.ts` NetworkContact interface:
+  - Added `comms_last_date?: string | null`
+  - Added `comms_thread_count?: number | null`
+  - Added `shared_institutions?: Record<string, any>[] | null`
+  - Added `ask_readiness?: Record<string, any> | null`
+  - `familiarity_rating` was already present from prior work
+- TypeScript compilation passes clean
+
+**Learnings:**
+- The NetworkContact interface already had `familiarity_rating` and `familiarity_rated_at` from the familiarity rater feature. Just needed the new Phase 6 columns.
+- The `goal` field is typed as a string union rather than plain string to match the ask_readiness JSONB key structure.
+- `shared_institutions` typed as `Record<string, any>[]` (array of objects) since the JSONB stores an array of structured overlap entries.
+
+## Iteration 9: US-009 — Update Search Route & NETWORK_SELECT_COLS
+**Date:** 2026-02-20
+**Status:** COMPLETE
+
+**What was done:**
+- Updated `NETWORK_SELECT_COLS` in both `job-matcher-ai/lib/network-tools.ts` and `job-matcher-ai/app/api/network-intel/search/route.ts` to include: `familiarity_rating, comms_last_date, comms_thread_count, ask_readiness`
+- Added new filter handling in `executeStructuredSearch`:
+  - `familiarity_min` → `query.gte('familiarity_rating', value)`
+  - `has_comms` → `query.gt('comms_thread_count', 0)`
+  - `comms_since` → `query.gte('comms_last_date', value)`
+  - `ask_readiness` sort with `goal` → fetches contacts with non-null ask_readiness, sorts in-memory by goal score DESC
+- New sort options in `getSortColumn`: `familiarity` (familiarity_rating), `comms_recency` (comms_last_date)
+- Default sort changed from `ai_proximity_score` to `familiarity_rating` with `comms_last_date DESC NULLS LAST` as secondary
+- Updated `applyPostFilters` for hybrid search path with same familiarity_min, has_comms, comms_since filters
+- Updated `searchNetwork` tool in network-tools.ts:
+  - Added `familiarity_min`, `has_comms`, `comms_since`, `sort_by` parameters to tool definition
+  - Marked `proximity_min` as legacy in description
+  - Updated implementation with new filter handlers and sort logic
+  - Default sort now familiarity_rating DESC with comms_last_date DESC as secondary
+- TypeScript compiles cleanly (`npx tsc --noEmit` passes)
+
+**Learnings:**
+- Supabase JS client doesn't support JSONB path ordering (e.g., `ask_readiness->outdoorithm_fundraising->>'score'`), so ask_readiness sorting requires fetching extra rows and sorting in-memory. The approach fetches `limit * 2` rows and sorts/slices in JS.
+- The `nullsFirst: false` option in Supabase's `.order()` is important for familiarity_rating and comms_last_date since many contacts have NULL values — without it, NULLs sort first in DESC order.
+- The search_network tool in network-tools.ts (used by the agent) and the search route (used by the UI) have separate but parallel implementations. Both needed updating with the same filters.
+

@@ -5,19 +5,32 @@ import { generateEmbedding768 } from './openai';
 const NETWORK_SELECT_COLS =
   'id, first_name, last_name, company, position, city, state, email, linkedin_url, headline, ' +
   'ai_proximity_score, ai_proximity_tier, ai_capacity_score, ai_capacity_tier, ' +
-  'ai_kindora_prospect_score, ai_kindora_prospect_type, ai_outdoorithm_fit';
+  'ai_kindora_prospect_score, ai_kindora_prospect_type, ai_outdoorithm_fit, ' +
+  'familiarity_rating, comms_last_date, comms_thread_count, ask_readiness';
 
 export const networkTools: Anthropic.Tool[] = [
   {
     name: 'search_network',
     description:
-      'Search contacts with structured filters. Use for questions about specific segments: fundraiser invites, Kindora prospects, contacts at a company, contacts in a city, etc. Returns contacts sorted by proximity score.',
+      'Search contacts with structured filters. Use for questions about specific segments: fundraiser invites, Kindora prospects, contacts at a company, contacts in a city, etc. Returns contacts sorted by familiarity rating by default.',
     input_schema: {
       type: 'object' as const,
       properties: {
+        familiarity_min: {
+          type: 'number',
+          description: 'Minimum familiarity rating (0-4). 0=stranger, 1=recognize, 2=know, 3=good relationship, 4=close/trusted.',
+        },
+        has_comms: {
+          type: 'boolean',
+          description: 'If true, only return contacts with email communication history.',
+        },
+        comms_since: {
+          type: 'string',
+          description: 'Only contacts communicated with since this date (YYYY-MM-DD). E.g., "2025-01-01".',
+        },
         proximity_min: {
           type: 'number',
-          description: 'Minimum proximity score (0-100). E.g., 40 for warm+, 60 for close+, 80 for inner circle.',
+          description: 'Minimum proximity score (0-100). Legacy — prefer familiarity_min.',
         },
         proximity_tiers: {
           type: 'array',
@@ -56,6 +69,11 @@ export const networkTools: Anthropic.Tool[] = [
         location_state: {
           type: 'string',
           description: 'Filter by state. E.g., "California", "New York"',
+        },
+        sort_by: {
+          type: 'string',
+          enum: ['familiarity', 'comms_recency', 'capacity', 'proximity', 'name'],
+          description: 'Sort results by this field (default: familiarity).',
         },
         limit: {
           type: 'number',
@@ -201,6 +219,15 @@ async function searchNetwork(input: any): Promise<any> {
     .from('contacts')
     .select(NETWORK_SELECT_COLS);
 
+  if (input.familiarity_min != null) {
+    query = query.gte('familiarity_rating', input.familiarity_min);
+  }
+  if (input.has_comms) {
+    query = query.gt('comms_thread_count', 0);
+  }
+  if (input.comms_since) {
+    query = query.gte('comms_last_date', input.comms_since);
+  }
   if (input.proximity_min != null) {
     query = query.gte('ai_proximity_score', input.proximity_min);
   }
@@ -230,8 +257,23 @@ async function searchNetwork(input: any): Promise<any> {
     query = query.ilike('state', `%${input.location_state}%`);
   }
 
+  // Determine sort column
+  const sortColumn = (() => {
+    switch (input.sort_by) {
+      case 'comms_recency': return 'comms_last_date';
+      case 'capacity': return 'ai_capacity_score';
+      case 'proximity': return 'ai_proximity_score';
+      case 'name': return 'last_name';
+      case 'familiarity':
+      default: return 'familiarity_rating';
+    }
+  })();
+
   const limit = input.limit || 50;
-  query = query.order('ai_proximity_score', { ascending: false }).limit(limit);
+  query = query
+    .order(sortColumn, { ascending: false, nullsFirst: false })
+    .order('comms_last_date', { ascending: false, nullsFirst: false })
+    .limit(limit);
 
   const { data, error } = await query;
   if (error) throw new Error(`Search failed: ${error.message}`);

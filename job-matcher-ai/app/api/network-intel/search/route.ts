@@ -7,7 +7,8 @@ export const runtime = 'edge';
 const NETWORK_SELECT_COLS =
   'id, first_name, last_name, company, position, city, state, email, linkedin_url, headline, ' +
   'ai_proximity_score, ai_proximity_tier, ai_capacity_score, ai_capacity_tier, ' +
-  'ai_kindora_prospect_score, ai_kindora_prospect_type, ai_outdoorithm_fit';
+  'ai_kindora_prospect_score, ai_kindora_prospect_type, ai_outdoorithm_fit, ' +
+  'familiarity_rating, comms_last_date, comms_thread_count, ask_readiness';
 
 /**
  * Execute a structured search using searchNetwork logic.
@@ -48,11 +49,46 @@ async function executeStructuredSearch(filters: FilterState) {
   if (filters.location_state) {
     query = query.ilike('state', `%${filters.location_state}%`);
   }
+  if (filters.familiarity_min != null) {
+    query = query.gte('familiarity_rating', filters.familiarity_min);
+  }
+  if (filters.has_comms) {
+    query = query.gt('comms_thread_count', 0);
+  }
+  if (filters.comms_since) {
+    query = query.gte('comms_last_date', filters.comms_since);
+  }
 
   // Apply sorting
+  if (filters.sort_by === 'ask_readiness' && filters.goal) {
+    // Sort by ask_readiness score for a specific goal — requires raw ordering
+    // Supabase JS doesn't support JSONB path ordering, so we fetch and sort in-memory
+    query = query.not('ask_readiness', 'is', null);
+    const limit = filters.limit || 50;
+    // Fetch more than needed since we'll sort in-memory
+    query = query.limit(limit * 2);
+    const { data, error } = await query;
+    if (error) throw new Error(`Search failed: ${error.message}`);
+    const results = (data || []) as any[];
+    results.sort((a: any, b: any) => {
+      const scoreA = a.ask_readiness?.[filters.goal!]?.score ?? -1;
+      const scoreB = b.ask_readiness?.[filters.goal!]?.score ?? -1;
+      return filters.sort_order === 'asc' ? scoreA - scoreB : scoreB - scoreA;
+    });
+    return results.slice(0, limit);
+  }
+
   const sortColumn = getSortColumn(filters.sort_by);
   const ascending = filters.sort_order === 'asc';
-  query = query.order(sortColumn, { ascending });
+  query = query.order(sortColumn, { ascending, nullsFirst: false });
+
+  // Secondary sort: comms_last_date for familiarity sort, familiarity_rating for default
+  if (filters.sort_by === 'familiarity') {
+    query = query.order('comms_last_date', { ascending: false, nullsFirst: false });
+  } else if (!filters.sort_by || filters.sort_by === 'proximity') {
+    // Default: familiarity_rating DESC as secondary
+    query = query.order('comms_last_date', { ascending: false, nullsFirst: false });
+  }
 
   const limit = filters.limit || 50;
   query = query.limit(limit);
@@ -140,6 +176,15 @@ function applyPostFilters(contacts: any[], filters: FilterState): any[] {
     const st = filters.location_state.toLowerCase();
     result = result.filter((c: any) => c.state?.toLowerCase().includes(st));
   }
+  if (filters.familiarity_min != null) {
+    result = result.filter((c: any) => (c.familiarity_rating ?? 0) >= filters.familiarity_min!);
+  }
+  if (filters.has_comms) {
+    result = result.filter((c: any) => (c.comms_thread_count ?? 0) > 0);
+  }
+  if (filters.comms_since) {
+    result = result.filter((c: any) => c.comms_last_date && c.comms_last_date >= filters.comms_since!);
+  }
 
   return result;
 }
@@ -152,9 +197,14 @@ function getSortColumn(sortBy?: string): string {
       return 'last_name';
     case 'company':
       return 'company';
+    case 'familiarity':
+      return 'familiarity_rating';
+    case 'comms_recency':
+      return 'comms_last_date';
     case 'proximity':
-    default:
       return 'ai_proximity_score';
+    default:
+      return 'familiarity_rating';
   }
 }
 
