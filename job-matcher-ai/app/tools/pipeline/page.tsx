@@ -34,6 +34,8 @@ import {
   X,
 } from 'lucide-react';
 import { KanbanBoard } from '@/components/pipeline/kanban-board';
+import { DealDetailSheet } from '@/components/pipeline/deal-detail-sheet';
+import { ContactDetailSheet } from '@/components/contact-detail-sheet';
 import { type Deal } from '@/components/pipeline/deal-card';
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -358,6 +360,10 @@ function PipelinePageInner() {
   const [error, setError] = useState('');
   const [hideLost, setHideLost] = useState(true);
   const [newDealOpen, setNewDealOpen] = useState(false);
+  const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
+  const [dealDetailOpen, setDealDetailOpen] = useState(false);
+  const [contactSheetId, setContactSheetId] = useState<number | null>(null);
+  const [contactSheetOpen, setContactSheetOpen] = useState(false);
 
   // Load pipelines
   useEffect(() => {
@@ -422,6 +428,24 @@ function PipelinePageInner() {
   // Handle new deal created
   const handleDealCreated = useCallback((deal: Deal) => {
     setDeals((prev) => [...prev, deal]);
+  }, []);
+
+  // Handle deal click -- open detail sheet
+  const handleDealClick = useCallback((deal: Deal) => {
+    setSelectedDeal(deal);
+    setDealDetailOpen(true);
+  }, []);
+
+  // Handle deal updated from detail sheet
+  const handleDealUpdated = useCallback((updated: Deal) => {
+    setDeals((prev) => prev.map((d) => (d.id === updated.id ? updated : d)));
+    setSelectedDeal(updated);
+  }, []);
+
+  // Handle "View Contact" from deal detail sheet
+  const handleViewContact = useCallback((contactId: number) => {
+    setContactSheetId(contactId);
+    setContactSheetOpen(true);
   }, []);
 
   // Filter deals for display (exclude lost if hidden)
@@ -552,9 +576,7 @@ function PipelinePageInner() {
             stages={activePipeline.stages}
             hideLost={hideLost}
             onDealsChange={setDeals}
-            onDealClick={() => {
-              // Deal click will be handled by US-005 (deal detail sheet)
-            }}
+            onDealClick={handleDealClick}
           />
         )}
 
@@ -573,6 +595,25 @@ function PipelinePageInner() {
             )}
           </SheetContent>
         </Sheet>
+
+        {/* Deal Detail Sheet */}
+        {activePipeline && (
+          <DealDetailSheet
+            deal={selectedDeal}
+            open={dealDetailOpen}
+            stages={activePipeline.stages}
+            onOpenChange={setDealDetailOpen}
+            onDealUpdated={handleDealUpdated}
+            onViewContact={handleViewContact}
+          />
+        )}
+
+        {/* Contact Detail Sheet (opened from deal detail) */}
+        <ContactDetailSheet
+          contactId={contactSheetId}
+          open={contactSheetOpen}
+          onOpenChange={setContactSheetOpen}
+        />
       </div>
     </main>
   );

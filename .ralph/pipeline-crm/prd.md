@@ -98,7 +98,7 @@ Create the core Kanban board component that displays deals as draggable cards or
 
 ### US-004: Build the pipeline page at /tools/pipeline
 **Priority:** 4
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Create the main pipeline page that ties everything together.
@@ -124,7 +124,7 @@ Create the main pipeline page that ties everything together.
 
 ### US-005: Add deal detail sheet and edit capability
 **Priority:** 5
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 When clicking a deal card, open a detail sheet (right drawer) showing full deal info with edit capability.

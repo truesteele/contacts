@@ -49,3 +49,32 @@ Started: 2026-02-22
 - Drag within column: arrayMove for reorder, positions recalculated sequentially
 - hideLost prop filters out the "lost" column when true
 - Typecheck passes clean
+
+### US-004: Build the Pipeline Page (2026-02-22)
+- Created `app/tools/pipeline/page.tsx` as `'use client'` page with Suspense boundary for useSearchParams
+- Pipeline selector: shadcn Select at top, reads `?pipeline=slug` from URL, defaults to first pipeline
+- URL sync: `router.replace()` with `scroll: false` on pipeline switch for bookmarkable URLs
+- "New Deal" button opens a Sheet (right drawer) with form fields: title, contact search, amount, close date, source, notes, next action + date
+- Contact search: debounced (300ms), queries new API endpoint, shows dropdown with name + company, click to select
+- Created `app/api/network-intel/pipeline/contacts/route.ts` - GET endpoint for contact search by name/company (ilike, limit 20)
+- KanbanBoard component wired in with deals, stages from active pipeline, hideLost toggle
+- "Lost" deals hidden by default with toggle button showing count
+- Stats bar: total deals, total pipeline value, per-stage counts with color dots (uses existing `stat-pill` CSS class)
+- Loading/error states follow ask-readiness page pattern (spinner, back arrow, icon)
+- Back arrow navigates to `/tools/network-intel` (consistent with other tool pages)
+- Deal click handler is a no-op placeholder -- US-005 will add deal detail sheet
+- Typecheck passes clean
+
+### US-005: Add Deal Detail Sheet and Edit Capability (2026-02-22)
+- Created `components/pipeline/deal-detail-sheet.tsx` using shadcn Sheet (right side drawer)
+- Editable form fields: title, stage (select with color dots), amount, close date, notes, next action + date, source, lost reason (only shown when stage is "lost")
+- "Save" button PATCHes the deal via `/api/network-intel/pipeline/deals/[id]`
+- Dirty state tracking: Save button disabled until a field changes
+- "View Contact" button opens existing `ContactDetailSheet` for the linked contact
+- Shows deal creation date and last updated date (formatted as "Mon DD, YYYY")
+- Shows days in current stage as a badge (e.g. "5d in stage" or "Moved today")
+- Stage selector shows all pipeline stages with color dots
+- Wired into pipeline page: `onDealClick` opens the detail sheet, `onDealUpdated` updates local deals state
+- Nested sheet support: deal detail sheet -> contact detail sheet
+- Follows existing `ContactDetailSheet` pattern: same width, flex column layout, overflow scroll
+- Typecheck passes clean
