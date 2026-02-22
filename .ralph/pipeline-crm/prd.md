@@ -48,7 +48,7 @@ Create the database schema for the pipeline CRM. Two tables: `pipelines` and `de
 
 ### US-002: Install dnd-kit and create API routes for deals CRUD
 **Priority:** 2
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Install the dnd-kit package and create the API routes needed for the pipeline page.

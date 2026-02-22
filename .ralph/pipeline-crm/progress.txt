@@ -26,3 +26,14 @@ Started: 2026-02-22
 - Seeded 3 pipelines: Kindora Fundraising, Outdoorithm Partnerships, True Steele Consulting
 - Applied via `supabase-contacts` MCP `apply_migration`, verified with `execute_sql`
 - Pipeline IDs: kindora=5359ab5a, outdoorithm=9699ccfb, truesteele=a8ce2a4f
+
+### US-002: Install dnd-kit and Create API Routes (2026-02-22)
+- Installed `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities` via npm
+- Created 4 API route files, all with `export const runtime = 'edge'`:
+  - `app/api/network-intel/pipeline/route.ts` - GET all pipelines, POST create pipeline
+  - `app/api/network-intel/pipeline/deals/route.ts` - GET deals by pipeline_id (with contact join + pagination), POST create deal (auto-calculates position)
+  - `app/api/network-intel/pipeline/deals/[id]/route.ts` - PATCH update deal fields, DELETE soft-delete (sets stage to 'lost')
+  - `app/api/network-intel/pipeline/deals/reorder/route.ts` - PATCH batch update stage+position for drag-and-drop reorder
+- Next.js 15 dynamic route params use `Promise<{ id: string }>` pattern (must await params)
+- Deal SELECT includes contact join: `*, contacts(id, first_name, last_name, company, position, headline, city, state)`
+- Typecheck passes clean
