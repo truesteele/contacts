@@ -23,6 +23,7 @@ export async function GET(
         'ai_proximity_score, ai_proximity_tier, ai_capacity_score, ai_capacity_tier, ' +
         'ai_kindora_prospect_score, ai_kindora_prospect_type, ai_outdoorithm_fit, ai_tags, ' +
         'familiarity_rating, comms_last_date, comms_thread_count, communication_history, ' +
+        'comms_closeness, comms_momentum, comms_reasoning, ' +
         'shared_institutions, ask_readiness, fec_donations, real_estate_data'
       )
       .eq('id', contactId)
@@ -61,6 +62,9 @@ export async function GET(
       familiarity_rating: c.familiarity_rating,
       comms_last_date: c.comms_last_date,
       comms_thread_count: c.comms_thread_count,
+      comms_closeness: c.comms_closeness || null,
+      comms_momentum: c.comms_momentum || null,
+      comms_reasoning: c.comms_reasoning || null,
       comms_relationship_summary: commsHistory.relationship_summary || null,
       comms_recent_threads: recentThreads,
 
@@ -84,12 +88,12 @@ export async function GET(
       ai_outdoorithm_fit: c.ai_outdoorithm_fit,
 
       // Shared context (legacy from ai_tags)
-      shared_employers: proximity.shared_employers || [],
-      shared_schools: proximity.shared_schools || [],
-      shared_boards: proximity.shared_boards || [],
+      shared_employers: (proximity.shared_employers || []).map((e: any) => typeof e === 'string' ? e : e?.org || ''),
+      shared_schools: (proximity.shared_schools || []).map((s: any) => typeof s === 'string' ? s : s?.org || ''),
+      shared_boards: (proximity.shared_boards || []).map((b: any) => typeof b === 'string' ? b : b?.org || ''),
 
       // Topics and interests
-      topics: (affinity.topics || []).slice(0, 10),
+      topics: (affinity.topics || []).slice(0, 10).map((t: any) => typeof t === 'string' ? t : t?.topic || ''),
       primary_interests: affinity.primary_interests || [],
 
       // Outreach context

@@ -218,13 +218,13 @@ Execute the comms closeness scoring script to label all contacts.
 
 ### US-008: Update Ask-Readiness Script to Use Comms Closeness
 **Priority:** 8
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Wire the new `comms_closeness` and `comms_momentum` into the ask-readiness scoring prompt so GPT can use behavioral communication data alongside subjective familiarity.
 
 **Acceptance Criteria:**
-- [ ] Update `scripts/intelligence/score_ask_readiness.py`:
+- [x] Update `scripts/intelligence/score_ask_readiness.py`:
   - Add `comms_closeness`, `comms_momentum` to the SELECT query
   - Update `summarize_comms()` to include closeness and momentum labels
   - Add a new section to the prompt explaining the two relationship dimensions:
@@ -232,8 +232,8 @@ Wire the new `comms_closeness` and `comms_momentum` into the ask-readiness scori
     - comms_closeness = behavioral/data-derived communication signal
     - Explain that dormant strong ties (high familiarity + dormant comms) are high-leverage reactivation targets
   - Include the comms_momentum in the prompt (growing = strike now, fading = risk of losing)
-- [ ] Verify script runs in test mode without errors: `python scripts/intelligence/score_ask_readiness.py --test --goal outdoorithm_fundraising`
-- [ ] The prompt should reference the 2x2 relationship map from the framework doc
+- [x] Verify script runs in test mode without errors: `python scripts/intelligence/score_ask_readiness.py --test --goal outdoorithm_fundraising`
+- [x] The prompt should reference the 2x2 relationship map from the framework doc
 
 **Notes:**
 - Do NOT run a full re-score in this story — just update the script
@@ -243,19 +243,19 @@ Wire the new `comms_closeness` and `comms_momentum` into the ask-readiness scori
 
 ### US-009: Update Contact Detail API and UI
 **Priority:** 9
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Show comms_closeness and comms_momentum in the contact detail sheet UI.
 
 **Acceptance Criteria:**
-- [ ] Update `job-matcher-ai/app/api/network-intel/contact/[id]/route.ts` to include `comms_closeness`, `comms_momentum`, `comms_reasoning` in the SELECT query
-- [ ] Update `job-matcher-ai/components/contact-detail-sheet.tsx` to display:
+- [x] Update `job-matcher-ai/app/api/network-intel/contact/[id]/route.ts` to include `comms_closeness`, `comms_momentum`, `comms_reasoning` in the SELECT query
+- [x] Update `job-matcher-ai/components/contact-detail-sheet.tsx` to display:
   - Comms Closeness label with appropriate color badge (active_inner_circle=green, regular_contact=blue, occasional=yellow, dormant=orange, one_way=purple, no_history=gray)
   - Comms Momentum label with icon or badge (growing=up arrow green, stable=dash blue, fading=down arrow orange, inactive=x gray)
   - Comms Reasoning text below the badges
-- [ ] Place this in the existing "Relationship" or "Communication" section of the detail sheet
-- [ ] TypeScript typecheck passes: `cd job-matcher-ai && npx tsc --noEmit`
+- [x] Place this in the existing "Relationship" or "Communication" section of the detail sheet
+- [x] TypeScript typecheck passes: `cd job-matcher-ai && npx tsc --noEmit`
 
 **Notes:**
 - Follow existing UI patterns in contact-detail-sheet.tsx (look at how familiarity_rating, ask_readiness_tier are displayed)

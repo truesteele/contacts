@@ -9,7 +9,7 @@ import {
   SheetDescription,
 } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
+// Using plain div with overflow instead of Radix ScrollArea to avoid horizontal overflow issues
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import {
@@ -26,6 +26,9 @@ import {
   RefreshCw,
   Target,
   CheckCircle2,
+  Home,
+  DollarSign,
+  Phone,
 } from 'lucide-react';
 
 interface SharedInstitution {
@@ -44,6 +47,11 @@ interface CommThread {
   date?: string;
   last_date?: string;
   snippet?: string;
+  source?: string;
+  phone?: string;
+  summary?: string;
+  message_count?: number;
+  direction?: string;
 }
 
 interface AskReadinessGoal {
@@ -75,6 +83,9 @@ interface ContactDetail {
   familiarity_rating?: number | null;
   comms_last_date?: string | null;
   comms_thread_count?: number | null;
+  comms_closeness?: string | null;
+  comms_momentum?: string | null;
+  comms_reasoning?: string | null;
   comms_relationship_summary?: string | null;
   comms_recent_threads?: CommThread[];
   // Structured institutional overlap
@@ -147,6 +158,45 @@ const ASK_READINESS_LABELS: Record<string, string> = {
   cultivate_first: 'Cultivate First',
   long_term: 'Long Term',
   not_a_fit: 'Not a Fit',
+};
+
+const COMMS_CLOSENESS_COLORS: Record<string, string> = {
+  active_inner_circle: 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/40 dark:text-green-300',
+  regular_contact: 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300',
+  occasional: 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-300',
+  dormant: 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/40 dark:text-orange-300',
+  one_way: 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/40 dark:text-purple-300',
+  no_history: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800/40 dark:text-gray-400',
+};
+
+const COMMS_CLOSENESS_LABELS: Record<string, string> = {
+  active_inner_circle: 'Inner Circle',
+  regular_contact: 'Regular',
+  occasional: 'Occasional',
+  dormant: 'Dormant',
+  one_way: 'One-Way',
+  no_history: 'No History',
+};
+
+const COMMS_MOMENTUM_COLORS: Record<string, string> = {
+  growing: 'text-green-600 dark:text-green-400',
+  stable: 'text-blue-600 dark:text-blue-400',
+  fading: 'text-orange-600 dark:text-orange-400',
+  inactive: 'text-gray-500 dark:text-gray-400',
+};
+
+const COMMS_MOMENTUM_LABELS: Record<string, string> = {
+  growing: 'Growing',
+  stable: 'Stable',
+  fading: 'Fading',
+  inactive: 'Inactive',
+};
+
+const COMMS_MOMENTUM_ICONS: Record<string, string> = {
+  growing: '\u2197',   // ↗
+  stable: '\u2014',    // —
+  fading: '\u2198',    // ↘
+  inactive: '\u00D7',  // ×
 };
 
 const OVERLAP_TYPE_ICONS: Record<string, typeof Briefcase> = {
@@ -284,7 +334,7 @@ export function ContactDetailSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="w-full sm:max-w-lg p-0 flex flex-col"
+        className="w-full sm:max-w-lg p-0 flex flex-col overflow-hidden min-w-0"
       >
         {loading && (
           <div className="flex-1 px-6 pt-6 space-y-5">
@@ -346,7 +396,7 @@ export function ContactDetailSheet({
         {detail && !loading && (
           <>
             {/* Header */}
-            <SheetHeader className="px-6 pt-6 pb-4 space-y-1">
+            <SheetHeader className="px-6 pt-6 pb-4 space-y-1 min-w-0">
               <SheetTitle className="text-xl">
                 {detail.first_name} {detail.last_name}
               </SheetTitle>
@@ -357,14 +407,14 @@ export function ContactDetailSheet({
               )}
             </SheetHeader>
 
-            <ScrollArea className="flex-1">
-              <div className="px-6 pb-6 space-y-5">
+            <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden">
+              <div className="px-6 pb-6 space-y-5 min-w-0 max-w-full">
                 {/* Basic Info */}
                 <div className="space-y-2">
                   {detail.company && (
-                    <div className="flex items-center gap-2 text-sm">
+                    <div className="flex items-center gap-2 text-sm min-w-0">
                       <Building2 className="w-4 h-4 text-muted-foreground shrink-0" />
-                      <span>
+                      <span className="min-w-0">
                         {detail.position
                           ? `${detail.position} at ${detail.company}`
                           : detail.company}
@@ -372,30 +422,30 @@ export function ContactDetailSheet({
                     </div>
                   )}
                   {location && (
-                    <div className="flex items-center gap-2 text-sm">
+                    <div className="flex items-center gap-2 text-sm min-w-0">
                       <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
-                      <span>{location}</span>
+                      <span className="min-w-0">{location}</span>
                     </div>
                   )}
                   {detail.email && (
-                    <div className="flex items-center gap-2 text-sm">
+                    <div className="flex items-center gap-2 text-sm min-w-0">
                       <Mail className="w-4 h-4 text-muted-foreground shrink-0" />
                       <a
                         href={`mailto:${detail.email}`}
-                        className="text-primary hover:underline truncate"
+                        className="text-primary hover:underline truncate min-w-0"
                       >
                         {detail.email}
                       </a>
                     </div>
                   )}
                   {detail.linkedin_url && (
-                    <div className="flex items-center gap-2 text-sm">
+                    <div className="flex items-center gap-2 text-sm min-w-0">
                       <Linkedin className="w-4 h-4 text-muted-foreground shrink-0" />
                       <a
                         href={detail.linkedin_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-primary hover:underline truncate"
+                        className="text-primary hover:underline truncate min-w-0"
                       >
                         LinkedIn Profile
                       </a>
@@ -436,14 +486,39 @@ export function ContactDetailSheet({
                       )}
                     </div>
 
-                    {/* Email Threads */}
+                    {/* Comms Threads */}
                     <div className="rounded-lg border p-3 space-y-1.5">
-                      <div className="text-xs text-muted-foreground">Email Threads</div>
+                      <div className="text-xs text-muted-foreground">Threads</div>
                       <div className="text-lg font-semibold tabular-nums">
                         {detail.comms_thread_count ?? 0}
                       </div>
                     </div>
                   </div>
+
+                  {/* Comms Closeness + Momentum */}
+                  {detail.comms_closeness && detail.comms_closeness !== 'no_history' && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant="outline"
+                          className={`text-xs ${COMMS_CLOSENESS_COLORS[detail.comms_closeness] || ''}`}
+                        >
+                          {COMMS_CLOSENESS_LABELS[detail.comms_closeness] || detail.comms_closeness}
+                        </Badge>
+                        {detail.comms_momentum && detail.comms_momentum !== 'inactive' && (
+                          <span className={`text-sm font-medium ${COMMS_MOMENTUM_COLORS[detail.comms_momentum] || ''}`}>
+                            {COMMS_MOMENTUM_ICONS[detail.comms_momentum] || ''}{' '}
+                            {COMMS_MOMENTUM_LABELS[detail.comms_momentum] || detail.comms_momentum}
+                          </span>
+                        )}
+                      </div>
+                      {detail.comms_reasoning && (
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          {detail.comms_reasoning}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Communication History */}
@@ -461,12 +536,23 @@ export function ContactDetailSheet({
                         <div className="space-y-2">
                           <div className="text-xs text-muted-foreground">Recent Threads</div>
                           {detail.comms_recent_threads.map((thread, i) => (
-                            <div key={i} className="flex items-start gap-2 text-sm">
-                              <Mail className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
-                              <div className="min-w-0">
+                            <div key={i} className="flex items-start gap-2 text-sm overflow-hidden">
+                              {thread.source === 'sms' ? (
+                                <Phone className="w-3.5 h-3.5 text-green-500 dark:text-green-400 shrink-0 mt-0.5" />
+                              ) : (
+                                <Mail className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
+                              )}
+                              <div className="min-w-0 flex-1">
                                 <div className="truncate font-medium">
-                                  {thread.subject || 'No subject'}
+                                  {thread.source === 'sms'
+                                    ? `SMS (${thread.message_count || '?'} messages)`
+                                    : thread.subject || 'No subject'}
                                 </div>
+                                {thread.source === 'sms' && thread.summary && (
+                                  <div className="text-xs text-muted-foreground line-clamp-2">
+                                    {thread.summary}
+                                  </div>
+                                )}
                                 {(thread.date || thread.last_date) && (
                                   <div className="text-xs text-muted-foreground">
                                     {formatDate(thread.date || thread.last_date || '')}
@@ -491,9 +577,9 @@ export function ContactDetailSheet({
                         {detail.shared_institutions!.map((inst, i) => {
                           const Icon = OVERLAP_TYPE_ICONS[inst.type] || Building2;
                           return (
-                            <div key={i} className="flex items-start gap-2 text-sm">
+                            <div key={i} className="flex items-start gap-2 text-sm overflow-hidden">
                               <Icon className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-                              <div className="min-w-0">
+                              <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <span className="font-medium">{inst.name}</span>
                                   <Badge variant="outline" className="text-[10px]">
@@ -538,9 +624,9 @@ export function ContactDetailSheet({
                     <div className="space-y-3">
                       <h3 className="text-sm font-medium">Shared Context</h3>
                       {detail.shared_employers.length > 0 && (
-                        <div className="flex items-start gap-2 text-sm">
+                        <div className="flex items-start gap-2 text-sm min-w-0">
                           <Briefcase className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-                          <div>
+                          <div className="min-w-0 flex-1">
                             <div className="text-xs text-muted-foreground mb-1">
                               Shared Employers
                             </div>
@@ -555,9 +641,9 @@ export function ContactDetailSheet({
                         </div>
                       )}
                       {detail.shared_schools.length > 0 && (
-                        <div className="flex items-start gap-2 text-sm">
+                        <div className="flex items-start gap-2 text-sm min-w-0">
                           <GraduationCap className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-                          <div>
+                          <div className="min-w-0 flex-1">
                             <div className="text-xs text-muted-foreground mb-1">
                               Shared Schools
                             </div>
@@ -572,9 +658,9 @@ export function ContactDetailSheet({
                         </div>
                       )}
                       {detail.shared_boards.length > 0 && (
-                        <div className="flex items-start gap-2 text-sm">
+                        <div className="flex items-start gap-2 text-sm min-w-0">
                           <Users className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-                          <div>
+                          <div className="min-w-0 flex-1">
                             <div className="text-xs text-muted-foreground mb-1">
                               Shared Boards
                             </div>
@@ -674,11 +760,11 @@ export function ContactDetailSheet({
                           )}
 
                           {/* Risk factors */}
-                          {goalData.risk_factors && goalData.risk_factors.length > 0 && (
+                          {Array.isArray(goalData.risk_factors) && goalData.risk_factors.length > 0 && (
                             <div className="text-xs">
                               <div className="text-muted-foreground mb-1">Risk Factors</div>
                               <ul className="space-y-0.5 text-red-600 dark:text-red-400">
-                                {goalData.risk_factors.map((risk, i) => (
+                                {goalData.risk_factors.map((risk: string, i: number) => (
                                   <li key={i}>{risk}</li>
                                 ))}
                               </ul>
@@ -770,6 +856,127 @@ export function ContactDetailSheet({
                   </div>
                 </div>
 
+                {/* Wealth Signals */}
+                {(detail.real_estate_data?.address || detail.fec_donations) && (
+                  <>
+                    <Separator />
+                    <div className="space-y-3">
+                      <h3 className="text-sm font-medium">Wealth Signals</h3>
+                      {detail.real_estate_data?.address && (
+                        <div className="flex items-start gap-2 min-w-0">
+                          <Home className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                          <div className="min-w-0 flex-1 space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground">Home</span>
+                              {detail.real_estate_data.building_level_data ? (
+                                <Badge variant="outline" className="text-[10px] bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300">
+                                  Building Record
+                                </Badge>
+                              ) : detail.real_estate_data.ownership_likelihood && (
+                                <Badge
+                                  variant="outline"
+                                  className={`text-[10px] ${
+                                    detail.real_estate_data.ownership_likelihood === 'likely_owner'
+                                      ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300'
+                                      : detail.real_estate_data.ownership_likelihood === 'likely_owner_condo'
+                                      ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'
+                                      : detail.real_estate_data.ownership_likelihood === 'likely_renter'
+                                      ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300'
+                                      : 'bg-gray-100 text-gray-600 dark:bg-gray-800/40 dark:text-gray-400'
+                                  }`}
+                                >
+                                  {detail.real_estate_data.ownership_likelihood === 'likely_owner'
+                                    ? 'Owner'
+                                    : detail.real_estate_data.ownership_likelihood === 'likely_owner_condo'
+                                    ? 'Condo Owner'
+                                    : detail.real_estate_data.ownership_likelihood === 'likely_renter'
+                                    ? 'Renter'
+                                    : 'Uncertain'}
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-sm">{detail.real_estate_data.address}</p>
+                            {detail.real_estate_data.building_level_data && (
+                              <p className="text-xs text-muted-foreground">Unit-level value unknown (Zillow returned building data)</p>
+                            )}
+                            {!detail.real_estate_data.building_level_data && detail.real_estate_data.zestimate && (
+                              <div className="space-y-0.5">
+                                <div className="flex items-center gap-3 text-sm">
+                                  <span className="font-semibold text-green-700 dark:text-green-400">
+                                    Zestimate: ${Number(detail.real_estate_data.zestimate).toLocaleString()}
+                                  </span>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                                  {detail.real_estate_data.property_type && (
+                                    <span>{detail.real_estate_data.property_type.replace(/_/g, ' ').toLowerCase()}</span>
+                                  )}
+                                  {detail.real_estate_data.beds && (
+                                    <span>{detail.real_estate_data.beds}bd/{detail.real_estate_data.baths || '?'}ba</span>
+                                  )}
+                                  {detail.real_estate_data.sqft && (
+                                    <span>{Number(detail.real_estate_data.sqft).toLocaleString()} sqft</span>
+                                  )}
+                                  {detail.real_estate_data.year_built && (
+                                    <span>built {detail.real_estate_data.year_built}</span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      {detail.fec_donations && detail.fec_donations.donation_count > 0 && (
+                        <div className="flex items-start gap-2 min-w-0">
+                          <DollarSign className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                          <div className="min-w-0 flex-1 space-y-1">
+                            <div className="text-xs text-muted-foreground">FEC Political Donations</div>
+                            {detail.fec_donations.total_amount != null && detail.fec_donations.total_amount > 0 ? (
+                              <>
+                                <div className="flex items-baseline gap-2">
+                                  <span className="text-sm font-semibold">
+                                    ${Number(detail.fec_donations.total_amount).toLocaleString()}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">
+                                    across {detail.fec_donations.donation_count || '?'} donations
+                                  </span>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                                  {detail.fec_donations.max_single && (
+                                    <span>largest: ${Number(detail.fec_donations.max_single).toLocaleString()}</span>
+                                  )}
+                                  {detail.fec_donations.cycles && detail.fec_donations.cycles.length > 0 && (
+                                    <span>cycles: {(detail.fec_donations.cycles as string[]).join(', ')}</span>
+                                  )}
+                                </div>
+                                {detail.fec_donations.recent_donations && (detail.fec_donations.recent_donations as any[]).length > 0 && (
+                                  <div className="mt-1.5 space-y-0.5">
+                                    <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Recent</div>
+                                    {(detail.fec_donations.recent_donations as any[]).slice(0, 5).map((d: any, i: number) => (
+                                      <div key={i} className="flex items-center justify-between text-xs">
+                                        <span className="text-muted-foreground truncate max-w-[200px]">
+                                          {(d.committee || '').length > 35
+                                            ? (d.committee || '').slice(0, 35) + '...'
+                                            : d.committee || '?'}
+                                        </span>
+                                        <div className="flex items-center gap-2 shrink-0">
+                                          <span className="font-mono">${Number(d.amount || 0).toLocaleString()}</span>
+                                          <span className="text-muted-foreground text-[10px]">{d.date || ''}</span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <p className="text-sm text-muted-foreground">Donation records found</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+
                 {/* Topics & Interests */}
                 {(detail.topics.length > 0 || detail.primary_interests.length > 0) && (
                   <>
@@ -806,9 +1013,9 @@ export function ContactDetailSheet({
                       <h3 className="text-sm font-medium">Outreach Context</h3>
 
                       {detail.suggested_opener && (
-                        <div className="flex items-start gap-2">
+                        <div className="flex items-start gap-2 min-w-0">
                           <MessageSquare className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-                          <div>
+                          <div className="min-w-0 flex-1">
                             <div className="text-xs text-muted-foreground mb-1">
                               Suggested Opener
                             </div>
@@ -820,9 +1027,9 @@ export function ContactDetailSheet({
                       )}
 
                       {detail.personalization_hooks.length > 0 && (
-                        <div className="flex items-start gap-2">
+                        <div className="flex items-start gap-2 min-w-0">
                           <Lightbulb className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-                          <div>
+                          <div className="min-w-0 flex-1">
                             <div className="text-xs text-muted-foreground mb-1">
                               Personalization Hooks
                             </div>
@@ -838,9 +1045,9 @@ export function ContactDetailSheet({
                       )}
 
                       {detail.talking_points.length > 0 && (
-                        <div className="flex items-start gap-2">
+                        <div className="flex items-start gap-2 min-w-0">
                           <MessageSquare className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-                          <div>
+                          <div className="min-w-0 flex-1">
                             <div className="text-xs text-muted-foreground mb-1">
                               Talking Points
                             </div>
@@ -882,7 +1089,7 @@ export function ContactDetailSheet({
                   </>
                 )}
               </div>
-            </ScrollArea>
+            </div>
           </>
         )}
       </SheetContent>

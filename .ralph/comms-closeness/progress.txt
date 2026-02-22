@@ -100,3 +100,31 @@ Started: 2026-02-22
 - All 2,937 contacts have non-null comms_closeness (verified with SELECT count)
 - Input tokens: 1,663,568 | Output tokens: 1,006,328
 - No file changes — script execution only + data verification via Supabase MCP
+
+### US-008: Update Ask-Readiness Script to Use Comms Closeness (DONE)
+- Added `comms_closeness`, `comms_momentum` to SELECT_COLS in score_ask_readiness.py
+- Updated `summarize_comms()` to output closeness and momentum labels at the top of the communication section
+- Enhanced SYSTEM_PROMPT section 1 (RELATIONSHIP DEPTH) with full Granovetter 2x2 framework:
+  - Dimension a) Subjective Closeness (familiarity_rating 0-4) — emotional intensity/trust
+  - Dimension b) Behavioral Communication Closeness (comms_closeness + comms_momentum) — data-derived from email/LinkedIn/SMS
+  - Full 2x2 map: Active Inner Circle, Dormant Strong Ties, Active Weak Ties, Cold Contacts
+  - Momentum modifiers: growing=strike now, fading=risk of losing, etc.
+- Changed thread count label from "email + LinkedIn DMs" to "email + LinkedIn DMs + SMS"
+- Changed no-data message from "email or LinkedIn" to "email, LinkedIn, or SMS"
+- Test run: 1 contact scored (with --force), 0 errors, tier=cultivate_first, score=72
+- Verified contact context correctly includes closeness/momentum labels (tested with active_inner_circle contact)
+- No full re-score run in this story (per PRD instructions — just script update)
+
+### US-009: Update Contact Detail API and UI (DONE)
+- Updated `route.ts` API: added `comms_closeness`, `comms_momentum`, `comms_reasoning` to SELECT query and response JSON
+- Updated `ContactDetail` interface with 3 new optional string fields
+- Added color/label/icon constants for closeness (6 values) and momentum (4 values)
+  - Closeness colors: green (inner circle), blue (regular), yellow (occasional), orange (dormant), purple (one-way), gray (no history)
+  - Momentum: unicode arrow icons (↗ growing, — stable, ↘ fading, × inactive)
+- Added closeness + momentum display in "Your Relationship" section, below the 3-column grid
+  - Shows closeness badge + momentum with icon on same line
+  - Reasoning text below in smaller muted font
+  - Only displayed when closeness exists AND is not "no_history" (avoids cluttering contacts with no comms data)
+  - Momentum only shown when not "inactive" (same logic — no value in showing "inactive" which is the default)
+- TypeScript typecheck passes cleanly (`npx tsc --noEmit` — zero errors)
+- No file changes beyond the 2 UI files (route.ts + contact-detail-sheet.tsx)
