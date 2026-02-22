@@ -76,13 +76,13 @@ Set the `channel` and `is_group` fields for all existing rows in `contact_email_
 
 ### US-003: Migrate SMS Data into Unified Table
 **Priority:** 3
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Copy data from `contact_sms_conversations` into `contact_email_threads` with `channel = 'sms'`, creating a truly unified communication table.
 
 **Acceptance Criteria:**
-- [ ] Insert 147 SMS conversation rows into `contact_email_threads` with:
+- [x] Insert 147 SMS conversation rows into `contact_email_threads` with:
   - `channel = 'sms'`
   - `account_email = 'sms'`
   - `thread_id = 'sms_' || phone_number` (unique identifier)
@@ -96,9 +96,9 @@ Copy data from `contact_sms_conversations` into `contact_email_threads` with `ch
   - `raw_messages = sample_messages` from SMS table
   - `summary` from SMS table
   - `gathered_at` from SMS table
-- [ ] Verify count: `SELECT channel, count(*) FROM contact_email_threads GROUP BY channel` should show sms: ~147
-- [ ] Verify no duplicate thread_ids
-- [ ] Do NOT delete the original `contact_sms_conversations` table (keep as backup)
+- [x] Verify count: `SELECT channel, count(*) FROM contact_email_threads GROUP BY channel` should show sms: ~147
+- [x] Verify no duplicate thread_ids
+- [x] Do NOT delete the original `contact_sms_conversations` table (keep as backup)
 
 **Notes:**
 - Use `execute_sql` for the INSERT...SELECT statement

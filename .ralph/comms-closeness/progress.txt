@@ -38,3 +38,16 @@ Started: 2026-02-22
 - High group ratio (76% of email threads) makes sense — Gmail participants include CC recipients
 - All 10,216 rows verified: non-null channel, is_group, participant_count
 - No file changes — all SQL DML via Supabase MCP execute_sql
+
+### US-003: Migrate SMS Data into Unified Table (DONE)
+- Inserted 147 SMS rows from `contact_sms_conversations` into `contact_email_threads`
+- Mapping: channel='sms', account_email='sms', thread_id='sms_'+phone_number
+- Direction derived from sent/received counts: 134 bidirectional, 7 inbound, 6 outbound
+- subject=sms_contact_name, snippet=first message body, raw_messages=sample_messages
+- is_group=false, participant_count=2 for all SMS rows
+- No duplicate phone numbers in source table — clean 1:1 mapping
+- All 147 contact_ids non-null (no rows skipped)
+- Verified: channel counts = email:9425, linkedin:791, sms:147 (total 10,363)
+- Verified: zero duplicate thread_ids in SMS channel
+- Original `contact_sms_conversations` table preserved as backup
+- No file changes — all SQL DML via Supabase MCP execute_sql
