@@ -161,31 +161,31 @@ Execute the comms summary rebuild script to populate `comms_summary` JSONB for a
 
 ### US-006: Build score_comms_closeness.py Script
 **Priority:** 6
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Create a GPT-5 mini scoring script that reads each contact's `comms_summary` JSONB and outputs `comms_closeness`, `comms_momentum`, and `comms_reasoning`.
 
 **Acceptance Criteria:**
-- [ ] Create `scripts/intelligence/score_comms_closeness.py`
-- [ ] Uses OpenAI Responses API with structured output (Pydantic schema), following patterns from `score_ask_readiness.py`
-- [ ] GPT-5 mini prompt includes:
+- [x] Create `scripts/intelligence/score_comms_closeness.py`
+- [x] Uses OpenAI Responses API with structured output (Pydantic schema), following patterns from `score_ask_readiness.py`
+- [x] GPT-5 mini prompt includes:
   - The Granovetter framework context (behavioral dimension only)
   - Channel signal quality hierarchy: SMS (highest) > 1:1 email > LinkedIn DM > group email (lowest)
   - Clear definitions for each `comms_closeness` label (from `docs/RELATIONSHIP_DIMENSIONS_FRAMEWORK.md`)
   - Clear definitions for each `comms_momentum` label
   - Instruction to assess ONLY based on communication data, NOT personal knowledge
   - Today's date for recency calculations
-- [ ] Input per contact: the `comms_summary` JSONB (no name, no profile data, no familiarity_rating)
-- [ ] Output schema: `comms_closeness` (enum), `comms_momentum` (enum), `comms_reasoning` (string, 1-2 sentences)
-- [ ] Uses `ThreadPoolExecutor(max_workers=150)` for concurrent API calls
-- [ ] Supports `--test` flag (process 5 contacts, print results, don't write)
-- [ ] Supports `--workers N` flag to override default concurrency
-- [ ] Supports `--force` flag to re-score contacts that already have comms_closeness
-- [ ] Contacts with no comms_summary get `comms_closeness = 'no_history'`, `comms_momentum = 'inactive'` without calling GPT
-- [ ] Saves results to `comms_closeness`, `comms_momentum`, `comms_reasoning` columns on contacts table
-- [ ] Uses `_strip_null_bytes()` for JSONB safety (copy from score_ask_readiness.py)
-- [ ] Script runs without errors in test mode
+- [x] Input per contact: the `comms_summary` JSONB (no name, no profile data, no familiarity_rating)
+- [x] Output schema: `comms_closeness` (enum), `comms_momentum` (enum), `comms_reasoning` (string, 1-2 sentences)
+- [x] Uses `ThreadPoolExecutor(max_workers=150)` for concurrent API calls
+- [x] Supports `--test` flag (process 5 contacts, print results, don't write)
+- [x] Supports `--workers N` flag to override default concurrency
+- [x] Supports `--force` flag to re-score contacts that already have comms_closeness
+- [x] Contacts with no comms_summary get `comms_closeness = 'no_history'`, `comms_momentum = 'inactive'` without calling GPT
+- [x] Saves results to `comms_closeness`, `comms_momentum`, `comms_reasoning` columns on contacts table
+- [x] Uses `_strip_null_bytes()` for JSONB safety (copy from score_ask_readiness.py)
+- [x] Script runs without errors in test mode
 
 **Notes:**
 - Model: `gpt-4.1-mini` (this is GPT-5 mini model ID in the OpenAI API)

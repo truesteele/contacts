@@ -74,3 +74,17 @@ Started: 2026-02-22
 - Verified: comms_thread_count populated for all 1,210 contacts
 - Exceeds expected ~1,100+ contacts (actual: 1,210)
 - No file changes — script execution only + data verification via Supabase MCP
+
+### US-006: Build score_comms_closeness.py Script (DONE)
+- Created `scripts/intelligence/score_comms_closeness.py` (~320 lines)
+- GPT-5 mini structured output via Responses API with Pydantic schema (CommsClosenessResult)
+- Prompt includes: Granovetter behavioral framework, channel signal quality hierarchy (SMS > 1:1 email > LinkedIn DM > group email), detailed label definitions for closeness + momentum, today's date
+- Input: comms_summary JSONB only — no name, no profile, no familiarity_rating (keeps dimensions independent)
+- Output: comms_closeness (enum 6 values), comms_momentum (enum 4 values), comms_reasoning (1-2 sentences)
+- Contacts with no comms_summary get no_history/inactive without GPT call (saves cost)
+- ThreadPoolExecutor(max_workers=150) for concurrent processing in full mode
+- Flags: --test (5 contacts, no DB write), --workers N, --force (re-score), --contact-id N
+- _strip_null_bytes() from score_ask_readiness.py for PostgreSQL JSONB safety
+- Test run: 5 contacts, 0 errors, 2 no_history (no GPT), 2 one_way, 1 dormant — sensible results
+- Model ID: gpt-5-mini (same as score_ask_readiness.py)
+- Color-coded terminal output with closeness colors + momentum icons
