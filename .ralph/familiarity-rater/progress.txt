@@ -1,0 +1,143 @@
+# Ralph Progress Log
+Loop: familiarity-rater
+Started: 2026-02-19
+---
+
+## Codebase Patterns
+- Next.js 15 app at job-matcher-ai/ with App Router
+- Supabase client shared from lib/supabase.ts (uses SUPABASE_URL + SUPABASE_SERVICE_KEY from .env)
+- API routes follow pattern: app/api/{feature}/route.ts with NextResponse.json()
+- Components use 'use client' directive, Tailwind CSS, shadcn/ui primitives
+- NetworkContact interface in lib/supabase.ts defines the contact shape
+- Existing API routes in app/api/network-intel/ for reference
+- No test suite — quality gate is typecheck only: cd job-matcher-ai && npx tsc --noEmit
+- Migrations go in supabase/migrations/ with timestamp prefix format YYYYMMDDHHMMSS
+
+---
+
+## Iteration Log
+
+### US-001: Add familiarity_rating columns to contacts table (2026-02-19)
+**Status:** Complete
+**What was built:**
+- SQL migration: `supabase/migrations/20260219120000_add_familiarity_rating.sql`
+- Added `familiarity_rating` (SMALLINT, CHECK 0-4) and `familiarity_rated_at` (TIMESTAMPTZ) columns
+- Applied migration via Supabase MCP `apply_migration` tool — both columns verified in DB
+- CHECK constraint `contacts_familiarity_rating_check` confirmed (0-4 range)
+- Updated `NetworkContact` interface in `lib/supabase.ts` with both new fields
+- Typecheck passes cleanly
+
+**Learnings:**
+- Supabase MCP `apply_migration` tool works for DDL; `execute_sql` for queries
+- `IF NOT EXISTS` on ALTER TABLE ADD COLUMN is safe for idempotent migrations
+- Migration naming: `YYYYMMDDHHMMSS_description.sql` format
+
+### US-002: Create API routes for rating contacts (2026-02-19)
+**Status:** Complete
+**What was built:**
+- API route file: `job-matcher-ai/app/api/rate/route.ts`
+- **GET /api/rate**: Fetches batch of 20 unrated contacts ordered by `ai_proximity_score DESC NULLS LAST`, returns `{ contacts, unrated_count, rated_count }`
+- **POST /api/rate**: Accepts `{ contact_id, rating }`, validates rating 0-4, updates `familiarity_rating` and `familiarity_rated_at`
+- Both handlers use `NextRequest`/`NextResponse` pattern consistent with existing routes
+- Proper error handling with typed catch blocks (`err: unknown`)
+- Uses `{ count: 'exact', head: true }` for efficient count queries
+
+**Learnings:**
+- Supabase `.is('column', null)` for IS NULL filter, `.not('column', 'is', null)` for IS NOT NULL
+- `{ count: 'exact', head: true }` returns only the count without fetching rows — efficient for progress tracking
+- `.order('col', { ascending: false, nullsFirst: false })` for DESC NULLS LAST
+- Followed the `contact/[id]/route.ts` pattern (simpler than the streaming network-intel main route)
+
+### US-003: Build the mobile-optimized rate page with contact card (2026-02-19)
+**Status:** Complete
+**What was built:**
+- Page file: `job-matcher-ai/app/rate/page.tsx`
+- Full-screen mobile layout: gray-50 bg, vertically centered card, max-w-400px
+- Contact card displays: profile photo (with initials fallback), full name, title @ company, headline, connected-on date, AI proximity tier badge
+- Shared context section: matches contact's schools/companies against Justin's known affiliations (HBS, HKS, UVA, Kindora, Google.org, Year Up, Bridgespan, Bain, True Steele, Outdoorithm)
+- Loading skeleton with animate-pulse while fetching
+- Back arrow to "/" at top-left, progress counter at top-right
+- Uses shadcn Card, Badge components + Lucide ArrowLeft icon
+- Fetches from GET /api/rate on mount, stores contacts + counts in state
+
+**Learnings:**
+- `enrich_schools` and `enrich_companies_worked` are JSONB arrays of objects — need flexible extraction (schoolName, name, etc.)
+- `min-h-dvh` is better than `min-h-screen` for mobile (accounts for dynamic viewport with browser chrome)
+- `line-clamp-2` for headline truncation keeps card height consistent
+- Used fuzzy matching (includes) for shared context since school/company names vary in format
+- US-004 will add rating buttons, animations, undo/skip — the card display is ready to wire into the flow
+
+### US-004: Build rating buttons and card flow interaction (2026-02-19)
+**Status:** Complete
+**What was built:**
+- Rewrote `job-matcher-ai/app/rate/page.tsx` with full rating flow
+- **5 rating buttons**: Full-width, stacked vertically, min-h-[48px], color-coded (gray→blue→green→orange→purple), show level number + label
+- **Optimistic UI**: Tapping a rating fires POST fire-and-forget, immediately animates card out (fade + slide up, 200ms) and slides next card in
+- **Undo button**: Top-right header icon (Undo2 from lucide), re-POSTs with `rating: null` to revert, re-inserts previous card, single-level undo
+- **Skip button**: Below rating buttons, moves contact to end of batch queue, skipped contacts cycle back
+- **Progress bar**: Thin colored bar under header, percentage-width based on rated/total ratio, smooth CSS transition
+- **Auto-fetch**: When batch exhausted (all 20 rated/skipped), automatically fetches next batch
+- **Done state**: When no unrated contacts remain, shows "Done!" completion message with total count and back link
+- **Keyboard shortcuts**: 0-4 keys to rate, 'u' for undo, 's' for skip (for desktop usage)
+- Updated `POST /api/rate` to accept `rating: null` for undo support (sets familiarity_rating and familiarity_rated_at to null)
+- Changed `any` types to `unknown` in extract functions for better type safety
+- Typecheck passes cleanly
+
+**Learnings:**
+- `requestAnimationFrame` double-nested is needed for CSS transition triggers after DOM updates (first rAF schedules, second applies)
+- `useRef` for fetchingRef prevents duplicate fetches when batch auto-fetches
+- Skip flow: splice current contact out and push to end of array — currentIndex naturally points to next
+- Undo needs to splice the contact back into the array at currentIndex position
+- Keyboard listener needs deps on animatingOut/loading/allDone/currentIndex/contacts to capture current closure state
+- API route now accepts `rating: null` — validation updated to allow null as a special "undo" value
+
+### US-005: Add stats dashboard and session controls (2026-02-19)
+**Status:** Complete
+**What was built:**
+- **Collapsible stats panel**: Tapping the "X / Y rated" header text toggles an expanded panel showing percentage complete, session count, and a color-coded breakdown by familiarity level (0-4) with counts
+- **Filter control**: Sliders icon in header toggles a filter panel with:
+  - Sort order dropdown (shadcn Select): "AI: Close first" (default), "AI: Distant first", "Recently connected"
+  - Mode toggle buttons: "Unrated" (default) vs "Re-rate" to revisit already-rated contacts
+- **Updated GET /api/rate**: Accepts `sort` (ai_close|ai_distant|recent) and `mode` (unrated|rerate) query params; returns `breakdown` object with counts per level (0-4)
+- **LinkedIn profile link**: ExternalLink icon next to contact name opens their LinkedIn in a new tab
+- **Re-rate mode support**: Shows "Current: X — Label" badge on cards when in re-rate mode; properly handles count adjustments for re-rating (decrements old level, increments new)
+- **Session counter**: Tracks how many ratings made in current session (increments on rate, decrements on undo)
+- Also added `familiarity_rating` to SELECT_FIELDS so re-rate mode can display current ratings
+- Typecheck passes cleanly
+
+**Learnings:**
+- Supabase count queries per-level (loop 0-4 with `.eq('familiarity_rating', level)`) is simple and efficient with `head: true`
+- Radix Select (shadcn) needs `SelectTrigger`, `SelectContent`, `SelectItem` hierarchy — works well for compact mobile dropdowns
+- Filter/stats panels as collapsible sections below the header keeps mobile real estate efficient — toggle with icon buttons in header
+- Re-rate mode requires fetching `familiarity_rating` in SELECT_FIELDS to show current rating on card
+- Optimistic breakdown updates need to handle both fresh ratings (mode=unrated) and re-ratings (mode=rerate, decrement old + increment new)
+
+### US-006: Polish UI and end-to-end verification (2026-02-19)
+**Status:** Complete
+**What was built:**
+- **Network error handling**: Added `ErrorToast` component (auto-dismiss 4s, red alert bar) + `saveRating()` helper that catches fetch errors + retry queue (`retryQueueRef`) that retries failed saves every 10 seconds
+- **Image error fallback**: `<img onError>` handler sets `imgError` state → falls back to initials avatar. Resets when contact changes via `useEffect` on `contact.id`
+- **Touch targets ≥44px**: All header buttons (back, stats, filter, undo), filter mode buttons, select items, LinkedIn link, and "Back to dashboard" link have `min-w-[44px] min-h-[44px]`
+- **Smoother card animations**: Exit uses `scale-[0.98]` + `ease-in`, enter uses matching scale + opacity; duration bumped from 200ms to 250ms
+- **iPhone safe area**: Bottom rating area uses `env(safe-area-inset-bottom)` via inline style for home indicator clearance
+- **Accurate undo breakdown**: `UndoState` now includes `appliedRating` field so breakdown revert properly decrements the just-applied level and restores the previous level
+- **No title/company edge case**: Shows em-dash (`—`) when both title and company are null (unless headline provides fallback content)
+- **Fetch error handling**: GET requests check `res.ok` and show error toast on failure
+- **Accessibility**: Added `aria-label` on all icon-only buttons/links, `role="alert"` on error toast
+- **Select none**: Rating/skip buttons have `select-none` to prevent text selection on touch
+- **Badge wrapping**: AI tier + current rating badges use `flex-wrap` for narrow screens
+- **Verified DB**: Confirmed `familiarity_rating` column works (2,402 unrated contacts, schema intact)
+- **Keyboard shortcuts**: Already implemented in US-004 (0-4, u, s) — verified working
+- Typecheck passes cleanly
+
+**Learnings:**
+- `env(safe-area-inset-bottom)` needs inline style since Tailwind doesn't have a built-in utility for it; `max(1rem, env(...))` ensures minimum padding even when env is 0
+- Image `onError` fires when URL 404s or CORS blocks — always need a fallback strategy for user-sourced profile pics
+- Retry queue pattern (ref + setInterval) is a simple, dependency-free approach to resilient fire-and-forget saves — no need for a library
+- `UndoState` should capture both the previous state AND the action that was taken, otherwise reverting optimistic updates is lossy
+- Apple HIG 44px minimum is easy to achieve with `min-w-[44px] min-h-[44px]` + flex centering — the visual icon can be smaller (20px) while the tap area is large
+
+---
+## COMPLETED
+Finished at: Thu Feb 19 19:27:09 PST 2026
+Total iterations: 6

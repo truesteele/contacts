@@ -279,8 +279,11 @@ async function searchNetwork(input: any): Promise<any> {
     query = query.ilike('company', `%${input.company_keyword}%`);
   }
   if (input.name_search) {
-    const term = `%${input.name_search}%`;
-    query = query.or(`first_name.ilike.${term},last_name.ilike.${term}`);
+    const sanitized = String(input.name_search).replace(/[,().]/g, ' ').trim();
+    if (sanitized) {
+      const term = `%${sanitized}%`;
+      query = query.or(`first_name.ilike.${term},last_name.ilike.${term}`);
+    }
   }
   if (input.location_state) {
     query = query.ilike('state', `%${input.location_state}%`);
@@ -655,18 +658,20 @@ async function exportContacts(input: any): Promise<any> {
   const contacts = data || [];
   const headers = [
     'First Name', 'Last Name', 'Email', 'LinkedIn URL', 'Company', 'Position',
-    'City', 'State', 'Proximity Score', 'Proximity Tier', 'Capacity Score',
-    'Capacity Tier', 'Kindora Score', 'Kindora Type', 'Outdoorithm Fit',
+    'City', 'State', 'Familiarity Rating', 'Last Contact', 'Email Threads',
+    'Capacity Score', 'Capacity Tier', 'Kindora Type', 'Outdoorithm Fit',
+    'Ask Readiness Tier', 'Ask Readiness Score',
   ];
 
-  const rows = contacts.map((c: any) =>
-    [
+  const rows = contacts.map((c: any) => {
+    const ar = c.ask_readiness?.outdoorithm_fundraising || c.ask_readiness?.kindora_sales || null;
+    return [
       c.first_name, c.last_name, c.email, c.linkedin_url, c.company, c.position,
-      c.city, c.state, c.ai_proximity_score, c.ai_proximity_tier, c.ai_capacity_score,
-      c.ai_capacity_tier, c.ai_kindora_prospect_score, c.ai_kindora_prospect_type,
-      c.ai_outdoorithm_fit,
-    ].map(escapeCSVValue).join(',')
-  );
+      c.city, c.state, c.familiarity_rating, c.comms_last_date, c.comms_thread_count,
+      c.ai_capacity_score, c.ai_capacity_tier, c.ai_kindora_prospect_type,
+      c.ai_outdoorithm_fit, ar?.tier, ar?.score,
+    ].map(escapeCSVValue).join(',');
+  });
 
   const csvContent = [headers.join(','), ...rows].join('\n');
   const timestamp = new Date().toISOString().split('T')[0];

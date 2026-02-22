@@ -68,6 +68,15 @@
   }
 }
 
+/* Fix text overflow in slide-over sheet panels.
+   Flex children default to min-width:auto which prevents text wrapping.
+   overflow-wrap:anywhere also affects min-content intrinsic size so flex
+   items can shrink properly. */
+[role="dialog"] {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 /* Dashboard-specific styles */
 @layer components {
   .tool-card {
@@ -97,5 +106,16 @@
     @apply inline-flex items-center gap-1.5 px-3 py-1.5
            rounded-full text-xs font-medium tracking-wide
            bg-secondary text-secondary-foreground;
+  }
+
+  /* Shared page header for tool/sub-pages */
+  .page-header {
+    @apply flex items-center gap-3 mb-4 pb-3 border-b;
+  }
+
+  .page-back {
+    @apply min-w-[40px] min-h-[40px] flex items-center justify-center
+           text-muted-foreground hover:text-foreground transition-colors
+           rounded-lg hover:bg-secondary;
   }
 }

@@ -41,5 +41,14 @@ data/
 outputs/
 archive/
 
+# Credentials
+docs/credentials/
+
+# Lock files
+.ralph/**/.lock/
+
+# Tool results (large data files)
+tool-results/
+
 # Vercel
 .vercel

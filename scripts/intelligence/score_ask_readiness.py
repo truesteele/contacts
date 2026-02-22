@@ -48,6 +48,7 @@ class RecommendedApproach(str, Enum):
     phone_call = "phone_call"
     in_person = "in_person"
     linkedin = "linkedin"
+    text_message = "text_message"
     intro_via_mutual = "intro_via_mutual"
 
 class AskTiming(str, Enum):
@@ -62,10 +63,11 @@ class AskReadinessResult(BaseModel):
     reasoning: str = Field(description="Comprehensive 4-6 sentence prospect summary. Must include: (1) relationship strength and basis, (2) key capacity signals (property, FEC, career level), (3) philanthropic alignment evidence, (4) recommended cultivation path. This is the primary summary a fundraiser will read.")
     recommended_approach: RecommendedApproach
     ask_timing: AskTiming
-    cultivation_needed: str = Field(description="What cultivation is needed, or 'None — ready for direct ask'")
+    cultivation_needed: str = Field(description="Specific, time-bound cultivation steps needed (e.g., '2-3 LinkedIn touchpoints over 4-6 weeks, then personal email — aim for ask in 2-3 months'), or 'None — ready for direct ask'")
     suggested_ask_range: str = Field(description="Dollar range like '$500-$2,000' or 'volunteer/attend first'")
-    personalization_angle: str = Field(description="The single strongest personalization hook")
-    risk_factors: list[str] = Field(description="Reasons the ask could backfire or damage the relationship")
+    personalization_angle: str = Field(description="The strongest personalization hook, framed from the RECEIVER's perspective — what about their identity, interests, or overlap with Justin makes this cause resonate for THEM?")
+    receiver_frame: str = Field(description="From the contact's perspective: what kind of message would they welcome from Justin, and why? Consider their interests, shared overlap, topics they write about, and what would make them feel like an insider rather than a target.")
+    risk_factors: list[str] = Field(description="Specific ways the ask could backfire with THIS person — wrong channel, bad timing, misframing, asking too much/little, or damaging the relationship")
 
 
 # ── Goal Definitions ──────────────────────────────────────────────────
@@ -189,28 +191,106 @@ The three pillars of donor readiness are Capacity, Propensity, and Relationship 
    - Would this person feel the ask is authentic coming from Justin, or would it feel transactional?
    - The "warm glow" factor — will giving to this cause make them feel good about themselves?
 
+5. OUTREACH CHANNEL STRATEGY (Evidence-Based)
+   DO NOT recommend channels that don't work. Here's what the research says:
+
+   PHONE CALLS — Almost never recommend.
+   Cold fundraising calls have a 2.3% success rate and most people experience them as intrusive. Only recommend phone_call when:
+   - The contact is active_inner_circle AND familiarity >= 3 (they actually talk on the phone)
+   - It's a THANK-YOU call after a gift (not a solicitation)
+   - There's existing phone/SMS history showing they communicate by phone
+   Phone is for deepening warm relationships, NOT for cold outreach.
+
+   PERSONAL EMAIL — Primary outreach channel ($36-40 ROI per $1 spent).
+   Best for: initial cultivation messages, formal asks after cultivation, follow-ups, stewardship.
+   Use donor-centric language — frame around THEIR identity, not Justin's need.
+   Donor-centric framing increases retention from 27% to 45%.
+
+   LINKEDIN — Best for re-engagement and warm cultivation.
+   Highest-converting social channel for nonprofits. 98% of LinkedIn users donate annually.
+   Best for: reconnecting with dormant strong ties ("it's been too long"), sharing OC content organically, building visibility pre-ask.
+   NOT for: cold transactional asks or generic InMail solicitations.
+
+   TEXT/SMS — Only for people Justin already texts with.
+   98% open rate, highest-engagement channel. But ONLY appropriate when:
+   - Contact has existing SMS history (comms shows sms channel)
+   - Relationship is close enough that texting feels natural (familiarity >= 3)
+   Good for: casual check-ins, event invites, quick personal touchpoints.
+   NEVER recommend for contacts without existing SMS communication.
+
+   IN-PERSON — Highest conversion for major asks ($5K+).
+   Best for: Outdoorithm trips/events, donor cultivation dinners, impact site visits.
+   Requires existing warm relationship. Don't recommend cold in-person meetings.
+
+   INTRO VIA MUTUAL — Best for cold high-capacity contacts.
+   Warm introductions convert at 14.6% vs 1.7% for cold outreach (8.6x). Recommend when:
+   - Contact is distant (familiarity 0-1) but has high capacity or strong alignment
+   - Direct outreach would feel presumptuous given the relationship distance
+
+6. RECEIVER PERSONIFICATION FRAMEWORK
+   Before writing ANY outreach guidance, PUT YOURSELF IN THE CONTACT'S SHOES.
+
+   Consider:
+   a) What does this person care about? (Their Topics of Interest, LinkedIn About, volunteering, career focus, posting activity)
+   b) What do they share with Justin? (Shared institutions, temporal overlap, shared causes, mutual connections)
+   c) What would make them feel like an INSIDER, not a TARGET?
+   d) What kind of message would they be GLAD to receive from Justin?
+
+   Frame ALL outreach guidance from the receiver's perspective:
+   - BAD: "Call them and ask for $5K" (Justin-centric, transactional)
+   - GOOD: "As a fellow HBS alum working in environmental policy, they'd welcome a personal email about how OC bridges outdoor access gaps — directly connected to their professional focus. An invitation to see impact firsthand would appeal to their hands-on orientation."
+
+   Identity framing is the most powerful tool (r=.32, twice as strong as shared identity alone):
+   - "As someone who has dedicated their career to equity..."
+   - "Given your deep connection to the outdoors..."
+   - "As a fellow [institution] alum who believes in..."
+
+   HNW donors especially want PARTNERSHIP, not transactions. They want impact evidence, involvement opportunities, and to feel like co-creators — not ATMs.
+
 CRITICAL BEHAVIORAL INSIGHTS:
+- Warm outreach converts at 14.6% vs 1.7% for cold (8.6x). ALWAYS prioritize warming the relationship before asking.
 - Donors who feel like insiders give more. Shared institutional membership creates insider feeling.
-- The identifiable victim effect: donors respond to individual stories, not statistics. Contacts who've experienced the outdoors themselves (or have kids) are more likely to empathize.
-- Social proof: contacts who know OTHER supporters in Justin's network are more likely to give. Peer clusters matter.
-- Loss aversion: framing matters. "Don't miss being part of this founding group" > "Please donate."
-- Second-gift psychology: if someone has already given to Outdoorithm or supported Justin's other ventures, they're 2-3x more likely to give again.
-- Monthly giving converts best within 30-90 days of first gift or engagement.
-- Major donors need 12-18 months of cultivation before a large ask. Mid-level donors need 2-4 touchpoints.
+- Identity effect: "I am the kind of person who..." framing (r=.32) is the strongest predictor — twice as powerful as shared identity alone (r=.15).
+- Social proof: 48% of donors trust friend/family recommendations. Mention mutual connections who support OC when possible.
+- The identifiable victim effect: one person's story > statistics. Contacts who've experienced the outdoors (or have kids who would benefit) empathize more.
+- Loss aversion: "Don't miss being part of this founding group" > "Please donate."
+- Second-gift psychology: prior givers are 2-3x more likely to give again. First-time donor retention is only 19.4%, but repeat donors retain at 69.2%.
+- Monthly giving: 5.4x lifetime value (83% vs 45% retention). Best converted within 30-90 days of first gift.
+- 80/20 rule: 80% of communication should be cultivation (sharing impact, building relationship), 20% solicitation. Asking too often poisons the well.
+- Cultivation timelines: warm contacts/event participants ask in 30-90 days. Mid-level donors need 2-6 months. Major donors ($10K+) need 12-24 months.
 
 OUTPUT REQUIREMENTS:
-Produce a structured assessment with score (0-100), tier, reasoning, recommended approach, ask timing, cultivation needed, suggested ask range, personalization angle, and risk factors.
+Produce a structured assessment with score (0-100), tier, reasoning, recommended_approach, ask_timing, cultivation_needed, suggested_ask_range, personalization_angle, receiver_frame, and risk_factors.
 
 The 'reasoning' field is the most important output — it's the fundraiser's briefing. Include ALL relevant evidence: relationship basis (shared institutions, comms history, familiarity), capacity signals (FEC donation totals, property value if owner, career level), alignment signals (outdoor/equity interests, board service, philanthropic identity), and the key risk or opportunity. Write it as a decision-ready paragraph, not a vague summary.
 
+The 'cultivation_needed' field must be SPECIFIC and TIME-BOUND:
+- BAD: "Some cultivation needed"
+- GOOD: "2-3 LinkedIn touchpoints over 4-6 weeks (engage with their content, share OC impact stories), then a personal email connecting their environmental work to OC's mission. Aim for ask in 2-3 months."
+
+The 'personalization_angle' should describe the strongest hook FROM THE RECEIVER'S PERSPECTIVE:
+- BAD: "They went to HBS with Justin"
+- GOOD: "As a fellow HBS alum now in environmental policy, frame OC as the evidence-based outdoor equity work they were trained to build — connects their professional identity to the cause."
+
+The 'receiver_frame' field should articulate what the contact would WANT to hear, from their perspective:
+- BAD: "Tell them about OC's mission"
+- GOOD: "They post regularly about DEI in outdoor recreation and their kids' hiking. An email connecting OC's youth camping expeditions to their passion for getting diverse families outdoors would feel like a natural, welcome invitation — not a cold solicitation."
+
+The 'risk_factors' should flag specific approaches that could BACKFIRE with THIS person:
+- Calling someone you haven't spoken to in years feels intrusive
+- A generic fundraising email to someone in philanthropy professionally will feel amateur
+- Asking for money before warming the relationship poisons future asks
+- A small ask to a HNW contact may feel insulting; a large ask to modest-income contact feels tone-deaf
+- Mentioning shared institutions you barely overlapped at can feel presumptuous
+
 SCORING GUIDANCE:
-- 80-100 (ready_now): Close relationship + financial capacity + values alignment + recent positive contact. Justin could call today.
-- 60-79 (cultivate_first): Good relationship foundation but needs a touchpoint before asking. Maybe reconnect first, share the mission, then ask.
-- 40-59 (long_term): Has capacity and some alignment, but relationship is too thin for a direct ask. Needs multiple cultivation touchpoints.
-- 20-39 (long_term): Distant connection or misaligned values. Only worth pursuing if capacity is very high.
+- 80-100 (ready_now): Close relationship + financial capacity + values alignment + recent warm contact. Ready for a personal, well-framed ask.
+- 60-79 (cultivate_first): Good relationship foundation but needs 1-3 cultivation touchpoints before asking. Reconnect, share the mission, build warmth — ask in 1-3 months.
+- 40-59 (long_term): Has capacity and some alignment, but relationship is too thin for a direct ask. Needs 4-8 cultivation touchpoints over 3-12 months.
+- 20-39 (long_term): Distant connection or weak alignment. Only pursue if capacity is very high and a warm intro path exists.
 - 0-19 (not_a_fit): No relationship, no alignment, or no capacity. Don't waste effort.
 
-Be honest and realistic. Most LinkedIn connections are NOT ready for a fundraising ask. A 2,400-person network might yield 50-100 people who are genuinely ready, 200-300 worth cultivating, and the rest are too distant."""
+Be honest and realistic. Most LinkedIn connections are NOT ready for a fundraising ask. A 2,400-person network might yield 50-100 genuinely ready, 200-300 worth cultivating, and the rest are too distant."""
 
 
 # ── Select columns ────────────────────────────────────────────────────
@@ -222,7 +302,7 @@ SELECT_COLS = (
     "ai_capacity_tier, ai_capacity_score, ai_outdoorithm_fit, "
     "fec_donations, real_estate_data, "
     "comms_last_date, comms_thread_count, communication_history, "
-    "comms_closeness, comms_momentum, "
+    "comms_closeness, comms_momentum, comms_summary, "
     "enrich_employment, enrich_education, enrich_volunteering, "
     "known_donor, nonprofit_board_member, "
     "outdoor_environmental_affinity, outdoor_affinity_evidence, "
@@ -375,6 +455,42 @@ def summarize_comms(contact: dict) -> str:
         parts.append(f"Last contact: {last_date}")
     if thread_count:
         parts.append(f"Total threads (email + LinkedIn DMs + SMS): {thread_count}")
+
+    # Rich channel-level data from comms_summary JSONB
+    cs = parse_jsonb(contact.get("comms_summary"))
+    if cs and isinstance(cs, dict):
+        channels = cs.get("channels", {})
+        # Channel breakdown
+        ch_parts = []
+        for ch_name in ["email", "linkedin", "sms"]:
+            ch = channels.get(ch_name)
+            if not ch:
+                continue
+            ch_threads = ch.get("threads", 0)
+            ch_bidir = ch.get("bidirectional", 0)
+            ch_group = ch.get("group_threads", 0)
+            ch_last = ch.get("last_date", "")
+            if ch_last:
+                ch_last = ch_last[:10]  # date only
+            label = {"email": "email", "linkedin": "LinkedIn DM", "sms": "SMS"}.get(ch_name, ch_name)
+            detail = f"{ch_threads} {label} threads ({ch_bidir} bidirectional"
+            if ch_name == "email" and ch_group:
+                detail += f", {ch_group} group"
+            detail += f", last: {ch_last})" if ch_last else ")"
+            ch_parts.append(detail)
+        if ch_parts:
+            parts.append(f"Channel breakdown: {'; '.join(ch_parts)}")
+
+        bidir_pct = cs.get("bidirectional_pct", 0)
+        parts.append(f"Overall bidirectional rate: {bidir_pct:.0f}%")
+
+        most_recent = cs.get("most_recent_channel")
+        if most_recent:
+            parts.append(f"Most recent channel: {most_recent}")
+
+        chrono = cs.get("chronological_summary")
+        if chrono:
+            parts.append(f"Activity timeline: {chrono}")
 
     # Extract relationship summary and recent threads from communication_history
     comms = parse_jsonb(contact.get("communication_history"))
@@ -700,13 +816,14 @@ class AskReadinessScorer:
     MODEL = "gpt-5-mini"
 
     def __init__(self, goal="outdoorithm_fundraising", test_mode=False,
-                 batch_size=None, start_from=0, workers=8, force=False):
+                 batch_size=None, start_from=0, workers=8, force=False, ids=None):
         self.goal = goal
         self.test_mode = test_mode
         self.batch_size = batch_size
         self.start_from = start_from
         self.workers = workers
         self.force = force
+        self.ids = ids  # list of specific contact IDs to score
         self.supabase: Optional[Client] = None
         self.openai: Optional[OpenAI] = None
         self.stats = {
@@ -740,6 +857,23 @@ class AskReadinessScorer:
 
     def get_contacts(self) -> list[dict]:
         """Fetch contacts that need ask-readiness scoring for this goal."""
+        # If specific IDs requested, fetch just those
+        if self.ids:
+            all_contacts = []
+            # Supabase .in_() supports batches; fetch in chunks of 100
+            for i in range(0, len(self.ids), 100):
+                chunk = self.ids[i:i+100]
+                page = (
+                    self.supabase.table("contacts")
+                    .select(SELECT_COLS)
+                    .in_("id", chunk)
+                    .order("id")
+                    .execute()
+                ).data
+                if page:
+                    all_contacts.extend(page)
+            return all_contacts
+
         all_contacts = []
         page_size = 1000
         offset = 0
@@ -843,14 +977,25 @@ class AskReadinessScorer:
             ar = dict(existing_ar)
         ar[self.goal] = self._strip_null_bytes(score_data)
 
-        try:
-            self.supabase.table("contacts").update({
-                "ask_readiness": ar,
-            }).eq("id", contact_id).execute()
-            return True
-        except Exception as e:
-            print(f"    DB error for id={contact_id}: {e}")
-            return False
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                self.supabase.table("contacts").update({
+                    "ask_readiness": ar,
+                }).eq("id", contact_id).execute()
+                return True
+            except Exception as e:
+                err_str = str(e)
+                # Transient errors: SSL EOF, connection terminated — retry with backoff
+                if any(kw in err_str for kw in ("EOF occurred", "ConnectionTerminated", "ConnectionReset", "BrokenPipe")):
+                    if attempt < max_retries - 1:
+                        wait = 2 ** (attempt + 1)
+                        print(f"    DB transient error for id={contact_id}, retrying in {wait}s...")
+                        time.sleep(wait)
+                        continue
+                print(f"    DB error for id={contact_id}: {e}")
+                return False
+        return False
 
     def process_contact(self, contact: dict) -> bool:
         """Process a single contact: score + save."""
@@ -888,6 +1033,45 @@ class AskReadinessScorer:
             self.stats["errors"] += 1
             return False
 
+    def _run_batch(self, contacts: list[dict], start_time: float,
+                   total_label: int, workers: int) -> list[dict]:
+        """Run a batch of contacts concurrently. Returns list of failed contacts."""
+        failed = []
+        # Map futures to full contact dicts (needed for retry)
+        contact_by_future = {}
+
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            for c in contacts:
+                future = executor.submit(self.process_contact, c)
+                contact_by_future[future] = c
+
+            done_count = 0
+            for future in as_completed(contact_by_future):
+                done_count += 1
+                contact = contact_by_future[future]
+                try:
+                    success = future.result()
+                    if not success:
+                        failed.append(contact)
+                except Exception as e:
+                    cid = contact["id"]
+                    print(f"  [ERROR] Contact {cid}: {e}")
+                    self.stats["errors"] += 1
+                    failed.append(contact)
+
+                if done_count % 50 == 0 or done_count == len(contacts):
+                    elapsed = time.time() - start_time
+                    rate = (self.stats["processed"]) / elapsed if elapsed > 0 else 0
+                    print(f"\n--- Progress: {self.stats['processed']}/{total_label} "
+                          f"(ready={self.stats['by_tier']['ready_now']}, "
+                          f"cultivate={self.stats['by_tier']['cultivate_first']}, "
+                          f"long_term={self.stats['by_tier']['long_term']}, "
+                          f"not_fit={self.stats['by_tier']['not_a_fit']}, "
+                          f"errors={self.stats['errors']}) "
+                          f"[{rate:.1f}/sec, {elapsed:.0f}s] ---\n")
+
+        return failed
+
     def run(self):
         if not self.connect():
             return False
@@ -914,33 +1098,22 @@ class AskReadinessScorer:
             for c in contacts:
                 self.process_contact(c)
         else:
-            # Concurrent processing
-            with ThreadPoolExecutor(max_workers=self.workers) as executor:
-                futures = {}
-                for c in contacts:
-                    future = executor.submit(self.process_contact, c)
-                    futures[future] = c["id"]
+            # Main concurrent pass
+            failed = self._run_batch(contacts, start_time, total, self.workers)
 
-                done_count = 0
-                for future in as_completed(futures):
-                    done_count += 1
-                    try:
-                        future.result()
-                    except Exception as e:
-                        cid = futures[future]
-                        print(f"  [ERROR] Contact {cid}: {e}")
-                        self.stats["errors"] += 1
+            # Auto-retry failed contacts sequentially with delays
+            if failed:
+                retry_workers = min(4, len(failed))
+                print(f"\n--- RETRY PASS: {len(failed)} failed contacts with {retry_workers} workers ---\n")
+                # Reset error count — retries get a fresh chance
+                self.stats["errors"] = 0
+                time.sleep(3)  # Brief pause to let connections recover
+                still_failed = self._run_batch(failed, start_time, total, retry_workers)
 
-                    if done_count % 50 == 0 or done_count == total:
-                        elapsed = time.time() - start_time
-                        rate = done_count / elapsed if elapsed > 0 else 0
-                        print(f"\n--- Progress: {done_count}/{total} "
-                              f"(ready={self.stats['by_tier']['ready_now']}, "
-                              f"cultivate={self.stats['by_tier']['cultivate_first']}, "
-                              f"long_term={self.stats['by_tier']['long_term']}, "
-                              f"not_fit={self.stats['by_tier']['not_a_fit']}, "
-                              f"errors={self.stats['errors']}) "
-                              f"[{rate:.1f}/sec, {elapsed:.0f}s] ---\n")
+                if still_failed:
+                    failed_ids = [c["id"] for c in still_failed]
+                    print(f"\n  {len(still_failed)} contacts still failed after retry: {failed_ids}")
+                    print(f"  Re-run with: --ids {','.join(str(i) for i in failed_ids)}")
 
         elapsed = time.time() - start_time
         self.print_summary(elapsed)
@@ -997,7 +1170,13 @@ def main():
                         help="Number of concurrent workers (default: 50)")
     parser.add_argument("--force", "-f", action="store_true",
                         help="Re-score contacts already scored for this goal")
+    parser.add_argument("--ids", type=str, default=None,
+                        help="Comma-separated list of contact IDs to score (e.g., '1264,1972,2070')")
     args = parser.parse_args()
+
+    ids_list = None
+    if args.ids:
+        ids_list = [int(x.strip()) for x in args.ids.split(",") if x.strip()]
 
     scorer = AskReadinessScorer(
         goal=args.goal,
@@ -1006,6 +1185,7 @@ def main():
         start_from=args.start_from,
         workers=args.workers,
         force=args.force,
+        ids=ids_list,
     )
     success = scorer.run()
     sys.exit(0 if success else 1)

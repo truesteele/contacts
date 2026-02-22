@@ -73,25 +73,31 @@ class OverlapAnalysis(BaseModel):
 JUSTIN_TIMELINE = """JUSTIN STEELE'S CAREER TIMELINE (use for temporal overlap analysis):
 
 EMPLOYMENT:
-- Bain & Company, Associate Consultant (2006-2008)
-- The Bridgespan Group, Senior Associate Consultant (2008-2010)
-- Year Up, Deputy Director / Director Strategy & Ops (2010-2012)
-- Harvard Business School, MBA student (2012-2014)
-- Harvard Kennedy School, MPA student (2012-2014)
-- Google.org, Director Americas (2014-2019)
-- Outdoorithm, Co-Founder & CTO (2018-present)
-- True Steele LLC, Founder & Fractional CIO (2019-present)
-- Kindora, Co-Founder & CEO (2020-present)
-- Outdoorithm Collective, Co-Founder & Treasurer (2022-present)
+- Bain & Company, Associate Consultant (Jul 2004 - Aug 2006)
+- The Bridgespan Group, Senior Associate Consultant (Aug 2006 - Jul 2007)
+- Harvard Business School, MBA student (2007-2010)
+- Harvard Kennedy School, MPA student (2007-2010)
+- Year Up, Intern & Contractor (May 2009 - Jul 2010), Dir Strategy & Ops (Jul 2010 - Jul 2012), Program Manager (Jul 2011 - Jan 2013), Deputy Director (Jul 2012 - Aug 2014)
+- Northern Virginia Community College, Adjunct Business Professor (Jul 2011 - Jul 2014)
+- Google / Google.org, Racial Justice & Inclusion Giving Lead (Aug 2014 - Apr 2017), Director Americas (Apr 2017 - Nov 2024)
+- Outdoorithm, Co-Founder & CTO (Feb 2023 - present)
+- True Steele LLC, Founder & Fractional Chief Impact Officer (Dec 2024 - present)
+- Kindora, Co-Founder & CEO (Apr 2025 - present)
+- Outdoorithm Collective, Co-Founder & Treasurer (Jan 2024 - present)
 
 EDUCATION:
-- University of Virginia, BS Engineering (~2002-2006)
-- Harvard Business School, MBA (2012-2014)
-- Harvard Kennedy School, MPA/MPP (2012-2014)
+- University of Virginia, BS Chemical Engineering with Distinction (2000-2004)
+- Harvard Business School, MBA, Nonprofit Management (2007-2010)
+- Harvard Kennedy School, MPA, Urban Social Policy (2007-2010)
 
 BOARDS & VOLUNTEERING:
-- San Francisco Foundation, Board of Trustees / Program Chair (2021-present)
-- Outdoorithm Collective, Board of Directors / Treasurer (2022-present)"""
+- San Francisco Foundation, Program Chair, Board of Trustees (Sep 2020 - present)
+- Outdoorithm Collective, Treasurer, Board of Directors (Aug 2024 - present)
+- National Society of Black Engineers, National Academic Excellence Chair (May 2003 - Apr 2004)
+- Emmanuel Gospel Center, Board Member (Sep 2008 - May 2010)
+- Summer Advantage USA, Founding Team Member (Sep 2009 - May 2010)
+- Citizen Schools, Citizen Teacher (Aug 2008 - May 2010)
+- Sustained Dialogue Campus Network, Moderator (Sep 2002 - present)"""
 
 
 SYSTEM_PROMPT = """You are an institutional overlap analyst. Given Justin Steele's career timeline and a contact's employment, education, and volunteering history, identify ALL shared institutions between them.
@@ -248,11 +254,12 @@ def build_contact_context(contact: dict) -> str:
 class OverlapScorer:
     MODEL = "gpt-5-mini"
 
-    def __init__(self, test_mode=False, batch_size=None, start_from=0, workers=8):
+    def __init__(self, test_mode=False, batch_size=None, start_from=0, workers=8, force=False):
         self.test_mode = test_mode
         self.batch_size = batch_size
         self.start_from = start_from
         self.workers = workers
+        self.force = force
         self.supabase: Optional[Client] = None
         self.openai: Optional[OpenAI] = None
         self.stats = {
@@ -289,15 +296,19 @@ class OverlapScorer:
         offset = 0
 
         while True:
-            page = (
+            query = (
                 self.supabase.table("contacts")
                 .select(SELECT_COLS)
-                .is_("shared_institutions", "null")
+            )
+            if not self.force:
+                query = query.is_("shared_institutions", "null")
+            query = (
+                query
                 .not_.is_("ai_tags", "null")
                 .order("id")
                 .range(offset, offset + page_size - 1)
-                .execute()
-            ).data
+            )
+            page = query.execute().data
 
             if not page:
                 break
@@ -492,8 +503,10 @@ def main():
                         help="Process N contacts")
     parser.add_argument("--start-from", "-s", type=int, default=0,
                         help="Skip first N contacts (for resuming)")
-    parser.add_argument("--workers", "-w", type=int, default=8,
-                        help="Number of concurrent workers (default: 8)")
+    parser.add_argument("--workers", "-w", type=int, default=150,
+                        help="Number of concurrent workers (default: 150)")
+    parser.add_argument("--force", "-f", action="store_true",
+                        help="Re-score contacts that already have overlap data")
     args = parser.parse_args()
 
     scorer = OverlapScorer(
@@ -501,6 +514,7 @@ def main():
         batch_size=args.batch,
         start_from=args.start_from,
         workers=args.workers,
+        force=args.force,
     )
     success = scorer.run()
     sys.exit(0 if success else 1)

@@ -8,6 +8,7 @@ import {
   Users,
   Search,
   MapPin,
+  Heart,
   Mountain,
   ArrowUpRight,
   Sparkles,
@@ -49,12 +50,21 @@ const TOOLS = [
     title: 'Network Intelligence',
     description:
       'AI copilot for exploring your 2,500-person network. Natural language queries, smart filters, prospect lists, and outreach drafting.',
-    href: '/tools?tab=network-intel',
+    href: '/tools/network-intel',
     icon: Network,
     accent: 'from-teal-500/10 to-emerald-500/5',
     iconColor: 'text-teal-600',
     badge: 'Primary',
     large: true,
+  },
+  {
+    title: 'Ask Readiness',
+    description:
+      'Sortable list of all 2,800+ contacts scored by GPT-5 mini for Outdoorithm fundraising readiness. Includes reasoning, approach, ask range, and risk factors.',
+    href: '/tools/ask-readiness',
+    icon: Heart,
+    accent: 'from-green-500/10 to-emerald-500/5',
+    iconColor: 'text-green-600',
   },
   {
     title: 'Email Finder',
@@ -77,7 +87,7 @@ const TOOLS = [
   {
     title: 'AI Job Search',
     description: 'Chat-based candidate matching from your personal network for open roles.',
-    href: '/tools?tab=job-search',
+    href: '/tools/job-search',
     icon: Search,
     accent: 'from-blue-500/10 to-sky-500/5',
     iconColor: 'text-blue-600',
@@ -85,7 +95,7 @@ const TOOLS = [
   {
     title: 'SoCal Contacts',
     description: 'Browse and filter contacts in the LA and San Diego metro areas.',
-    href: '/tools?tab=socal-contacts',
+    href: '/tools/socal-contacts',
     icon: MapPin,
     accent: 'from-rose-500/10 to-pink-500/5',
     iconColor: 'text-rose-600',
@@ -93,7 +103,7 @@ const TOOLS = [
   {
     title: 'Camelback Coaches',
     description: 'Search and match coaches from the Camelback Ventures expert network.',
-    href: '/tools?tab=coach-search',
+    href: '/tools/coach-search',
     icon: Mountain,
     accent: 'from-emerald-500/10 to-green-500/5',
     iconColor: 'text-emerald-600',

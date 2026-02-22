@@ -593,9 +593,9 @@ export default function RatePage() {
   const showInitials = !contact?.enrich_profile_pic_url || imgError === contact?.id;
 
   return (
-    <div className="min-h-dvh bg-gray-50 flex flex-col">
+    <div className="min-h-dvh bg-background flex flex-col">
       {/* Header — all touch targets ≥44px */}
-      <div className="flex items-center justify-between px-2 py-1 bg-white border-b">
+      <div className="flex items-center justify-between px-2 py-1 bg-card border-b">
         <div className="flex items-center">
           <Link
             href="/"
@@ -658,7 +658,7 @@ export default function RatePage() {
 
       {/* Progress bar */}
       {total > 0 && (
-        <div className="h-1 bg-gray-200">
+        <div className="h-1 bg-muted">
           <div
             className="h-full bg-primary transition-all duration-300 ease-out"
             style={{ width: `${progressPct}%` }}
@@ -668,7 +668,7 @@ export default function RatePage() {
 
       {/* Collapsible stats panel */}
       {statsExpanded && (
-        <div className="bg-white border-b px-4 py-3 space-y-2">
+        <div className="bg-card border-b px-4 py-3 space-y-2">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>{progressPct.toFixed(1)}% complete</span>
             <span>Session: {sessionCount} rated</span>
@@ -689,7 +689,7 @@ export default function RatePage() {
 
       {/* Filter panel */}
       {filterOpen && (
-        <div className="bg-white border-b px-4 py-3 space-y-3">
+        <div className="bg-card border-b px-4 py-3 space-y-3">
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Sort order</label>
             <Select value={sortBy} onValueChange={handleSortChange}>
@@ -713,7 +713,7 @@ export default function RatePage() {
                 className={`flex-1 min-h-[44px] py-2 px-3 rounded-md text-sm font-medium transition-colors ${
                   mode === 'unrated'
                     ? 'bg-primary text-primary-foreground'
-                    : 'bg-gray-100 text-muted-foreground hover:bg-gray-200'
+                    : 'bg-secondary text-muted-foreground hover:bg-muted'
                 }`}
               >
                 Unrated
@@ -723,7 +723,7 @@ export default function RatePage() {
                 className={`flex-1 min-h-[44px] py-2 px-3 rounded-md text-sm font-medium transition-colors ${
                   mode === 'rerate'
                     ? 'bg-primary text-primary-foreground'
-                    : 'bg-gray-100 text-muted-foreground hover:bg-gray-200'
+                    : 'bg-secondary text-muted-foreground hover:bg-muted'
                 }`}
               >
                 Re-rate
@@ -898,7 +898,7 @@ export default function RatePage() {
           <button
             onClick={handleSkip}
             disabled={animatingOut}
-            className="w-full min-h-[44px] px-4 py-2.5 rounded-lg text-sm text-muted-foreground hover:bg-gray-100 active:bg-gray-200 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 select-none"
+            className="w-full min-h-[44px] px-4 py-2.5 rounded-lg text-sm text-muted-foreground hover:bg-secondary active:bg-muted transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 select-none"
           >
             {viewingHistory ? (
               <>
@@ -917,7 +917,7 @@ export default function RatePage() {
 
       {/* Search overlay */}
       {searchOpen && (
-        <div className="fixed inset-0 z-50 bg-white flex flex-col">
+        <div className="fixed inset-0 z-50 bg-card flex flex-col">
           <div className="flex items-center gap-2 px-3 py-2 border-b">
             <Search className="w-5 h-5 text-muted-foreground flex-shrink-0" />
             <input
@@ -951,7 +951,7 @@ export default function RatePage() {
               <button
                 key={result.id}
                 onClick={() => handleSearchSelect(result)}
-                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-50 active:bg-gray-100 transition-colors border-b text-left"
+                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-secondary active:bg-muted transition-colors border-b text-left"
               >
                 {result.enrich_profile_pic_url ? (
                   <img

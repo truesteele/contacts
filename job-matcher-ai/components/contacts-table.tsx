@@ -119,7 +119,7 @@ function FamiliarityDots({ rating }: { rating: number }) {
 }
 
 function getRecencyColor(dateStr: string): string {
-  const date = new Date(dateStr);
+  const date = new Date(dateStr + 'T00:00:00');
   const now = new Date();
   const monthsAgo = (now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24 * 30);
   if (monthsAgo < 3) return 'text-green-600 dark:text-green-400';
@@ -128,7 +128,7 @@ function getRecencyColor(dateStr: string): string {
 }
 
 function formatShortDate(dateStr: string): string {
-  const d = new Date(dateStr);
+  const d = new Date(dateStr + 'T00:00:00');
   const now = new Date();
   const sameYear = d.getFullYear() === now.getFullYear();
   return d.toLocaleDateString('en-US', {

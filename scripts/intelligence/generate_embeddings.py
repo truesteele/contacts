@@ -31,7 +31,7 @@ load_dotenv()
 
 EMBEDDING_MODEL = "text-embedding-3-small"
 EMBEDDING_DIMS = 768
-BATCH_SIZE = 100  # OpenAI supports up to 2048, but 100 keeps requests manageable
+BATCH_SIZE = 500  # OpenAI supports up to 2048; Tier 5 handles large batches easily
 PAGE_SIZE = 1000
 
 SELECT_COLS = (

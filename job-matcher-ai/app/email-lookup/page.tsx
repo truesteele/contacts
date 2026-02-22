@@ -54,7 +54,7 @@ function CopyButton({ text }: { text: string }) {
   return (
     <button
       onClick={handleCopy}
-      className="min-w-[36px] min-h-[36px] flex items-center justify-center rounded-md hover:bg-gray-100 transition-colors text-muted-foreground hover:text-foreground"
+      className="min-w-[36px] min-h-[36px] flex items-center justify-center rounded-md hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
       title="Copy email"
     >
       {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
@@ -155,17 +155,16 @@ export default function EmailLookupPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-gray-50 flex flex-col">
+    <div className="min-h-dvh bg-background flex flex-col">
       {/* Header */}
-      <div className="flex items-center gap-2 px-3 py-1 bg-white border-b">
-        <Link
-          href="/"
-          className="min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-          aria-label="Back to dashboard"
-        >
+      <div className="page-header mx-4 mt-4">
+        <Link href="/" className="page-back" aria-label="Back to dashboard">
           <ArrowLeft className="w-5 h-5" />
         </Link>
-        <h1 className="text-base font-semibold">Email Finder</h1>
+        <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center text-violet-600">
+          <Mail className="w-4 h-4" />
+        </div>
+        <h1 className="text-lg font-semibold tracking-tight">Email Finder</h1>
       </div>
 
       <div className="flex-1 px-4 py-6 max-w-lg mx-auto w-full space-y-4">
@@ -179,7 +178,7 @@ export default function EmailLookupPage() {
               value={url}
               onChange={e => setUrl(e.target.value)}
               placeholder="linkedin.com/in/username"
-              className="w-full pl-10 pr-4 py-3 text-base border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+              className="w-full pl-10 pr-4 py-3 text-base border rounded-lg bg-card focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
               autoComplete="off"
               disabled={loading}
             />
@@ -203,7 +202,7 @@ export default function EmailLookupPage() {
               <button
                 type="button"
                 onClick={handleClear}
-                className="min-h-[44px] px-4 py-2.5 border rounded-lg text-sm text-muted-foreground hover:bg-gray-50 transition-colors"
+                className="min-h-[44px] px-4 py-2.5 border rounded-lg text-sm text-muted-foreground hover:bg-secondary transition-colors"
               >
                 Clear
               </button>

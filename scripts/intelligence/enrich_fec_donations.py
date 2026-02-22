@@ -7,6 +7,9 @@ contact, storing results in the fec_donations JSONB column. Federal campaign
 contributions ($200+) are public record and serve as the strongest free wealth
 indicator available.
 
+Uses GPT-5 mini to verify that FEC records belong to the correct person (not
+a same-name collision), matching on employer, occupation, city, and state.
+
 Usage:
   python scripts/intelligence/enrich_fec_donations.py --test           # 1 contact
   python scripts/intelligence/enrich_fec_donations.py --batch 50       # 50 contacts
@@ -19,12 +22,14 @@ import sys
 import json
 import time
 import argparse
+import threading
 from datetime import datetime, timezone
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import requests
 from dotenv import load_dotenv
 from supabase import create_client, Client
+from openai import OpenAI
 
 load_dotenv()
 
@@ -33,8 +38,82 @@ load_dotenv()
 OPENFEC_BASE = "https://api.open.fec.gov/v1"
 CYCLES = [2026, 2024, 2022, 2020]
 MAX_DONATIONS_STORED = 10  # Keep top N recent donations in JSONB
-RATE_LIMIT_DELAY = 3.7     # ~970 req/hr, safely under 1,000/hr limit
-SELECT_COLS = "id, first_name, last_name, city, state, fec_donations"
+TARGET_REQUESTS_PER_HOUR = 950  # Under 1,000/hr API limit
+SELECT_COLS = (
+    "id, first_name, last_name, city, state, country, "
+    "company, position, headline, enrich_employment, fec_donations"
+)
+
+# FEC is US-only — skip contacts in other countries
+US_COUNTRY_VALUES = {"united states", "us", "usa", "united states of america", ""}
+
+# State map for extracting state from city strings like "San Francisco, California"
+STATE_MAP = {
+    "alabama": "AL", "alaska": "AK", "arizona": "AZ", "arkansas": "AR",
+    "california": "CA", "colorado": "CO", "connecticut": "CT", "delaware": "DE",
+    "district of columbia": "DC", "florida": "FL", "georgia": "GA", "hawaii": "HI",
+    "idaho": "ID", "illinois": "IL", "indiana": "IN", "iowa": "IA",
+    "kansas": "KS", "kentucky": "KY", "louisiana": "LA", "maine": "ME",
+    "maryland": "MD", "massachusetts": "MA", "michigan": "MI", "minnesota": "MN",
+    "mississippi": "MS", "missouri": "MO", "montana": "MT", "nebraska": "NE",
+    "nevada": "NV", "new hampshire": "NH", "new jersey": "NJ", "new mexico": "NM",
+    "new york": "NY", "north carolina": "NC", "north dakota": "ND", "ohio": "OH",
+    "oklahoma": "OK", "oregon": "OR", "pennsylvania": "PA", "rhode island": "RI",
+    "south carolina": "SC", "south dakota": "SD", "tennessee": "TN", "texas": "TX",
+    "utah": "UT", "vermont": "VT", "virginia": "VA", "washington": "WA",
+    "west virginia": "WV", "wisconsin": "WI", "wyoming": "WY",
+}
+STATE_CODES = set(STATE_MAP.values())
+
+
+class RateLimiter:
+    """Thread-safe rate limiter for concurrent API calls."""
+
+    def __init__(self, max_per_hour: int):
+        self.min_interval = 3600.0 / max_per_hour
+        self.lock = threading.Lock()
+        self.last_time = 0.0
+
+    def acquire(self):
+        """Block until it's safe to make the next API call."""
+        with self.lock:
+            now = time.monotonic()
+            wait = self.min_interval - (now - self.last_time)
+            if wait > 0:
+                time.sleep(wait)
+            self.last_time = time.monotonic()
+
+
+# ── State extraction ─────────────────────────────────────────────────
+
+def normalize_state(state_str: str) -> str:
+    """Convert state name to 2-letter code if needed."""
+    if not state_str:
+        return ""
+    state_str = state_str.strip()
+    if len(state_str) == 2 and state_str.upper() in STATE_CODES:
+        return state_str.upper()
+    return STATE_MAP.get(state_str.lower(), "")
+
+
+def extract_state_from_employment(contact: dict) -> str:
+    """Try to extract US state from employment data when contact state is missing."""
+    employment = contact.get("enrich_employment")
+    if not employment or not isinstance(employment, list):
+        return ""
+    for emp in employment[:3]:  # Check recent jobs
+        if not isinstance(emp, dict):
+            continue
+        location = emp.get("location", "") or emp.get("company_location", "")
+        if not location:
+            continue
+        # Try "City, ST" or "City, State" patterns
+        parts = [p.strip() for p in location.split(",")]
+        for part in parts:
+            code = normalize_state(part)
+            if code:
+                return code
+    return ""
 
 
 # ── OpenFEC API ───────────────────────────────────────────────────────
@@ -64,7 +143,6 @@ def query_fec(api_key: str, first_name: str, last_name: str,
 
         # State filter for disambiguation (only if we have it)
         if state:
-            # Normalize state to 2-letter code
             state_code = normalize_state(state)
             if state_code:
                 params["contributor_state"] = state_code
@@ -101,39 +179,11 @@ def query_fec(api_key: str, first_name: str, last_name: str,
     return all_results
 
 
-def normalize_state(state_str: str) -> str:
-    """Convert state name to 2-letter code if needed."""
-    if not state_str:
-        return ""
-    state_str = state_str.strip()
-    if len(state_str) == 2:
-        return state_str.upper()
-
-    # Common state name → code mapping
-    STATE_MAP = {
-        "alabama": "AL", "alaska": "AK", "arizona": "AZ", "arkansas": "AR",
-        "california": "CA", "colorado": "CO", "connecticut": "CT", "delaware": "DE",
-        "district of columbia": "DC", "florida": "FL", "georgia": "GA", "hawaii": "HI",
-        "idaho": "ID", "illinois": "IL", "indiana": "IN", "iowa": "IA",
-        "kansas": "KS", "kentucky": "KY", "louisiana": "LA", "maine": "ME",
-        "maryland": "MD", "massachusetts": "MA", "michigan": "MI", "minnesota": "MN",
-        "mississippi": "MS", "missouri": "MO", "montana": "MT", "nebraska": "NE",
-        "nevada": "NV", "new hampshire": "NH", "new jersey": "NJ", "new mexico": "NM",
-        "new york": "NY", "north carolina": "NC", "north dakota": "ND", "ohio": "OH",
-        "oklahoma": "OK", "oregon": "OR", "pennsylvania": "PA", "rhode island": "RI",
-        "south carolina": "SC", "south dakota": "SD", "tennessee": "TN", "texas": "TX",
-        "utah": "UT", "vermont": "VT", "virginia": "VA", "washington": "WA",
-        "west virginia": "WV", "wisconsin": "WI", "wyoming": "WY",
-    }
-    return STATE_MAP.get(state_str.lower(), "")
-
-
 def disambiguate_results(results: list[dict], first_name: str, last_name: str,
                          city: str = None, state: str = None) -> list[dict]:
     """
-    Filter FEC results to likely matches. The API does fuzzy name matching,
-    so we need to verify the results are for the right person.
-    Uses city/state when available for common names.
+    Filter FEC results to exact name matches only.
+    GPT verification handles the actual person-matching downstream.
     """
     if not results:
         return []
@@ -142,19 +192,16 @@ def disambiguate_results(results: list[dict], first_name: str, last_name: str,
     first_lower = first_name.lower().strip()
     last_lower = last_name.lower().strip()
     state_code = normalize_state(state) if state else ""
-    city_lower = city.lower().strip() if city else ""
 
     # For compound last names like "Kapor Klein", split into parts
     last_parts = last_lower.split()
 
     for r in results:
-        # Check name match — FEC splits names differently than LinkedIn
-        # e.g., "Kapor Klein" → contributor_last_name="KLEIN", contributor_name="KLEIN, FREADA KAPOR"
         fec_first = (r.get("contributor_first_name") or "").lower().strip()
         fec_last = (r.get("contributor_last_name") or "").lower().strip()
         fec_full_name = (r.get("contributor_name") or "").lower().strip()
 
-        # Last name match: exact, or FEC last equals any part of compound last name
+        # Last name: exact match, or FEC last equals any part of compound last name
         last_match = (
             fec_last == last_lower or
             fec_last in last_parts or
@@ -163,12 +210,9 @@ def disambiguate_results(results: list[dict], first_name: str, last_name: str,
         if not last_match:
             continue
 
-        # First name match: exact, prefix, or contained
-        first_match = (
-            fec_first == first_lower or
-            fec_first.startswith(first_lower) or
-            first_lower.startswith(fec_first)
-        )
+        # First name: EXACT match only (no prefix matching)
+        # "Andre" must NOT match "Andrea" or "Andrew"
+        first_match = (fec_first == first_lower)
         if not first_match:
             continue
 
@@ -177,14 +221,11 @@ def disambiguate_results(results: list[dict], first_name: str, last_name: str,
             if not all(part in fec_full_name for part in last_parts):
                 continue
 
-        # For common names, also check state/city if available
+        # Tag state/city match for downstream use
         fec_state = (r.get("contributor_state") or "").upper()
         fec_city = (r.get("contributor_city") or "").lower().strip()
-
-        # If we have state info, prefer matches in the same state
-        # but don't exclude (people move)
         r["_state_match"] = (state_code and fec_state == state_code)
-        r["_city_match"] = (city_lower and fec_city == city_lower)
+        r["_city_match"] = (city and fec_city == city.lower().strip())
 
         filtered.append(r)
 
@@ -196,6 +237,92 @@ def disambiguate_results(results: list[dict], first_name: str, last_name: str,
             filtered = state_matches
 
     return filtered
+
+
+# ── GPT-5 mini verification ──────────────────────────────────────────
+
+def verify_fec_match(contact: dict, fec_summary: dict, openai_client: OpenAI) -> dict:
+    """
+    Use GPT-5 mini to verify that FEC donation records belong to the contact.
+    Returns verification dict with is_match, confidence, reasoning.
+    """
+    # Build contact profile
+    profile_parts = [
+        f"Name: {contact.get('first_name', '')} {contact.get('last_name', '')}",
+        f"City: {contact.get('city', 'Unknown')}",
+        f"State: {contact.get('state', 'Unknown')}",
+        f"Current Company: {contact.get('company', 'Unknown')}",
+        f"Current Position: {contact.get('position', 'Unknown')}",
+        f"Headline: {contact.get('headline', 'Unknown')}",
+    ]
+
+    employment = contact.get("enrich_employment")
+    if employment and isinstance(employment, list):
+        jobs = []
+        for emp in employment[:5]:
+            if isinstance(emp, dict):
+                co = emp.get("company_name", "") or emp.get("companyName", "")
+                title = emp.get("job_title", "") or emp.get("title", "")
+                loc = emp.get("location", "") or emp.get("company_location", "")
+                if co:
+                    jobs.append(f"  - {title} at {co} ({loc})" if loc else f"  - {title} at {co}")
+        if jobs:
+            profile_parts.append("Employment history:\n" + "\n".join(jobs))
+
+    # Build FEC summary for GPT
+    fec_parts = [
+        f"Total: ${fec_summary.get('total_amount', 0):,.2f} across {fec_summary.get('donation_count', 0)} donations",
+        f"Largest single: ${fec_summary.get('max_single', 0):,.2f}",
+        f"Cycles: {', '.join(fec_summary.get('cycles', []))}",
+        f"Employer from FEC: {fec_summary.get('employer_from_fec', 'N/A')}",
+        f"Occupation from FEC: {fec_summary.get('occupation_from_fec', 'N/A')}",
+    ]
+
+    # Add unique contributor states and cities from recent donations
+    recent = fec_summary.get("recent_donations", [])
+    if recent:
+        committees = [f"  - {d['committee']}: ${d['amount']:,.0f} ({d['date']})" for d in recent[:5]]
+        fec_parts.append("Recent donations:\n" + "\n".join(committees))
+
+    # Include raw contributor locations if available
+    fec_parts.append(f"Contributor states in data: {fec_summary.get('_contributor_states', 'N/A')}")
+    fec_parts.append(f"Contributor cities in data: {fec_summary.get('_contributor_cities', 'N/A')}")
+
+    prompt = f"""You are verifying whether FEC (Federal Election Commission) political donation records belong to a specific LinkedIn contact, or to a different person with the same name.
+
+LINKEDIN CONTACT PROFILE:
+{chr(10).join(profile_parts)}
+
+FEC DONATION RECORDS:
+{chr(10).join(fec_parts)}
+
+Determine if these FEC records are from the SAME PERSON as the LinkedIn contact. Consider:
+1. Employer match: Does the FEC employer/occupation match ANY of the contact's current or past employers?
+2. Location match: Is the FEC contributor in the same state or metro area as the contact?
+3. Plausibility: Does the donation pattern make sense for this person's career level?
+4. Red flags: Different employer AND different state = almost certainly a different person.
+
+Common false positive patterns to watch for:
+- FEC records from a different state with a completely unrelated employer
+- "NOT EMPLOYED" or "RETIRED" in FEC when the contact is actively working at a specific company
+- Very common names (Chris, David, Michael, etc.) with no employer/location overlap
+
+Respond in JSON:
+{{
+  "is_match": true or false,
+  "confidence": "high" | "medium" | "low",
+  "reasoning": "1-2 sentence explanation citing specific evidence"
+}}"""
+
+    try:
+        response = openai_client.chat.completions.create(
+            model="gpt-5-mini",
+            messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"},
+        )
+        return json.loads(response.choices[0].message.content)
+    except Exception as e:
+        return {"is_match": False, "confidence": "error", "reasoning": f"GPT error: {e}"}
 
 
 def build_fec_summary(results: list[dict]) -> dict:
@@ -215,6 +342,16 @@ def build_fec_summary(results: list[dict]) -> dict:
     total_amount = sum(r.get("contribution_receipt_amount", 0) for r in results)
     max_single = max((r.get("contribution_receipt_amount", 0) for r in results), default=0)
     cycles = sorted(set(str(r.get("two_year_transaction_period", "")) for r in results), reverse=True)
+
+    # Collect unique contributor states and cities for GPT verification
+    contributor_states = sorted(set(
+        (r.get("contributor_state") or "").upper()
+        for r in results if r.get("contributor_state")
+    ))
+    contributor_cities = sorted(set(
+        (r.get("contributor_city") or "").title()
+        for r in results if r.get("contributor_city")
+    ))[:10]  # Cap at 10
 
     # Build recent donations list (top N by date)
     sorted_results = sorted(
@@ -254,6 +391,8 @@ def build_fec_summary(results: list[dict]) -> dict:
         "employer_from_fec": employer,
         "occupation_from_fec": occupation,
         "last_checked": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+        "_contributor_states": ", ".join(contributor_states),
+        "_contributor_cities": ", ".join(contributor_cities),
     }
 
 
@@ -265,11 +404,15 @@ class FECEnricher:
         self.batch_size = batch_size
         self.start_from = start_from
         self.workers = workers
+        self.rate_limiter = RateLimiter(TARGET_REQUESTS_PER_HOUR)
         self.supabase: Client = None
+        self.openai_client: OpenAI = None
         self.api_key: str = ""
         self.stats = {
             "processed": 0,
             "found": 0,
+            "verified": 0,
+            "rejected_by_gpt": 0,
             "no_results": 0,
             "errors": 0,
             "skipped": 0,
@@ -280,6 +423,7 @@ class FECEnricher:
         url = os.environ.get("SUPABASE_URL")
         key = os.environ.get("SUPABASE_SERVICE_KEY")
         self.api_key = os.environ.get("OPENFEC_API_KEY", "")
+        openai_key = os.environ.get("OPENAI_APIKEY", "")
 
         if not url or not key:
             print("ERROR: Missing SUPABASE_URL or SUPABASE_SERVICE_KEY")
@@ -287,9 +431,13 @@ class FECEnricher:
         if not self.api_key:
             print("ERROR: Missing OPENFEC_API_KEY")
             return False
+        if not openai_key:
+            print("ERROR: Missing OPENAI_APIKEY (needed for GPT verification)")
+            return False
 
         self.supabase = create_client(url, key)
-        print("Connected to Supabase + OpenFEC API key loaded")
+        self.openai_client = OpenAI(api_key=openai_key)
+        print("Connected to Supabase + OpenFEC + OpenAI")
         return True
 
     def get_contacts(self) -> list[dict]:
@@ -328,7 +476,7 @@ class FECEnricher:
         return all_contacts
 
     def process_contact(self, contact: dict) -> bool:
-        """Query FEC for a single contact and store results."""
+        """Query FEC for a single contact, verify with GPT, and store results."""
         cid = contact["id"]
         first = contact.get("first_name", "").strip()
         last = contact.get("last_name", "").strip()
@@ -340,15 +488,58 @@ class FECEnricher:
             self.stats["skipped"] += 1
             return False
 
-        # Query FEC
+        # FEC is US-only — skip non-US contacts
+        country = (contact.get("country") or "").strip().lower()
+        if country and country not in US_COUNTRY_VALUES:
+            self.stats["skipped"] += 1
+            skipped_fec = {
+                "total_amount": 0, "donation_count": 0, "max_single": 0,
+                "cycles": [], "recent_donations": [],
+                "employer_from_fec": None, "occupation_from_fec": None,
+                "last_checked": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
+                "skipped_reason": "non_us_contact",
+            }
+            try:
+                self.supabase.table("contacts").update(
+                    {"fec_donations": skipped_fec}
+                ).eq("id", cid).execute()
+            except Exception:
+                pass
+            return False
+
+        # Try to extract state from employment if missing
+        if not state:
+            state = extract_state_from_employment(contact)
+
+        # Rate limit then query FEC
+        self.rate_limiter.acquire()
         self.stats["api_calls"] += 1
         raw_results = query_fec(self.api_key, first, last, state, city)
 
-        # Disambiguate
+        # Disambiguate (strict exact name matching)
         filtered = disambiguate_results(raw_results, first, last, city, state)
 
         # Build summary
         summary = build_fec_summary(filtered)
+
+        # GPT verification if we found donations
+        verification = None
+        if summary["donation_count"] > 0:
+            verification = verify_fec_match(contact, summary, self.openai_client)
+
+            if not verification.get("is_match", False):
+                # GPT says these records don't belong to this person
+                self.stats["rejected_by_gpt"] += 1
+                summary = build_fec_summary([])  # Clear the donations
+                summary["verification"] = verification
+                summary["_raw_count_before_verification"] = len(filtered)
+            else:
+                self.stats["verified"] += 1
+                summary["verification"] = verification
+
+        # Clean up internal fields before saving
+        summary.pop("_contributor_states", None)
+        summary.pop("_contributor_cities", None)
 
         # Save to Supabase
         try:
@@ -363,10 +554,11 @@ class FECEnricher:
         self.stats["processed"] += 1
         if summary["donation_count"] > 0:
             self.stats["found"] += 1
+            conf = verification.get("confidence", "?") if verification else "?"
             print(f"  [{cid}] {name}: ${summary['total_amount']:,.0f} across "
                   f"{summary['donation_count']} donations "
                   f"(max ${summary['max_single']:,.0f}, "
-                  f"cycles: {', '.join(summary['cycles'])})")
+                  f"verified={conf})")
         else:
             self.stats["no_results"] += 1
 
@@ -387,26 +579,37 @@ class FECEnricher:
 
         mode_str = "TEST" if self.test_mode else f"BATCH {self.batch_size}" if self.batch_size else "FULL"
         print(f"\n--- {mode_str} MODE: Processing {total} contacts ---")
-        print(f"    Rate limit: {RATE_LIMIT_DELAY}s between API calls (~{3600/RATE_LIMIT_DELAY:.0f}/hr)")
+        print(f"    Rate limit: {TARGET_REQUESTS_PER_HOUR}/hr with {self.workers} concurrent workers")
+        print(f"    GPT-5 mini verification: ENABLED")
         print()
 
-        # Sequential processing due to API rate limit (1,000/hr)
-        for i, contact in enumerate(contacts):
-            self.process_contact(contact)
+        # Concurrent processing with thread-safe rate limiter
+        with ThreadPoolExecutor(max_workers=self.workers) as executor:
+            futures = {}
+            for contact in contacts:
+                future = executor.submit(self.process_contact, contact)
+                futures[future] = contact["id"]
 
-            # Rate limiting
-            if i < total - 1:
-                time.sleep(RATE_LIMIT_DELAY)
+            done_count = 0
+            for future in as_completed(futures):
+                done_count += 1
+                try:
+                    future.result()
+                except Exception as e:
+                    cid = futures[future]
+                    print(f"  [ERROR] Contact {cid}: {e}")
+                    self.stats["errors"] += 1
 
-            # Progress every 50
-            if (i + 1) % 50 == 0 or (i + 1) == total:
-                elapsed = time.time() - start_time
-                rate = (i + 1) / elapsed * 3600 if elapsed > 0 else 0
-                print(f"\n--- Progress: {i + 1}/{total} "
-                      f"({self.stats['found']} found, "
-                      f"{self.stats['no_results']} no results, "
-                      f"{self.stats['errors']} errors) "
-                      f"[{rate:.0f} contacts/hr, {elapsed:.0f}s elapsed] ---\n")
+                if done_count % 50 == 0 or done_count == total:
+                    elapsed = time.time() - start_time
+                    rate = done_count / elapsed * 3600 if elapsed > 0 else 0
+                    s = self.stats
+                    print(f"\n--- Progress: {done_count}/{total} "
+                          f"(found={s['found']}, verified={s['verified']}, "
+                          f"gpt_rejected={s['rejected_by_gpt']}, "
+                          f"no_results={s['no_results']}, "
+                          f"errors={s['errors']}) "
+                          f"[{rate:.0f} contacts/hr, {elapsed:.0f}s elapsed] ---\n")
 
         elapsed = time.time() - start_time
         self.print_summary(elapsed)
@@ -418,9 +621,10 @@ class FECEnricher:
         print("FEC ENRICHMENT SUMMARY")
         print("=" * 60)
         print(f"  Contacts processed: {s['processed']}")
-        print(f"  With FEC records:   {s['found']}")
+        print(f"  With FEC records:   {s['found']} (GPT-verified)")
+        print(f"  GPT rejected:       {s['rejected_by_gpt']} (wrong person)")
         print(f"  No FEC records:     {s['no_results']}")
-        print(f"  Skipped (no name):  {s['skipped']}")
+        print(f"  Skipped (non-US):   {s['skipped']}")
         print(f"  Errors:             {s['errors']}")
         print(f"  API calls:          {s['api_calls']}")
         print(f"  Time elapsed:       {elapsed:.1f}s")
@@ -441,7 +645,7 @@ def main():
     parser.add_argument("--start-from", "-s", type=int, default=0,
                         help="Skip first N contacts (for resuming)")
     parser.add_argument("--workers", "-w", type=int, default=4,
-                        help="Number of workers (unused — sequential due to rate limit)")
+                        help="Number of concurrent workers (default: 4, rate-limited to 950/hr)")
     args = parser.parse_args()
 
     enricher = FECEnricher(

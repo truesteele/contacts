@@ -225,30 +225,39 @@ export function NetworkCopilot() {
       'State',
       'Email',
       'LinkedIn',
-      'Proximity Score',
-      'Proximity Tier',
+      'Familiarity Rating',
+      'Last Contact',
+      'Email Threads',
       'Capacity Score',
       'Capacity Tier',
       'Kindora Type',
       'Outdoorithm Fit',
+      'Ask Readiness Tier',
+      'Ask Readiness Score',
     ];
 
-    const rows = contacts.map((c) => [
-      c.first_name || '',
-      c.last_name || '',
-      c.company || '',
-      c.position || '',
-      c.city || '',
-      c.state || '',
-      c.email || '',
-      c.linkedin_url || '',
-      c.ai_proximity_score ?? '',
-      c.ai_proximity_tier || '',
-      c.ai_capacity_score ?? '',
-      c.ai_capacity_tier || '',
-      c.ai_kindora_prospect_type || '',
-      c.ai_outdoorithm_fit || '',
-    ]);
+    const rows = contacts.map((c) => {
+      const ar = (c.ask_readiness as any)?.outdoorithm_fundraising || (c.ask_readiness as any)?.kindora_sales || null;
+      return [
+        c.first_name || '',
+        c.last_name || '',
+        c.company || '',
+        c.position || '',
+        c.city || '',
+        c.state || '',
+        c.email || '',
+        c.linkedin_url || '',
+        c.familiarity_rating ?? '',
+        c.comms_last_date || '',
+        c.comms_thread_count ?? '',
+        c.ai_capacity_score ?? '',
+        c.ai_capacity_tier || '',
+        c.ai_kindora_prospect_type || '',
+        c.ai_outdoorithm_fit || '',
+        ar?.tier || '',
+        ar?.score ?? '',
+      ];
+    });
 
     const csvContent = [
       headers.join(','),

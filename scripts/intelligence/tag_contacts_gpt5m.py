@@ -133,13 +133,13 @@ class ContactIntelligence(BaseModel):
 # ── Justin's Anchor Profile ────────────────────────────────────────────
 
 ANCHOR_PROFILE = """ANCHOR PERSON (Justin Steele):
-- Current roles: Co-Founder & CEO at Kindora (AI-powered grant matching for nonprofits, 2025-present), Founder & Fractional CIO at True Steele LLC (2024-present), Co-Founder & Treasurer at Outdoorithm Collective (outdoor equity nonprofit, 2024-present), Co-Founder & CTO at Outdoorithm (outdoor recreation app, 2023-present)
-- Previous employers: Google / Google.org (Director, Americas; Racial Justice Lead, ~6 years), Year Up (Deputy Director, PM, Dir Strategy & Ops, ~5 years), Northern Virginia Community College (Adjunct Professor, ~2 years), The Bridgespan Group (Senior Associate Consultant, ~2 years), Bain and Company (Associate Consultant, ~2 years)
-- Schools: Harvard Business School (MBA), Harvard Kennedy School (MPA/MPP), University of Virginia (BS Engineering)
-- Boards: San Francisco Foundation (Program Chair, Board of Trustees), Outdoorithm Collective (Treasurer, Board of Directors)
+- Current roles: Co-Founder & CEO at Kindora (AI-powered grant matching for nonprofits, Apr 2025-present), Founder & Fractional Chief Impact Officer at True Steele LLC (Dec 2024-present), Co-Founder & Treasurer at Outdoorithm Collective (outdoor equity nonprofit, Jan 2024-present), Co-Founder & CTO at Outdoorithm (outdoor recreation app, Feb 2023-present)
+- Previous employers: Google / Google.org (Inclusion Giving Lead 2014-2017, Director Americas 2017-2024, ~10 years total), Year Up (Intern/Contractor 2009-2010, Dir Strategy & Ops 2010-2012, Program Manager 2011-2013, Deputy Director 2012-2014, ~5 years total), Northern Virginia Community College (Adjunct Professor, 2011-2014, ~3 years), The Bridgespan Group (Senior Associate Consultant, 2006-2007, ~1 year), Bain and Company (Associate Consultant, 2004-2006, ~2 years)
+- Schools: Harvard Business School (MBA, Nonprofit Management, 2007-2010), Harvard Kennedy School (MPA, Urban Social Policy, 2007-2010), University of Virginia (BS Chemical Engineering with Distinction, 2000-2004)
+- Boards: San Francisco Foundation (Program Chair, Board of Trustees, Sep 2020-present), Outdoorithm Collective (Treasurer, Board of Directors, Aug 2024-present)
 - Key interests/topics: Outdoor equity & nature access, AI for social good & public interest technology, Philanthropy & corporate social responsibility, Nonprofit fundraising & grant matching, Racial justice & equity & DEI, Systems change & social innovation, Education & workforce development, Fatherhood & family camping
-- LinkedIn: 2,796 connections, 6,061 followers, connected since 2015
-- Location: San Francisco Bay Area"""
+- LinkedIn: 2,796 connections, 6,061 followers
+- Location: Oakland, CA / San Francisco Bay Area"""
 
 
 SYSTEM_PROMPT = """You are a network intelligence analyst. Given an anchor person's profile and a target contact's LinkedIn data, produce a structured analysis.
@@ -156,11 +156,26 @@ Relationship Proximity (0-100):
 
 Key signals for proximity: Shared employers (especially same time period), shared schools (especially same years), shared boards/volunteer orgs, shared industry/community, LinkedIn connection tenure (earlier = potentially closer), shared location.
 
-Giving Capacity (0-100):
-- 70-100 (major_donor, $10K+): C-suite, founders, senior leaders at large companies, board seats at foundations
-- 40-69 (mid_level, $1K-$10K): Directors, senior managers, experienced professionals
-- 15-39 (grassroots, $100-$1K): Individual contributors, early career
-- 0-14 (unknown): Insufficient data
+Giving Capacity (0-100) — estimate DISCRETIONARY personal giving capacity, not gross income:
+- 70-100 (major_donor, $10K+): People with demonstrated liquid wealth — large FEC political donations, high-value owned property, tech equity (VP+ at public tech companies with long tenure), successful founders/entrepreneurs, or known philanthropists. Hard evidence required for top scores.
+- 40-69 (mid_level, $1K-$10K): Solid professionals with some disposable income — mid-career tech workers, directors at large companies, well-compensated professionals. Factor in location cost of living and obligations (expensive home = expensive mortgage).
+- 15-39 (grassroots, $100-$1K): Individual contributors, early career, nonprofit/education/government staff without equity upside.
+- 0-14 (unknown): Insufficient data to assess.
+
+Capacity nuances — think about NET capacity not gross signals:
+- Career sector matters: Tech company equity (stock grants) creates wealth that salary alone doesn't. A 10-year Google VP likely has $5-20M+ in vested equity. A nonprofit CEO at the same title level has zero equity — just salary.
+- An expensive home in a high-COL area is both an asset AND an obligation. A $2M Bay Area home means ~$12K/month in mortgage/taxes. Factor this in.
+- FEC political donations are the strongest behavioral signal — they prove both disposable income AND willingness to write checks.
+- If someone is flagged as a renter, the property Zestimate is the landlord's asset, not theirs.
+- Be transparent about what is hard evidence vs title-based inference.
+
+CRITICAL — INSTITUTIONAL vs PERSONAL GIVING:
+You are ONLY assessing this person's PERSONAL discretionary giving capacity. Do NOT:
+- Conflate someone's professional grantmaking role with their personal giving capacity
+- Score someone as major_donor just because they run or work at a foundation, trust, or giving vehicle
+- Treat "manages $X in grants" as personal wealth — they are stewards of institutional money, not owners of it
+A program officer at the Ford Foundation may personally give $500 from their own salary. Score THAT, not the Ford Foundation's $16B endowment. A CEO of a grantmaking trust on an academic/nonprofit salary with no equity upside is a grassroots or mid_level personal giver, regardless of how much institutional money flows through their organization.
+If someone works in institutional philanthropy, note it as a signal of philanthropic VALUES alignment, but score capacity based on their personal finances (salary level, property, FEC donations, career sector).
 
 Kindora Sales Fit (0-100):
 Kindora is an AI-powered grant matching platform for nonprofits. High-fit prospects work at foundations, manage nonprofit networks, lead grantmaking programs, or influence nonprofit technology purchasing.
@@ -246,6 +261,44 @@ def build_contact_context(contact: dict) -> str:
     if honors:
         parts.append(f"Awards: {json.dumps(honors)}")
 
+    # Wealth signals
+    fec = parse_jsonb(contact.get("fec_donations"))
+    if fec and isinstance(fec, dict) and fec.get("donation_count", 0) > 0 and not fec.get("skipped_reason"):
+        fec_parts = [f"${fec.get('total_amount', 0):,.0f} total across {fec.get('donation_count', 0)} donations"]
+        if fec.get("max_single"):
+            fec_parts.append(f"largest single: ${fec['max_single']:,.0f}")
+        if fec.get("cycles"):
+            fec_parts.append(f"cycles: {', '.join(fec['cycles'])}")
+        parts.append(f"FEC Political Donations: {'. '.join(fec_parts)}")
+
+    re_data = parse_jsonb(contact.get("real_estate_data"))
+    if re_data and isinstance(re_data, dict) and re_data.get("address"):
+        source = re_data.get("source", "")
+        if source not in ("skip_trace_rejected", "skip_trace_failed"):
+            # Building-level records — suppress misleading values
+            if re_data.get("building_level_data"):
+                parts.append(f"Real Estate: Resident at {re_data['address']} (condo/apartment building — unit-level value unknown)")
+            else:
+                ownership = re_data.get("ownership_likelihood", "uncertain")
+                re_parts = []
+                if ownership == "likely_renter":
+                    re_parts.append(f"Renter at {re_data['address']}")
+                else:
+                    label = "Owner" if ownership == "likely_owner" else "Condo owner" if ownership == "likely_owner_condo" else "Ownership uncertain"
+                    re_parts.append(f"Property ({label}): {re_data['address']}")
+                    if re_data.get("zestimate"):
+                        re_parts.append(f"Zestimate: ${re_data['zestimate']:,.0f}")
+                    details = []
+                    if re_data.get("property_type"):
+                        details.append(re_data["property_type"].replace("_", " ").lower())
+                    if re_data.get("beds"):
+                        details.append(f"{re_data['beds']}bd/{re_data.get('baths', '?')}ba")
+                    if re_data.get("sqft"):
+                        details.append(f"{re_data['sqft']:,} sqft")
+                    if details:
+                        re_parts.append(", ".join(details))
+                parts.append(f"Real Estate: {'. '.join(re_parts)}")
+
     return "\n".join(parts)
 
 
@@ -258,7 +311,7 @@ class ContactTagger:
         "connected_on, city, state, ai_tags, "
         "enrich_employment, enrich_education, enrich_skills_detailed, "
         "enrich_volunteering, enrich_certifications, enrich_publications, "
-        "enrich_honors_awards"
+        "enrich_honors_awards, fec_donations, real_estate_data"
     )
 
     def __init__(self, test_mode=False, dry_run=False, force=False, workers=10, test_count=10):
@@ -520,8 +573,8 @@ def main():
                         help="Assemble prompts but don't call OpenAI")
     parser.add_argument("--force", "-f", action="store_true",
                         help="Re-tag contacts that already have ai_tags")
-    parser.add_argument("--workers", "-w", type=int, default=10,
-                        help="Number of concurrent workers (default: 10)")
+    parser.add_argument("--workers", "-w", type=int, default=150,
+                        help="Number of concurrent workers (default: 50)")
     args = parser.parse_args()
 
     tagger = ContactTagger(

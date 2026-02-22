@@ -1,0 +1,147 @@
+<html>
+<head>
+  <title>Yosemite's Weather Apps Failed Us—So AI Wrote Me a Better One in an Afternoon</title>
+  <style>
+    body {
+      margin: 0 auto;
+      width: 744px;
+      font-family: Source Serif Pro, serif;
+      line-height: 32px;
+      font-weight: 400;
+      color: rgba(0, 0, 0, 0.7);
+      font-size: 21px;
+    }
+    h1, h2, h3 {
+      font-family: Source Sans Pro, Helvetica, Arial, sans-serif;
+    }
+    h1 a, h1 a:visited {
+      color: inherit;
+      text-decoration: none;
+    }
+    h1 {
+      line-height: 48px;
+      font-weight: 600;
+      color: rgba(0, 0, 0, 0.85);
+      font-size: 42px;
+      margin: 32px 0 20px;
+    }
+    h2 {
+      line-height: 32px;
+      font-weight: 600;
+      color: rgba(0, 0, 0, 0.85);
+      font-size: 26px;
+      margin: 28px 0;
+    }
+    h3 {
+      line-height: 28px;
+      font-weight: 600;
+      color: rgba(0, 0, 0, 0.85);
+      font-size: 21px;
+      margin: 24px 0;
+    }
+    p {
+      margin: 32px 0;
+    }
+    .created, .published {
+      color: rgba(0, 0, 0, 0.55);
+      font-size: 15px;
+      line-height: 15px;
+      margin: 20px 0;
+    }
+    .created + .published {
+      margin-top: -12px;
+    }
+    blockquote {
+      font-family: Georgia, Source Serif Pro, serif;
+      font-style: italic;
+      font-size: 24px;
+      line-height: 36px;
+      margin: 48px 120px;
+      text-align: center;
+    }
+    a {
+      word-wrap: break-word;
+      outline: none;
+      text-decoration: none;
+      background-color: transparent;
+      border: 0;
+      color: #008CC9;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    a:visited {
+      color: #8C68CB;
+    }
+    .center {
+      text-align: center;
+    }
+    iframe {
+      display: block;
+      margin: 44px auto;
+    }
+    *:not(pre) + pre, pre:first-of-type {
+      margin-top: 32px;
+      padding-top: 32px;
+    }
+    pre:only-of-type {
+      margin: 32px 0;
+      padding: 32px;
+    }
+    pre {
+      background: #F3F6F8;
+      overflow-x: auto;
+      display: block;
+      font-size: 13px;
+      font-family: monospace;
+      line-height: 13px;
+      padding: 0 32px 32px;
+      white-space: pre;
+    }
+    a.embedded {
+      background: #F3F6F8;
+      display: block;
+      padding: 32px;
+      margin: 32px 0;
+    }
+    img {
+      height: auto;
+      max-width: 100%;
+    }
+    .slate-image-embed__resize-full-width img {
+      width: 100%;
+    }
+    .series-logo {
+      width: 48px;
+      height: 48px;
+      box-sizing: border-box;
+      background-clip: content-box;
+      border: 4px solid transparent;
+      border-radius: 6px;
+      object-fit: scale-down;
+      float: left;
+    }
+    .series-title {
+      font-size: 16px;
+      font-weight: 600;
+      vertical-align: top;
+    }
+    .series-description {
+      color: rgba(0,0,0,.6);
+      font-weight: 400;
+      font-size: 14px;
+      line-height: 20px;
+    }
+    div {
+      margin: 32px 0;
+    }
+  </style>
+</head>
+<body>
+    <img src="https://media.licdn.com/mediaD4E12AQHPOHp_vJ245w" alt="" title="" />
+      <h1><a href="https://www.linkedin.com/pulse/yosemites-weather-apps-failed-usso-ai-wrote-me-better-justin-steele-m9zee">Yosemite's Weather Apps Failed Us—So AI Wrote Me a Better One in an Afternoon</a></h1>
+    <p class="created">Created on 2024-12-20 23:32</p>
+  <p class="published">Published on 2024-12-21 01:08</p>
+  <div><p><em>Not looking for a post about camping AND artificial intelligence? Keep scrolling! But if you're curious about how regular folks are using AI to solve real-world problems, this story's for you. 🏕️ + 🤖 = Magic!</em></p><h2>The Problem: Weather Apps That Don't Work for Everyone</h2><p>Picture this: Tomorrow, we're taking 10 families to Yosemite with <a target="_blank">Outdoorithm Collective</a>. The kids are bouncing with excitement about potential snow. Their parents? Less excited, more anxious: "Do we need tire chains? How many layers should we pack?" These aren't just logistical questions—they could be the difference between a joyful outdoor experience and one that might discourage families from coming back. When you didn't grow up with parents who taught you about mountain weather patterns, these "basic" outdoor skills aren't basic at all.</p><p>As the co-founder of <a target="_blank">Outdoorithm</a> (and a girl dad x4 who's tired of getting weather forecasts wrong), I knew standard weather apps weren't cutting it. They'd show forecasts for Groveland—a town sitting 1,500 feet lower than our cabins. In Yosemite, that's like checking D.C.'s weather for a trip to Boston.</p><h2>The Solution: Building with AI</h2><p>So today, I decided to build something better. With AI as my coding partner.</p><p>Here's the mind-bending part: 30 minutes after typing my first prompt, I had a working solution. In four hours I had it fine tuned and published. I simply showed <a href="https://www.linkedin.com/article/edit/7276016722506133505/#" target="_blank">Anthropic</a>'s Claude (the top dawg AI assistant for coding—if you don't know, now you know 😎) some weather interfaces I liked and the documentation for a weather API. Within minutes, it started writing TypeScript code for exactly what I needed—a widget that pulls location-specific forecasts and presents them in a way that makes sense for outdoor adventures.</p><p>Was it perfect? Nope. The widget got confused about geo-coordinates and the mobile version looked like a jigsaw puzzle gone wrong. But each fix took minutes, not days—just ask Claude for adjustments, whether it's mobile responsiveness or historical weather patterns. Even adding an AI meteorologist to summarize forecasts in plain English only costs us 6 cents per thousand forecasts.</p><p>I just wrapped up the code an hour ago, and that project now powers forecasts for over 10,000 campgrounds across the U.S. Visit any campground on <a href="http://map.outdoorithm.com" target="_blank">map.outdoorithm.com</a> and you'll get forecasts that actually match your elevation and gps coordinates. Planning a Pinnacles trip? It'll tell you to skip the 95-degree July inferno for the perfect 75-degree weeks in April.</p><h2>Why This Matters</h2><p>This is what gets me excited about AI. It's not about replacing humans—it's about empowering them. Every time we take families to Yosemite, I see how something as simple as knowing what weather to expect can be the difference between feeling confident enough to explore and deciding to stay home. When families show up prepared, they're more likely to come back, to feel like they belong in these spaces.</p><p>You don't need to be a software engineer anymore to build these solutions. You just need a problem you understand deeply and the curiosity to explore solutions. Some basic tech comfort helps—I'm a non-software engineer learning tools like VS Code through YouTube and AI guidance—but the barrier to entry has never been lower.</p><h2>What's Next?</h2><p>We're entering an era where communities can build their own solutions. For those too often underrepresented in mainstream tech, this is a game changer.</p><p>As for our Yosemite trip this weekend? <a href="https://forecast-widget-gamma.vercel.app/?provider=RecreationDotGov&amp;campgroundId=232451" target="_blank">Our new widget</a> says Tuesday's bringing snow. The kids are going to lose their minds. ❄️</p><p><em>What would you build if coding wasn't a barrier? Drop a comment with a problem you'd love to solve—or better yet, hop into Claude and start building.</em></p><p><em>P.S. Want to see what AI helped build? Visit </em><a href="http://map.outdoorithm.com" target="_blank"><em>map.outdoorithm.com</em></a><em>, click any campground, and check out our shiny new weather widget in action!</em> ⛺️</p><p></p><p><a target="_blank">CJ Goulding</a> <a target="_blank">Ronald V. E. Griswell</a> <a target="_blank">Lesford H. Duncan, MPH</a> <a target="_blank">Juan D. Martinez Pineda</a> <a target="_blank">Jose Gonzalez, M.S</a> <a target="_blank">Rue Mapp</a> <a target="_blank">Kristen Ragain</a> <a target="_blank">Hannah Abuzaineh</a> <a target="_blank">Onika Abraham</a> <a target="_blank">Berkeley Bryant</a> <a target="_blank">Alex Bailey</a> <a target="_blank">Kaitlin Levenstrong</a> <a target="_blank">Dan Walker</a> <a target="_blank">Karen Cowe</a> <a target="_blank">Benje Williams</a> <a target="_blank">Jahmicah Dawes</a> <a target="_blank">Shane Douglas</a> <a target="_blank">Amy Dominguez-Arms</a> <a target="_blank">Katherine Toy</a> <a target="_blank">Kristine Stratton</a> <a target="_blank">Greg Curtis</a> <a target="_blank">Lisa Bourne, MBA</a> <a target="_blank">Nooshin Razani</a> <a target="_blank" href="https://www.linkedin.com/in/steelesally?miniProfileUrn=urn%3Ali%3Afs_miniProfile%3AACoAAAAmcucBb3ZwVrnJW-h8VmAbfd_HX_ldaQM">Sally Steele</a> - sharing this because it hits on what we often talk about: breaking down barriers, whether they're tech ones or access ones or just straight up representation. Excited to keep building solutions together.</p></div>
+</body>
+</html>

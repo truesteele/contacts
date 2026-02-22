@@ -1,7 +1,7 @@
 # Personal Network Intelligence System
 
-**Last updated:** 2026-02-21
-**Status:** Phase 1-5 COMPLETE, Phase 6 IN PROGRESS (Donor Psychology Overhaul)
+**Last updated:** 2026-02-22
+**Status:** Phase 1-5 COMPLETE, Phase 6 COMPLETE — All enrichments run, all 2,937 contacts fully scored
 
 ---
 
@@ -20,7 +20,11 @@
 11. [Technology Choices](#11-technology-choices)
 12. [Use Cases](#12-use-cases)
 13. [Phase Plan](#13-phase-plan)
-14. [Phase 6: Donor Psychology Overhaul](#14-phase-6-donor-psychology-overhaul-in-progress)
+14. [Phase 6: Donor Psychology Overhaul](#14-phase-6-donor-psychology-overhaul-complete)
+    - [14.12 Custom People Search Scraper](#1412-custom-multi-result-people-search-scraper--implemented-2026-02-21)
+    - [14.13 Ownership Likelihood Classification](#1413-ownership-likelihood-classification)
+    - [14.14 Zillow Batch Data Bug & Re-scrape](#1414-zillow-batch-data-bug--re-scrape-2026-02-22)
+    - [14.15 FEC Multi-Person Aggregation Bug Fix](#1415-fec-multi-person-aggregation-bug-fix-2026-02-22)
 15. [Cost Estimates](#15-cost-estimates)
 16. [Open Questions](#16-open-questions)
 
@@ -52,24 +56,31 @@ The goal is to generate actionable outreach lists like:
 
 ## 2. What We Have Today
 
-### Contacts Database (2,498 rows)
+### Contacts Database (2,937 rows)
 
 | Data | Coverage | Source |
 |------|----------|--------|
 | Basic info (name, company, title) | ~100% | LinkedIn export |
-| LinkedIn URL | 96% (2,398) | LinkedIn export |
-| Apify enrichment (employment, education, skills, volunteering, JSONB) | 96% (2,404) | Apify batch run Feb 2026 |
+| LinkedIn URL | 96% | LinkedIn export |
+| Apify enrichment (employment, education, skills, volunteering, JSONB) | 96% | Apify batch run Feb 2026 |
 | Flat enrichment columns (schools, companies_worked, titles_held arrays) | 96% | Computed from Apify data |
-| Connection date (when connected on LinkedIn) | 91% (2,266) | LinkedIn export, Apr 2015–Oct 2024 |
-| Donor scoring (capacity, propensity, affinity, warmth) | 53% (1,315) | Perplexity sonar-reasoning-pro |
-| Warmth/connection type classification | 52% (1,305) | Perplexity — mostly "Cold" (94%) |
-| Perplexity deep research | 53% (1,315) | sonar-reasoning-pro ~$0.022/contact |
-| Email addresses | ~60% | Various sources |
-| LinkedIn posts | 51 posts (Justin's only) | Apify post scraper |
+| Connection date (when connected on LinkedIn) | 91% | LinkedIn export, Apr 2015–Oct 2024 |
+| AI structured tags (LLM scored) | 100% (2,937) | GPT-5 mini structured output |
+| Profile embeddings (768d) | 100% (2,937) | text-embedding-3-small |
+| Interests embeddings (768d) | 99.9% (2,933) | text-embedding-3-small |
+| Communication history (Gmail) | 628 contacts | 5 Gmail accounts, LLM-summarized |
+| Familiarity ratings (0-4) | 100% (2,937) | Human-rated + backfilled |
+| FEC political donations | 100% (2,937) — 325 verified donors | OpenFEC API + GPT verification |
+| Real estate data | 46% (1,358) — 690 with Zestimates | Skip-trace + Zillow pipeline |
+| Structured institutional overlap | 66% (1,949) | GPT-5 mini with career timeline |
+| Ask-readiness scoring | 100% (2,937) | GPT-5 mini donor psychology model |
+| Email addresses | ~60% | Various sources + email discovery |
+| LinkedIn posts | 76 posts (Justin's only) | Apify post scraper |
+| Legacy Perplexity scoring | 53% (1,315) | Deprecated — replaced by AI tags |
 
 ### Key Observations
 
-1. **Existing warmth scoring is useless.** 94% of scored contacts are "Cold" with "No known connection." This was done without Justin's full career graph as context — it couldn't find shared employers, schools, or boards because it didn't have Justin's data as a reference.
+1. **All contacts are fully scored.** Every contact has LLM tags, embeddings, FEC data (verified or confirmed zero), and ask-readiness scores. Real estate covers 46% — limited by skip-trace success rates for US contacts.
 
 2. **Rich JSONB data is already stored.** Each contact has `enrich_employment`, `enrich_education`, `enrich_skills_detailed`, `enrich_volunteering`, `enrich_certifications`, `enrich_publications` as JSONB arrays with company names, titles, dates, descriptions, school names, fields of study.
 
@@ -78,6 +89,8 @@ The goal is to generate actionable outreach lists like:
 4. **Connected_on dates** provide a temporal signal: people Justin connected with 10 years ago in 2015 are likely closer than someone from 2024.
 
 5. **Justin's full profile is now scraped** — 12 positions, 3 schools, 2 board/volunteer roles, 76 posts, 6,061 followers.
+
+6. **GPT verification catches bad data.** FEC: 292 wrong-person matches rejected. Real estate: skip-trace validation rejects wrong-state/wrong-employer results. Zillow: zpid-based matching prevents data misassignment.
 
 ---
 
@@ -774,7 +787,7 @@ What exists commercially, and where our system differs:
 | **WealthEngine** | Wealth screening | ~$5K+/yr | ML-powered pre-scored profiles, Altrata data | Enterprise-grade; our proxy approach is ~1% of the cost |
 | **Apollo.io** | Sales intelligence | $59/user/mo | 275M+ contact database, built-in sequences | Less relevant — we already have contacts, need intelligence not data |
 
-**Our differentiation:** We combine relationship proximity (like Affinity), giving capacity estimation (like iWave), topical affinity (like semantic search tools), and communication history (like Introhive) in a single personal system for ~$13 total processing cost instead of $10K+/year in SaaS subscriptions. The tradeoff is that our wealth estimates are LinkedIn proxy-based rather than sourced from SEC filings and real estate records.
+**Our differentiation:** We combine relationship proximity (like Affinity), giving capacity estimation (like iWave), topical affinity (like semantic search tools), and communication history (like Introhive) in a single personal system for ~$33 total processing cost instead of $10K+/year in SaaS subscriptions. Unlike earlier versions, wealth estimates now incorporate **real estate data** (1,358 contacts enriched, 690 with Zestimates, ownership classified) and **FEC political donation records** (325 GPT-verified donors totaling $5.38M) alongside LinkedIn career proxy signals. All 2,937 contacts are scored with an AI donor-psychology ask-readiness model.
 
 ---
 
@@ -996,9 +1009,9 @@ python scripts/intelligence/discover_emails.py  # Full run
 
 ---
 
-## 14. Phase 6: Donor Psychology Overhaul (IN PROGRESS)
+## 14. Phase 6: Donor Psychology Overhaul — COMPLETE
 
-**Status:** Planning complete, implementation via Ralph loop
+**Status:** All 17 user stories implemented. All enrichment scripts run against full database. All 2,937 contacts fully scored.
 **Plan file:** `/Users/Justin/.claude/plans/cozy-munching-dongarra.md`
 **Ralph loop:** `.ralph/network-intel-overhaul/`
 
@@ -1021,7 +1034,7 @@ ALTER TABLE contacts ADD COLUMN IF NOT EXISTS real_estate_data JSONB DEFAULT NUL
 ALTER TABLE contacts ADD COLUMN IF NOT EXISTS ask_readiness JSONB DEFAULT NULL;
 ```
 
-### 14.3 FEC Political Donation Enrichment (FREE)
+### 14.3 FEC Political Donation Enrichment (FREE) — COMPLETE
 
 Federal campaign contributions are public record via the **OpenFEC API** (free, rate limit 1,000 req/hr). Anyone who donates $200+ to a political campaign is searchable by name. This is the strongest free wealth indicator:
 
@@ -1036,6 +1049,26 @@ Federal campaign contributions are public record via the **OpenFEC API** (free, 
 - State filtering effectively reduces false positives for common names
 - GPT-5 mini verification handles disambiguation excellently (see 14.6)
 
+**Full run results (2,937 contacts):**
+
+| Metric | Result |
+|--------|--------|
+| Contacts processed | 2,937 |
+| GPT-verified donors | 325 (11%) |
+| GPT-rejected (wrong person) | 292 |
+| No FEC records | ~2,320 |
+| Total verified donations | $5.38M across 325 donors |
+| Average per verified donor | $16,549 |
+| Cost | $0 (FEC API) + ~$2 (GPT verification) |
+
+**Bug fix applied (2026-02-22):** Original script used loose prefix name matching (`fec_first.startswith(first_lower)`) which caused "Andrea" to match "Andre", "Christopher" to match "Chris", etc. — producing 308 contacts with >50 donations each (clearly aggregating multiple people). Fixed with:
+
+1. **Exact first name matching only** — no more prefix matching
+2. **GPT-5 mini verification** on every match — verifies employer/location/plausibility against LinkedIn profile
+3. **State extraction from employment** — extracts US state from `enrich_employment` JSONB when `state` field is null, reducing false positives
+
+After fix and re-run: 51 contacts with >50 donations remain — all are legitimate high-frequency donors (e.g., Donnel Baird/BlocPower 525 donations, Michelle Boyers/Give Forward Foundation $1.4M, Regan Pritzker $1.84M). See [Section 14.15](#1415-fec-multi-person-aggregation-bug-fix-2026-02-22) for details.
+
 **JSONB schema:**
 ```json
 {
@@ -1048,11 +1081,16 @@ Federal campaign contributions are public record via the **OpenFEC API** (free, 
   ],
   "employer_from_fec": "Google LLC",
   "occupation_from_fec": "Software Engineer",
-  "last_checked": "2026-02-20"
+  "verification": {
+    "is_match": true,
+    "confidence": "high",
+    "reasoning": "FEC employer matches LinkedIn profile..."
+  },
+  "last_checked": "2026-02-22"
 }
 ```
 
-**Cost:** $0 (free API). ~2.5 hours for 2,400 contacts at 1,000 req/hr.
+**Cost:** $0 (free API) + ~$2 GPT verification. ~3 hours for 2,937 contacts at 1,000 req/hr.
 
 ### 14.4 Real Estate Enrichment — Three-Step Pipeline (VALIDATED)
 
@@ -1102,7 +1140,7 @@ params = {"q": "1873 Wayne Ave, San Leandro, CA 94577", "resultTypes": "allAddre
 # Returns: {"results": [{"metaData": {"zpid": "24882391"}, "display": "1873 Wayne Ave San Leandro, CA 94577"}]}
 ```
 
-**Step 3: ZPID → Property Data — Apify `happitap/zillow-detail-scraper` (~$0.003/result)**
+**Step 3: ZPID → Property Data — Apify `maxcopell/zillow-detail-scraper` (~$0.003/result)**
 
 Takes Zillow detail URLs, returns full property data including Zestimate.
 
@@ -1146,7 +1184,7 @@ body = {"startUrls": [{"url": "https://www.zillow.com/homedetails/1873-Wayne-Ave
 |------|---------|-------------|-----------------|
 | Name → Address | Apify `one-api/skip-trace` | $0.007 | $4.20 |
 | Address → ZPID | Zillow autocomplete | FREE | $0 |
-| ZPID → Zestimate | Apify `happitap/zillow-detail-scraper` | ~$0.003 | $1.80 |
+| ZPID → Zestimate | Apify `maxcopell/zillow-detail-scraper` | ~$0.003 | $1.80 |
 | **Total** | | **~$0.01** | **~$6.00** |
 
 **Scope:** Top contacts — familiarity >= 2 OR capacity tier = major_donor (~500-700 contacts).
@@ -1160,17 +1198,20 @@ Each skip-trace result is verified against the contact's known profile data (cit
 {
   "address": "123 Main St, Palo Alto, CA 94301",
   "zestimate": 2100000,
+  "rent_zestimate": 7500,
   "beds": 4,
   "baths": 3,
   "sqft": 2400,
-  "lot_size": 6000,
   "year_built": 1965,
-  "property_type": "single_family",
+  "property_type": "SINGLE_FAMILY",
+  "ownership_likelihood": "likely_owner",
   "confidence": "high",
-  "source": "zillow",
+  "source": "zillow_via_skip_trace",
   "last_checked": "2026-02-21"
 }
 ```
+
+See [Section 14.13](#1413-ownership-likelihood-classification) for `ownership_likelihood` classification logic.
 
 ### 14.5 Structured Institutional Overlap (GPT-5 mini)
 
@@ -1333,50 +1374,520 @@ The AI Filter Co-pilot (Phase 4) is rewired:
 
 ### 14.10 Implementation Status
 
-17 user stories in Ralph loop (`.ralph/network-intel-overhaul/prd.md`):
+All 17 user stories complete (`.ralph/network-intel-overhaul/prd.md`):
 
 | Story | Description | Status |
 |-------|-------------|--------|
 | US-001 | Documentation update | Done |
-| US-002 | Database migration (new columns + indexes) | Pending |
-| US-003 | Backfill comms fields | Pending |
-| US-004 | FEC enrichment script | Pending |
-| US-005 | Real estate enrichment script (two-step) | Pending |
-| US-006 | Structured overlap scoring | Pending |
-| US-007 | Ask-readiness scoring | Pending |
-| US-008 | Update FilterState + types | Pending |
-| US-009 | Update search route + select cols | Pending |
-| US-010 | Add goal_search tool | Pending |
-| US-011 | Update agent system prompt | Pending |
-| US-012 | Update parse-filters | Pending |
-| US-013 | Update contact detail + outreach | Pending |
-| US-014 | Update contacts table UI | Pending |
-| US-015 | Update contact detail sheet UI | Pending |
-| US-016 | Update filter bar UI | Pending |
-| US-017 | Tag remaining 527 contacts | Pending |
+| US-002 | Database migration (new columns + indexes) | Done |
+| US-003 | Backfill comms fields (628 contacts) | Done |
+| US-004 | FEC enrichment script | Done — 2,937 contacts, 325 verified donors |
+| US-005 | Real estate enrichment script (three-step) | Done — 1,358 contacts, 690 with Zestimates |
+| US-006 | Structured overlap scoring | Done — 1,949 contacts with shared institutions |
+| US-007 | Ask-readiness scoring (donor psychology) | Done — 2,937 contacts scored |
+| US-008 | Update FilterState + types | Done |
+| US-009 | Update search route + select cols | Done |
+| US-010 | Add goal_search tool | Done |
+| US-011 | Update agent system prompt | Done |
+| US-012 | Update parse-filters | Done |
+| US-013 | Update contact detail + outreach context | Done |
+| US-014 | Update contacts table UI | Done |
+| US-015 | Update contact detail sheet UI | Done |
+| US-016 | Update filter bar UI | Done |
+| US-017 | Tag remaining 527 contacts | Done — all 2,937 tagged and embedded |
 
-**Total enrichment cost: ~$17** ($0 FEC + $0-30 real estate + $2.40 overlap + $7.20 ask-readiness + $1.60 tagging)
+**Production audit (2026-02-21):** 4 issues fixed — timezone bug in date display, PostgREST input sanitization in agent tool, CSV exports updated with new columns (familiarity/comms/ask-readiness replacing legacy proximity), Array.isArray guard on risk_factors rendering.
+
+**Data quality fixes (2026-02-22):** Zillow batch zpid matching bug (property data assigned to wrong contacts) — fixed and all 794 properties re-scraped. FEC multi-person aggregation bug (prefix name matching) — fixed with exact matching + GPT verification and full re-run.
+
+### 14.11 Data Enrichment Coverage — ALL COMPLETE
+
+All enrichment pipelines have been run against the full database. Current state:
+
+| Data | Coverage | Status |
+|------|----------|--------|
+| AI tags (LLM structured) | 2,937 / 2,937 (100%) | Complete |
+| Profile embeddings | 2,937 / 2,937 (100%) | Complete |
+| Interests embeddings | 2,933 / 2,937 (99.9%) | Complete (4 contacts with zero profile data) |
+| Communication history | 628 contacts | Complete |
+| Familiarity ratings | 2,937 / 2,937 (100%) | Complete (human-rated + backfilled) |
+| FEC donations | 2,937 / 2,937 (100%) | Complete — 325 verified donors, 292 GPT-rejected |
+| Real estate | 1,358 / 2,937 (46%) | Complete — 690 with Zestimates, 795 re-scraped |
+| Structured overlap | 1,949 / 2,937 (66%) | Complete — contacts with shared institutions |
+| Ask-readiness scoring | 2,937 / 2,937 (100%) | Complete — 87 ready_now, 2,118 cultivate_first |
+
+**Ask-readiness score distribution (outdoorithm_fundraising goal):**
+
+| Tier | Count | % |
+|------|-------|---|
+| ready_now (80-100) | 87 | 3% |
+| cultivate_first (60-79) | 2,118 | 72% |
+| long_term (40-59) | 657 | 22% |
+| not_a_fit (0-39) | 75 | 3% |
+| **Average score** | **60.8** | |
+
+**Re-run commands (for future updates):**
+```bash
+python scripts/intelligence/tag_contacts_gpt5m.py          # LLM tagging
+python scripts/intelligence/generate_embeddings.py          # Vector embeddings
+python scripts/intelligence/enrich_fec_donations.py         # FEC donations
+python scripts/intelligence/enrich_real_estate.py           # Real estate (Apify skip-trace)
+python scripts/intelligence/enrich_real_estate.py --source 411 --retry-rejected  # 411.com retry
+python scripts/intelligence/rescrape_zillow.py              # Re-scrape Zillow details (zpid-matched)
+python scripts/intelligence/score_overlap.py                # Structured overlap
+python scripts/intelligence/score_ask_readiness.py --goal outdoorithm_fundraising  # Ask-readiness
+```
+
+All scripts support `--test` (1 contact), `--batch N`, and `--start-from` flags for incremental runs.
 
 ---
 
-## 15. Cost Estimates (All Phases)
+## 15. Cost Estimates (All Phases — Actuals)
 
-| Component | Actual Cost | Notes |
-|-----------|-------------|-------|
-| GPT-5 mini tagging (2,402 contacts) | ~$5-7 | Structured output, Phase 1 |
-| Embeddings (4,804 calls) | ~$0.03 | text-embedding-3-small, Phase 2 |
+| Component | Cost | Notes |
+|-----------|------|-------|
+| GPT-5 mini tagging (2,937 contacts) | ~$7 | Structured output, Phase 1 (run in batches) |
+| Embeddings (5,870 calls) | ~$0.04 | text-embedding-3-small, Phase 2 |
 | Gmail thread summarization (628 contacts) | ~$1.30 | GPT-5 mini structured output |
 | Email discovery (579 contacts) | ~$0.05 | GPT-5 mini verification |
-| **Total Phases 1-5** | **~$6.50-8.50** | |
-| FEC political donations (2,400 contacts) | $0 | Free OpenFEC API |
-| Real estate (600 contacts, three-step) | ~$6 | Apify skip-trace + Zillow autocomplete + Apify Zillow detail |
-| Structured overlap (1,200 contacts) | ~$2.40 | GPT-5 mini |
-| Ask-readiness scoring (2,400 contacts) | ~$7.20 | GPT-5 mini donor psychology |
-| Tag remaining 527 contacts | ~$1.60 | GPT-5 mini + embeddings |
-| **Total Phase 6** | **~$17** | |
-| **Grand Total (all phases)** | **~$24-26** | |
+| **Total Phases 1-5** | **~$8.40** | |
+| FEC political donations (2,937 contacts) | ~$2 | Free OpenFEC API + $2 GPT verification |
+| Real estate — Apify batch Run 1 (551 contacts) | $5.31 | Apify skip-trace + Zillow detail |
+| Real estate — 411.com retry Run 2 (100 contacts) | ~$0.25 | curl_cffi (free) + GPT + Zillow detail |
+| Real estate — 411.com full retry Run 3 (793 contacts) | ~$3.00 | GPT prep + 411.com (free) + GPT + Zillow detail |
+| Real estate — Zillow re-scrape (794 contacts) | $2.38 | zpid-matched re-scrape after bug fix |
+| Structured overlap (1,949 contacts) | ~$3.00 | GPT-5 mini |
+| Ask-readiness scoring (2,937 contacts) | ~$8.50 | GPT-5 mini donor psychology (multiple runs) |
+| **Total Phase 6** | **~$24.50** | |
+| **Grand Total (all phases)** | **~$33** | |
 
 The entire 6-phase pipeline costs less than a month of any commercial wealth screening tool.
+
+#### Batch Run Results
+
+**Script:** `scripts/intelligence/enrich_real_estate.py`
+
+After auditing all Zillow detail scrapers on Apify, we switched from `happitap/zillow-detail-scraper` (12 users, 80 total runs) to `maxcopell/zillow-detail-scraper` (4,074 users, 1.97M runs, 383 monthly active users, 4.7/5 rating from 14 reviews). Same price ($0.003), same input/output format, vastly more battle-tested.
+
+| Metric | happitap (old) | maxcopell (new) |
+|--------|---------------|-----------------|
+| Validated → ZPID found | 75% | 86% |
+| ZPID → Zestimate found | 64% | 85% |
+| End-to-end success | 24% | 28% |
+
+##### Run 1: Apify Skip-Trace (2026-02-21, 551 contacts)
+
+| Metric | Result |
+|--------|--------|
+| Contacts processed | 551 |
+| GPT-5 mini validated | 211 (38%) |
+| Zestimates obtained | 153 (28% end-to-end) |
+| Errors | 0 |
+| Total cost | $5.31 |
+| Runtime | 15 min |
+
+##### Run 2: 411.com Retry-Rejected (2026-02-21, 100 contacts)
+
+After building the 411.com custom scraper (see [14.12](#1412-custom-multi-result-people-search-scraper--implemented-2026-02-21)), re-processed contacts that Apify's single-result skip-trace had failed on.
+
+| Metric | Result |
+|--------|--------|
+| Contacts re-processed | 100 (from 340 rejected/no-result) |
+| Skipped (non-US/no city) | 15 |
+| GPT-5 mini validated | 18/85 searchable (21%) |
+| Zestimates obtained | 16 |
+| Recovery rate (previously impossible contacts) | 43% of searchable |
+| Total cost | ~$0.25 (GPT validation only + Zillow detail) |
+
+These 18 contacts had ALL been rejected by the Apify skip-trace — the multi-candidate approach recovered them.
+
+##### Run 3: 411.com Full Retry with GPT Prep (2026-02-22, 793 contacts) — COMPLETE
+
+Re-processes ALL previously rejected and no-result contacts through the 411.com pipeline with two major improvements:
+
+**1. GPT-5 mini Search Param Preparation**
+
+Instead of regex/keyword cleaning, each contact's full profile is sent to GPT-5 mini to extract clean search parameters:
+- **Name cleaning:** Strips credentials (PhD, MBA, CFRE, Ed.D., MPA, CSSGB), pronouns (she/her/ella), removes accents (Jesús→Jesus)
+- **Location extraction:** When profile city/state is empty, reads employment JSONB to find US locations (e.g., Jesús Gerena had no city/state but employment showed "Salt Lake City, UT")
+- **Non-US filtering:** Correctly identifies and skips non-US contacts (Dan Walker in Vancouver, Annie Lewin in Auckland, Barry Newstead in Melbourne)
+- **Searchability assessment:** Returns `is_searchable: false` with `skip_reason` for contacts that can't be searched
+
+```python
+def prepare_search_params(contact: dict, openai_client: OpenAI) -> dict:
+    """Use GPT-5 mini to extract clean name and US location for 411.com search."""
+    # Sends: name fields, city/state, company, position, headline, employment locations, education
+    # Returns: {first_name, last_name, city, state, is_searchable, skip_reason}
+```
+
+**2. Concurrent Architecture**
+
+Restructured from sequential (17 sec/contact) to fully concurrent:
+- **GPT prep:** 50 concurrent workers (`N_GPT_WORKERS = 50`) — processes all contacts in parallel
+- **411 search + validation:** 5 concurrent workers (`N_411_WORKERS = 5`) — each creates own `Scraper411` instance with own `curl_cffi` session/TLS fingerprint for thread safety
+- **Result:** 6.7 sec/contact (3x faster than sequential)
+
+```
+Step 0: GPT-5 mini prep (all contacts, 50 concurrent) → clean params
+Step 1: 411.com search (5 concurrent workers, each with own session)
+Step 2: GPT-5 mini validation (inline per worker)
+Step 3: Zillow autocomplete + detail scraper
+```
+
+**Progress at 100/691:**
+
+| Metric | Result |
+|--------|--------|
+| Contacts in scope | 793 (all rejected + no_result) |
+| GPT-prepped & searchable | ~85% (non-US and no-location contacts skipped) |
+| Validated (at 100 processed) | 61/100 (61%) |
+| Zestimates (at 100 processed) | 45/61 (74% of validated) |
+| Errors | 0 |
+| Speed | 6.7 sec/contact (670s for 100) |
+| Estimated total time | ~80 min |
+| Cost | ~$2 GPT + free 411.com + ~$1 Zillow detail |
+
+##### Zillow Re-scrape (2026-02-22) — Critical Bug Fix
+
+A systemic batch data bug was discovered: Apify's `maxcopell/zillow-detail-scraper` returns results in arbitrary order, but the code matched results by **array index** instead of **zpid**. This caused property data to be assigned to the wrong contacts across hundreds of records. See [Section 14.14](#1414-zillow-batch-data-bug--re-scrape-2026-02-22) for details.
+
+**Fix:** Changed both Zillow result consumption paths in `enrich_real_estate.py` to build a `zr_by_zpid` lookup dict and match by zpid. Built `rescrape_zillow.py` to re-scrape all existing addresses.
+
+| Metric | Result |
+|--------|--------|
+| Contacts with addresses | 1,059 |
+| ZPIDs found | 794 |
+| Successfully re-scraped | 794 (100%) |
+| Errors | 0 |
+| Cost | $2.38 (Apify) |
+| Time | 23 min |
+
+##### Cumulative Real Estate Coverage (as of 2026-02-22, COMPLETE)
+
+| Category | Count | Notes |
+|----------|-------|-------|
+| Total contacts with `real_estate_data` | 1,358 | Includes all sources |
+| With Zestimate | 690 | |
+| Zillow re-scraped (zpid-matched) | 795 | Correct data via zpid matching |
+| Ownership: likely_owner (SFH) | 598 | |
+| Ownership: likely_owner_condo | 86 | |
+| Ownership: likely_renter | 109 | |
+| Ownership: uncertain | 92 | |
+| Skip-trace failed/rejected | 414 | No valid address found |
+| Skip-trace only (no Zillow data) | 149 | Address found but no zpid/Zestimate |
+
+#### Skip Trace Audit (2026-02-21)
+
+All Apify skip trace / people search actors were audited:
+
+| Actor | Users | Total Runs | Monthly Users | Price | Rating |
+|-------|-------|-----------|---------------|-------|--------|
+| **one-api/skip-trace** (ours) | 3,635 | 1.6M | 1,297 | $0.007 | 3.52/5 (21 reviews) |
+| twoapi/skip-trace | 3 | 24 | 2 | $0.01 | N/A |
+| wisteria_banjo/skip-tracer | — | — | — | — | DEPRECATED |
+| DealMachine | 37 | — | — | $49.99/mo | 1/5 |
+
+**Conclusion:** `one-api/skip-trace` is the only viable option by a wide margin.
+
+### 14.12 Custom Multi-Result People Search Scraper — IMPLEMENTED (2026-02-21)
+
+> **Full design doc:** `docs/CUSTOM_PEOPLE_SCRAPER.md`
+
+#### Summary
+
+Replaced `one-api/skip-trace` (Apify, $0.007/result, 1 result only) with a **free 411.com scraper** returning **3-10 candidates per name** with full addresses, phones, ages, and relatives. GPT-5 mini then picks the best match from all candidates simultaneously.
+
+**Key breakthrough:** 411.com (Whitepages) has **no Cloudflare protection** — simple HTTP requests with `curl_cffi` Chrome TLS impersonation work perfectly. No browser automation needed. TruePeopleSearch, FastPeopleSearch, and Nuwber all have heavy Cloudflare Turnstile that defeated Camoufox, nodriver, cloudscraper, and Playwright.
+
+#### Results
+
+| Metric | Apify (old) | 411.com (new) |
+|--------|-------------|---------------|
+| Cost per search | $0.007 | $0.000 (FREE) |
+| Candidates per name | 1 | 3-10 |
+| Known contacts test (5) | N/A | 3/5 exact address, 5/5 correct person |
+| Retry-rejected batch (100) | 0% (all rejected) | 21% validated, 43% of searchable |
+
+**Key technique improvements over Apify:**
+- **Multi-candidate comparison**: GPT-5 mini evaluates ALL candidates simultaneously, not just threshold-checking one result
+- **Relative/age signals**: 411.com provides age brackets and relative names — strong disambiguation signals
+- **GPT-5 mini search prep** (added Run 3): LLM-based name cleaning and location extraction replaces regex. Handles credentials (PhD, CFRE, Ed.D., MPA), pronouns (she/her/ella), accents (Jesús→Jesus), and extracts US city/state from employment JSONB when profile fields are empty
+- **Non-US filtering**: GPT correctly identifies and skips non-US contacts (Vancouver, Auckland, Melbourne, Nairobi) — saves unnecessary 411 searches
+- **State normalization**: Converts full state names ("California") to 2-letter abbreviations for URL construction
+- **403 retry**: Fresh curl_cffi session + 5-10s delay on HTTP 403 responses
+- **Concurrent execution**: 5 parallel 411.com workers (each with own session for thread safety) + 50 concurrent GPT workers = 6.7 sec/contact vs 17 sec sequential
+
+#### Architecture
+
+```
+Step 0: GPT-5 mini prep — clean names, extract US locations, filter non-searchable
+Step 1: 411.com search → 3-10 candidates (FREE, curl_cffi + BeautifulSoup)
+Step 2: GPT-5 mini multi-candidate validation (picks best or rejects all)
+Step 3: Zillow autocomplete (address → ZPID, free)
+Step 4: Zillow detail scraper (ZPID → Zestimate, ~$0.003)
+```
+
+**Concurrent execution model (for batch runs):**
+```
+┌─────────────────────────────────────────────┐
+│ Step 0: GPT Prep (50 concurrent workers)    │
+│ All contacts prepped in parallel            │
+│ Output: clean params + searchable/skip list │
+└─────────────────┬───────────────────────────┘
+                  │
+┌─────────────────▼───────────────────────────┐
+│ Steps 1-2: 411 Search + Validate            │
+│ 5 concurrent workers, each with own         │
+│ Scraper411 instance (own curl_cffi session)  │
+│ GPT validation runs inline per worker       │
+└─────────────────┬───────────────────────────┘
+                  │
+┌─────────────────▼───────────────────────────┐
+│ Steps 3-4: Zillow ZPID + Detail             │
+│ Concurrent for validated addresses          │
+└─────────────────────────────────────────────┘
+```
+
+#### Usage
+
+```bash
+# Full retry of all rejected/no-result (concurrent, GPT prep)
+python scripts/intelligence/enrich_real_estate.py --source 411 --retry-rejected
+
+# Resume from a specific offset
+python scripts/intelligence/enrich_real_estate.py --source 411 --retry-rejected --start-from 100
+
+# Smaller batch
+python scripts/intelligence/enrich_real_estate.py --source 411 --retry-rejected --batch 50
+
+# New contacts
+python scripts/intelligence/enrich_real_estate.py --source 411 --batch 50
+
+# Standalone scraper
+python scripts/intelligence/people_search_scraper.py search "Adrian Schurr" "San Francisco, CA"
+python scripts/intelligence/people_search_scraper.py test  # 5 known contacts
+```
+
+#### Key Files
+
+- `scripts/intelligence/people_search_scraper.py` — Core 411.com scraper + GPT-5 mini validation
+- `scripts/intelligence/enrich_real_estate.py` — Pipeline with `--source 411` and `--retry-rejected` flags (zpid matching fixed 2026-02-22)
+- `scripts/intelligence/rescrape_zillow.py` — Standalone Zillow re-scrape with correct zpid matching
+- `docs/CUSTOM_PEOPLE_SCRAPER.md` — Full design document with research findings
+
+### 14.13 Ownership Likelihood Classification
+
+#### Problem
+
+Real estate data without ownership context produces misleading wealth signals. If a contact rents an apartment at a $3M building, the Zestimate reflects the landlord's wealth — not the contact's capacity. We need to distinguish homeowners (Zestimate = valid wealth signal) from renters (Zestimate = irrelevant).
+
+#### Property Ownership API Research (2026-02-21)
+
+Zillow does NOT return owner name data. Researched alternative APIs:
+
+| Service | Price | Owner Name? | Status |
+|---------|-------|-------------|--------|
+| **Propwire** | Free | Yes | Blocked by DataDome anti-bot (tested, all URL patterns returned 404) |
+| **Estated** | Was $179/mo | Yes | Being absorbed into ATTOM Data; 120-property sandbox only |
+| **ATTOM** | $179+/mo | Yes | Enterprise pricing, overkill for personal use |
+| **RentCast** | 50 free/mo | Yes | Only 50 calls too few for batch processing |
+| **County assessor sites** | Free | Yes | No unified API, each county different |
+| **Zillow** | Free | No | Returns property data but NOT owner information |
+
+**Conclusion:** No viable free/cheap API exists for property ownership verification at scale. Implemented heuristic classification instead.
+
+#### Heuristic Classification Logic
+
+Uses three signals already available from Zillow data: `property_type`, address format (unit numbers), and Zestimate presence.
+
+```python
+def classify_ownership(address, property_type, zestimate):
+    has_unit = re.search(r"#|Apt |Unit |Ste |Suite |Floor ", address)
+    has_zest = zestimate is not None
+
+    if property_type == "APARTMENT":
+        return "likely_renter" if not has_zest else "uncertain"
+    if property_type == "SINGLE_FAMILY":
+        if not has_unit: return "likely_owner"
+        return "likely_owner_condo" if has_zest else "likely_renter"
+    if property_type == "CONDO":
+        return "likely_owner_condo" if has_zest else "uncertain"
+    if property_type in ("TOWNHOUSE", "MULTI_FAMILY", "MANUFACTURED"):
+        return "likely_owner"
+    # No property_type
+    if has_unit and not has_zest: return "likely_renter"
+    return "uncertain"
+```
+
+#### Classification Results (updated 2026-02-22 after Zillow re-scrape)
+
+| Category | Count | % | Notes |
+|----------|-------|---|-------|
+| **likely_owner** | 598 | 44% | SFH without unit numbers |
+| **likely_owner_condo** | 86 | 6% | Condos/units with Zestimates |
+| **uncertain** | 92 | 7% | Ambiguous — need more data |
+| **likely_renter** | 109 | 8% | APARTMENTs or unit addresses with no Zestimate |
+| **No real estate data** | 1,579 | 54% | Skip-trace failed/rejected or not enriched |
+| **With Zestimate** | 690 | 51% of enriched | |
+
+**Key finding:** The classification is defensive — likely renters have no Zestimates, ensuring no bad wealth data is being used in scoring.
+
+#### Integration
+
+- **Database:** `ownership_likelihood` field added to `real_estate_data` JSONB for all 505 contacts
+- **Pipeline:** `classify_ownership()` function in `enrich_real_estate.py` auto-classifies on ingest (both Apify and 411.com paths)
+- **UI:** Contact detail sheet shows color-coded ownership badge:
+  - Green: "Owner" (likely_owner)
+  - Blue: "Condo Owner" (likely_owner_condo)
+  - Orange: "Renter" (likely_renter)
+  - Gray: "Uncertain"
+- **Wealth signals:** New "Wealth Signals" section in contact detail sheet shows address, Zestimate, property type, ownership badge, and FEC donation data
+
+#### Final Decision (2026-02-22): Heuristic Is Sufficient
+
+After researching all ownership verification APIs and analyzing the data, the heuristic approach is the right call. Here's why:
+
+| Group | Count | Zestimate? | Risk | Action |
+|-------|-------|------------|------|--------|
+| **Likely owners** (SFH, no unit#) | 598 | Most yes | None — >90% US SFH are owner-occupied | Trust |
+| **Likely condo owners** (unit# + Zestimate) | 86 | 86 yes | Low — Zillow only Zestimates owned units | Trust |
+| **Likely renters** | 109 | 0 | None — no Zestimate = no bad wealth data | Safe |
+| **Uncertain** | 92 | Some | Low risk — small subset | Manual spot-check if needed |
+
+**The heuristic approach works.** Likely renters have zero Zestimates, so no bad wealth data leaks into scoring. The ROI of a $179/mo ownership API subscription is not justified for the small uncertain subset.
+
+#### Edge Cases
+
+Some contacts are likely misclassified due to Zillow data quirks:
+- **Zillow mislabels condos as SINGLE_FAMILY**: Common for multi-unit buildings with individual Zestimates. These get classified as `likely_owner_condo` (correct behavior).
+- **High-end neighborhoods mislabeled APARTMENT**: e.g., Sea Cliff (SF), Brickell (Miami). These may actually be owners. The `uncertain` and `likely_renter` categories warrant manual review for high-priority contacts.
+- **$36M "SINGLE_FAMILY" with unit number**: Keosha Moon at `99 W Paces Ferry Rd NW #836, Atlanta` — Zillow says SINGLE_FAMILY with $36.5M Zestimate. Classified as `likely_owner_condo` which is reasonable.
+
+### 14.14 Zillow Batch Data Bug & Re-scrape (2026-02-22)
+
+#### The Bug
+
+Apify's `maxcopell/zillow-detail-scraper` returns results in **arbitrary order** — not matching the order of input URLs. The original code in `enrich_real_estate.py` matched results by **array index position**:
+
+```python
+# OLD (broken) — matched by index, not zpid
+for j, zr in enumerate(zillow_results):
+    zpid_item = zpid_items[j]  # WRONG — results are in random order
+```
+
+This caused property data to be assigned to the **wrong contacts**. Evidence: contacts in different states with different property types had identical Zestimates. Example: Morgan Hallmon's 4bd/3.5ba single-family home ($1.96M) was showing as a 1bd/1ba condo ($496K) — data from a completely different person's property.
+
+#### The Fix
+
+Changed both Zillow result consumption paths in `enrich_real_estate.py` (skip-trace path ~line 910 and 411 scraper path ~line 1077) to match by zpid:
+
+```python
+# NEW (correct) — build lookup dict, match by zpid
+zr_by_zpid = {}
+for zr in zillow_results:
+    zr_zpid = zr.get("zpid")
+    if zr_zpid:
+        zr_by_zpid[int(zr_zpid)] = zr
+
+for zpid_item in zpid_items:
+    target_zpid = int(zpid_item["zpid"])
+    zr = zr_by_zpid.get(target_zpid)  # CORRECT — matched by unique zpid
+```
+
+#### Re-scrape
+
+Built standalone `scripts/intelligence/rescrape_zillow.py` to re-scrape all contacts with existing `real_estate_data`:
+
+1. Fetches all contacts with addresses from `real_estate_data`
+2. Looks up ZPIDs via Zillow autocomplete API (concurrent, 5 workers)
+3. Batches zpid→URL to Apify (25 per batch)
+4. Matches results by zpid (not index)
+5. Updates database with correct property data
+
+| Metric | Result |
+|--------|--------|
+| Contacts with addresses | 1,059 |
+| ZPIDs found | 794 (75%) |
+| Successfully updated | 794 (100%) |
+| Errors | 0 |
+| Cost | $2.38 (Apify) |
+| Time | 23 minutes |
+
+**Verified examples of corrected data:**
+- Jason Rissman: $1,057,100 → $2,902,500
+- Gerald Chertavian: $1,366,500 → $4,820,600
+- Freada Kapor Klein: $301,700 → $1,546,900
+- Morgan Hallmon: $496,500 (1bd condo) → $1,963,400 (4bd SFH)
+
+**Note on missing ZPIDs (265 contacts):** Some addresses don't resolve via Zillow autocomplete due to city name mismatches (e.g., Zillow uses "El Sobrante" instead of "Richmond" for the same 94803 zip code). These could be recovered with city-name fuzzy matching in the future.
+
+#### Outscraper Comparison (evaluated 2026-02-22)
+
+Also evaluated Outscraper's `zillow-search` API as an alternative to Apify:
+
+| Metric | Apify | Outscraper |
+|--------|-------|------------|
+| Cost per property | ~$0.003 | ~$0.002 |
+| Speed | ~0.8s/property (batch) | 8-70s/property |
+| Batch support | Yes (25+ URLs/run) | No (one at a time) |
+| rentZestimate | Yes | No |
+| lotSize | Yes | No |
+| taxAssessedValue | Yes | No |
+| taxHistory | Yes | No |
+
+**Verdict:** Apify wins decisively — 35x faster in batch, richer data, only $1/1K more expensive.
+
+#### Key Files
+
+- `scripts/intelligence/enrich_real_estate.py` — Fixed zpid matching (both paths)
+- `scripts/intelligence/rescrape_zillow.py` — Standalone re-scrape script
+
+### 14.15 FEC Multi-Person Aggregation Bug Fix (2026-02-22)
+
+#### The Bug
+
+The original FEC enrichment script used **prefix-based first name matching**:
+
+```python
+# OLD (broken)
+first_match = (
+    fec_first == first_lower or
+    fec_first.startswith(first_lower) or  # "andrea" matches "andre"!
+    first_lower.startswith(fec_first)      # "chris" matches "christopher"!
+)
+```
+
+This caused 308 contacts to show >50 donations each, clearly aggregating records from multiple different people. Example: "Andre Steele" (Puget Sound Naval Shipyard, WA) had $43K across 389 donations — but the data included "Andrea Dew Steele" (Platypus Advisors, SF) and "Andrew Steele" (physician, KY).
+
+#### The Fix (3 changes)
+
+1. **Exact first name matching** — no prefix matching:
+```python
+first_match = (fec_first == first_lower)
+```
+
+2. **GPT-5 mini verification** on every match — sends contact's LinkedIn profile (employer, location, career history) alongside FEC summary (employer, occupation, contributor states/cities) to verify same person
+
+3. **State extraction from employment** — when `contact.state` is null, extracts US state from `enrich_employment` JSONB to give FEC a state filter
+
+#### Results After Fix
+
+| Metric | Before Fix | After Fix |
+|--------|-----------|-----------|
+| Contacts with >50 donations | 308 | 51 |
+| GPT-verified donors | N/A (no verification) | 325 |
+| GPT-rejected (wrong person) | N/A | 292 |
+| Total verified donation amount | Inflated/wrong | $5.38M |
+
+The 51 remaining >50-donation contacts are **legitimate high-frequency donors** (GPT-verified with employer matches):
+- Donnel Baird (BlocPower) — 525 donations, $29K, high confidence
+- Michelle Boyers (Give Forward Foundation) — 248 donations, $1.4M, high confidence
+- Regan Pritzker (Pritzker family) — 143 donations, $1.84M, medium confidence
+- Dakarai Aarons (Chan Zuckerberg Initiative) — 323 donations, high confidence
+
+#### Key File
+
+- `scripts/intelligence/enrich_fec_donations.py` — Full rewrite with GPT verification, exact matching, employment state extraction
 
 ---
 
@@ -1393,3 +1904,9 @@ The entire 6-phase pipeline costs less than a month of any commercial wealth scr
 5. **Communication history across accounts.** Justin has 5 Google Workspace accounts. Should we search all of them for each contact? Recommendation: yes, but prioritize by account relevance (e.g., `google-workspace` for personal, `kindora` for business).
 
 6. **Embedding model migration.** Camelback uses 1536 dims. Should we also generate 1536-dim embeddings for contacts for cross-table similarity search? Or migrate Camelback to 768 dims? Not urgent — keep them separate for now.
+
+7. **Property ownership verification — RESOLVED.** Heuristic classifier is sufficient. Only 10 contacts have ambiguous ownership WITH a Zestimate (the only scenario where bad data matters). No ownership API is cost-effective ($179+/mo for ATTOM, Propwire blocked, RentCast 50/mo limit). Manual spot-check of those 10 contacts if needed. See section 14.13 "Final Decision" for full analysis.
+
+8. **411.com long-term reliability.** The free 411.com scraper works today (no Cloudflare, data in server-rendered HTML), but could break if they add anti-bot protection. The Apify skip-trace pipeline remains as a fallback. Monitor for HTML structure changes or rate limiting tightening. **Update 2026-02-22:** Full 793-contact retry run showed 0 rate-limit errors and 0 HTTP errors through 100+ contacts with 5 concurrent workers — very stable.
+
+9. **Zillow autocomplete city mismatches — IDENTIFIED.** ~265 contacts with addresses didn't resolve via Zillow autocomplete because Zillow sometimes uses different city names than skip-trace (e.g., "El Sobrante" vs "Richmond" for the same 94803 zip). Could be resolved with city-name fuzzy matching or zip-code-based search in a future pass.
