@@ -1,0 +1,29 @@
+# Ralph Progress Log
+Loop: comms-closeness
+Started: 2026-02-22
+---
+
+## Codebase Patterns
+- Python scripts in `scripts/intelligence/` use Supabase Python client with dotenv
+- GPT-5 mini structured output uses OpenAI Responses API with Pydantic schemas
+- Concurrent processing uses `ThreadPoolExecutor(max_workers=150)`
+- JSONB null byte safety: `_strip_null_bytes()` function
+- Supabase pagination: `.range(offset, offset + page_size - 1)` for >1000 rows
+- Existing comms tables: `contact_email_threads` (10,216 rows), `contact_sms_conversations` (147 rows)
+- Existing contact comms columns: comms_last_date, comms_thread_count, comms_last_gathered_at
+- Account emails in contact_email_threads: justinrsteele@gmail.com (8291), linkedin (791), justin@truesteele.com (536), justin@outdoorithm.com (298), justin@outdoorithmcollective.org (208), justin@kindora.co (92)
+- contact_sms_conversations has: phone_number, message_count, sent_count, received_count, first/last_message_date, sms_contact_name, match_method, match_confidence, sample_messages (jsonb), summary
+- UI components in job-matcher-ai/ use shadcn/ui with Tailwind
+- Contact detail sheet: job-matcher-ai/components/contact-detail-sheet.tsx
+- Contact detail API: job-matcher-ai/app/api/network-intel/contact/[id]/route.ts
+
+---
+
+## Iteration Log
+
+### US-001: Database Migration — Add Unified Comms Columns (DONE)
+- Applied migration `add_comms_closeness_columns` via Supabase MCP `apply_migration`
+- Added to `contact_email_threads`: channel (text NOT NULL DEFAULT 'email'), is_group (boolean DEFAULT false), participant_count (smallint DEFAULT 2)
+- Added to `contacts`: comms_closeness (text), comms_momentum (text), comms_reasoning (text), comms_summary (jsonb)
+- All 7 columns verified with SELECT queries against information_schema
+- No issues encountered
