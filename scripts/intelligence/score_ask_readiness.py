@@ -59,7 +59,7 @@ class AskTiming(str, Enum):
 class AskReadinessResult(BaseModel):
     score: int = Field(ge=0, le=100, description="Overall ask-readiness score 0-100")
     tier: AskTier = Field(description="Ask-readiness tier")
-    reasoning: str = Field(description="2-3 sentence explanation citing specific evidence")
+    reasoning: str = Field(description="Comprehensive 4-6 sentence prospect summary. Must include: (1) relationship strength and basis, (2) key capacity signals (property, FEC, career level), (3) philanthropic alignment evidence, (4) recommended cultivation path. This is the primary summary a fundraiser will read.")
     recommended_approach: RecommendedApproach
     ask_timing: AskTiming
     cultivation_needed: str = Field(description="What cultivation is needed, or 'None — ready for direct ask'")
@@ -96,20 +96,74 @@ DONOR PSYCHOLOGY FRAMEWORK:
 The three pillars of donor readiness are Capacity, Propensity, and Relationship — but they interact in nuanced ways:
 
 1. RELATIONSHIP DEPTH (most important for individual fundraising)
-   The #1 predictor of individual giving is trust in the person asking. Warm outreach converts at 10x the rate of cold approaches. Assess:
-   - How well does Justin actually know this person? (familiarity_rating: 0=stranger, 1=recognize name, 2=know them, 3=good relationship, 4=close/trusted)
-   - Have they communicated recently? Recency and frequency of email contact signals active relationship vs dormant connection
+   The #1 predictor of individual giving is trust in the person asking. Warm outreach converts at 10x the rate of cold approaches.
+
+   Relationship strength has TWO independent dimensions (based on Granovetter's tie strength theory):
+
+   a) SUBJECTIVE CLOSENESS (familiarity_rating: 0-4)
+      Justin's personal assessment of how well he knows this person:
+      0=stranger, 1=recognize name, 2=know them, 3=good relationship, 4=close/trusted
+      This captures emotional intensity and trust — it does NOT decay with time.
+      A close friend you haven't spoken to in 3 years is still rated 4.
+
+   b) BEHAVIORAL COMMUNICATION CLOSENESS (comms_closeness + comms_momentum)
+      Data-derived from actual communication patterns across email, LinkedIn DMs, and SMS:
+      - active_inner_circle: Frequent, recent, bidirectional communication across intimate channels
+      - regular_contact: Consistent communication pattern, reliably in touch
+      - occasional: Infrequent communication, scattered threads
+      - dormant: Communication history exists but has gone cold (6+ months since last contact)
+      - one_way: Predominantly one-directional communication
+      - no_history: Zero communication records
+
+      Momentum (temporal trend):
+      - growing: Communication frequency is increasing — relationship is warming up
+      - stable: Consistent pattern over time
+      - fading: Communication was once more active but is declining
+      - inactive: No recent communication
+
+   THE 2x2 RELATIONSHIP MAP — USE THIS TO GUIDE YOUR ASSESSMENT:
+
+   | Quadrant | Familiarity | Comms | Fundraising Strategy |
+   |----------|------------|-------|----------------------|
+   | Active Inner Circle | 3-4 | active/regular | DIRECT ASK. Warm, trusted, in touch. Highest conversion rate. |
+   | Dormant Strong Ties | 3-4 | dormant/occasional | HIGHEST LEVERAGE. They trust Justin but aren't in touch. Reactivation ("it's been too long") before ask. These are the hidden gems. |
+   | Active Weak Ties | 0-2 | active/regular | CULTIVATE DEEPER. Regular contact but not close. Move from transactional to personal before asking. |
+   | Cold Contacts | 0-2 | dormant/none | LOW PRIORITY unless strong profile overlap. Requires cultivation or introduction. |
+
+   MOMENTUM MODIFIERS:
+   - Dormant Strong Tie + growing momentum = Relationship is naturally reactivating. STRIKE NOW.
+   - Active Inner Circle + fading momentum = RISK of losing an engaged supporter. Check in urgently.
+   - Growing momentum on any relationship = Window of opportunity. Act while the relationship is warming.
+
+   Also consider:
    - Do they share formative experiences? People who worked together, went to school together, or served on boards together share identity-level bonds. Temporal overlap amplifies this — being at Google at the SAME TIME creates a fundamentally different bond than both having worked there in different decades
    - Is there reciprocity history? Prior favors, shared projects, mutual support create giving obligations
 
 2. GIVING CAPACITY
-   Financial ability to give. Assess from:
-   - Career level and trajectory (C-suite, VP, director, IC)
-   - Company size and type (tech exec vs nonprofit staff)
-   - Board positions (signal wealth and philanthropic identity)
-   - FEC political donations: If someone donated $5,000+ to political campaigns, they demonstrably have disposable income AND willingness to write checks. This is the strongest behavioral signal of capacity — it's not estimated, it's proven.
-   - Real estate holdings: Property ownership is a factual wealth indicator. Someone with $2M+ in assessed property value has fundamentally different capacity than a renter. Multiple properties (vacation home, investment properties) signal significant wealth.
-   - But capacity WITHOUT relationship is meaningless for individual asks — a billionaire who doesn't know Justin won't give
+   What matters is DISCRETIONARY giving capacity — what someone can realistically write a check for after their obligations. This requires thinking about the full picture, not just impressive-sounding signals.
+
+   Use the employment history to reason about likely career earnings and wealth accumulation:
+   - What sector have they spent their career in? Nonprofit/government/education careers pay salaries but don't generate equity wealth. A 20-year nonprofit career, even at the CEO level, means someone earning $300-600K with no stock options or equity upside.
+   - For tech careers, LEVEL matters enormously. An IC or manager at Google for 5 years earned good money ($300-500K/yr) but didn't accumulate generational wealth. A VP+ at Google for 10+ years likely has $5-20M+ in vested equity. Read the actual titles and tenures in the employment history.
+   - Family offices, wealth management, and advisory roles manage OTHER people's money — don't assume the advisor is personally wealthy.
+   - Public company executives and founders have fundamentally different wealth profiles than salaried professionals at the same title level.
+
+   Factor in obligations that consume income:
+   - An expensive home (high Zestimate) in a high-COL area is as much an obligation as a wealth signal — a $2M home in the Bay Area means ~$12K/month in mortgage, taxes, and insurance. That's $144K/year before they spend a dollar on anything else.
+   - Location context: $500K/year in San Francisco or New York, after housing, taxes, childcare/private school, leaves far less discretionary income than $500K in a lower-cost market.
+   - Life stage: someone with young kids likely has major ongoing expenses (childcare, education, activities).
+
+   Hard evidence vs inference:
+   - FEC political donations are the strongest signal — they prove both disposable income AND willingness to write checks. Someone who gave $10K+ to political campaigns demonstrably has discretionary cash.
+   - Owned real estate with high Zestimate shows asset wealth (but may be illiquid/mortgaged).
+   - Prior charitable gifts are direct evidence.
+   - Everything else (titles, employer prestige) is inference. Be transparent about what is known vs assumed.
+
+   Real estate nuances:
+   - Only count property value for likely owners. If flagged as a renter, the Zestimate is the landlord's asset, not theirs.
+   - A high-value home with no FEC donations and a nonprofit career likely means most wealth is tied up in the house, not liquid.
+
+   But capacity WITHOUT relationship is meaningless for individual asks — a billionaire who doesn't know Justin won't give.
 
 3. PHILANTHROPIC PROPENSITY
    Likelihood of giving based on values and identity alignment. Key signals:
@@ -118,6 +172,14 @@ The three pillars of donor readiness are Capacity, Propensity, and Relationship 
    - Values alignment with the specific cause (outdoor equity, youth access, environmental justice)
    - Identity-based giving: "people like me give to causes like this" — shared social circles, similar career arcs, peer effects
    - Have they supported similar organizations?
+
+   CRITICAL — INSTITUTIONAL vs PERSONAL GIVING:
+   You are ONLY assessing this person's likelihood of making a PERSONAL gift. Do NOT:
+   - Recommend pitching someone for an institutional grant just because they work at a foundation
+   - Conflate someone's professional grantmaking role with their personal giving capacity
+   - Suggest "apply for a grant from their foundation" — Justin has a separate process for institutional giving
+   A program officer at the Ford Foundation may personally give $500 from their own wallet. Assess THAT, not the Ford Foundation's $16B endowment.
+   If someone works in institutional philanthropy, note it as a signal of philanthropic values alignment, but score based on their personal capacity (salary, property, FEC donations, etc).
 
 4. PSYCHOLOGICAL READINESS
    Timing and receptivity. Consider:
@@ -137,7 +199,9 @@ CRITICAL BEHAVIORAL INSIGHTS:
 - Major donors need 12-18 months of cultivation before a large ask. Mid-level donors need 2-4 touchpoints.
 
 OUTPUT REQUIREMENTS:
-Produce a structured assessment with score (0-100), tier, reasoning (citing specific evidence), recommended approach, ask timing, cultivation needed, suggested ask range, personalization angle, and risk factors.
+Produce a structured assessment with score (0-100), tier, reasoning, recommended approach, ask timing, cultivation needed, suggested ask range, personalization angle, and risk factors.
+
+The 'reasoning' field is the most important output — it's the fundraiser's briefing. Include ALL relevant evidence: relationship basis (shared institutions, comms history, familiarity), capacity signals (FEC donation totals, property value if owner, career level), alignment signals (outdoor/equity interests, board service, philanthropic identity), and the key risk or opportunity. Write it as a decision-ready paragraph, not a vague summary.
 
 SCORING GUIDANCE:
 - 80-100 (ready_now): Close relationship + financial capacity + values alignment + recent positive contact. Justin could call today.
@@ -158,7 +222,13 @@ SELECT_COLS = (
     "ai_capacity_tier, ai_capacity_score, ai_outdoorithm_fit, "
     "fec_donations, real_estate_data, "
     "comms_last_date, comms_thread_count, communication_history, "
-    "enrich_employment, enrich_education, enrich_volunteering"
+    "comms_closeness, comms_momentum, "
+    "enrich_employment, enrich_education, enrich_volunteering, "
+    "known_donor, nonprofit_board_member, "
+    "outdoor_environmental_affinity, outdoor_affinity_evidence, "
+    "equity_access_focus, equity_focus_evidence, "
+    "joshua_tree_invited, oc_engagement, "
+    "ask_readiness"
 )
 
 
@@ -185,6 +255,8 @@ def summarize_fec(fec_data: dict) -> str:
     """Summarize FEC donations into a readable string."""
     if not fec_data:
         return "No FEC records found"
+    if fec_data.get("skipped_reason"):
+        return "No FEC records (non-US contact — FEC is US-only)"
     total = fec_data.get("total_amount", 0)
     count = fec_data.get("donation_count", 0)
     max_single = fec_data.get("max_single", 0)
@@ -216,23 +288,51 @@ def summarize_fec(fec_data: dict) -> str:
 
 
 def summarize_real_estate(re_data: dict) -> str:
-    """Summarize real estate data into a readable string."""
+    """Summarize real estate data into a readable string.
+
+    Uses ownership_likelihood to contextualize property data:
+    - Owners: full Zestimate as wealth signal
+    - Renters: suppress Zestimate (it's the landlord's asset)
+    - Uncertain: include data but note uncertainty
+    """
     if not re_data:
         return "No property records found"
     source = re_data.get("source", "")
     if source in ("skip_trace_rejected", "skip_trace_failed"):
         return "No property records found"
 
+    # Building-level records (e.g., entire condo building, not a unit) — suppress misleading values
+    if re_data.get("building_level_data"):
+        address = re_data.get("address", "")
+        if address:
+            return f"Resident at {address} (condo/apartment building — unit-level value unknown)"
+        return "No reliable property records"
+
+    ownership = re_data.get("ownership_likelihood", "uncertain")
     parts = []
+
     address = re_data.get("address", "")
+
+    if ownership == "likely_renter":
+        # Renter: suppress Zestimate — it's the landlord's wealth, not theirs
+        if address:
+            parts.append(f"Renter at {address}")
+        else:
+            parts.append("Likely renter (no property ownership)")
+        return ". ".join(parts)
+
+    # Owner or uncertain — include property details
     if address:
-        parts.append(f"Property: {address}")
+        if ownership in ("likely_owner", "likely_owner_condo"):
+            label = "Owner" if ownership == "likely_owner" else "Condo owner"
+            parts.append(f"Property ({label}): {address}")
+        else:
+            parts.append(f"Property (ownership uncertain): {address}")
+
     zestimate = re_data.get("zestimate")
     if zestimate:
         parts.append(f"Zestimate: ${zestimate:,.0f}")
-    rent = re_data.get("rent_zestimate")
-    if rent:
-        parts.append(f"Rent Zestimate: ${rent:,.0f}/mo")
+
     ptype = re_data.get("property_type", "")
     beds = re_data.get("beds")
     baths = re_data.get("baths")
@@ -257,15 +357,24 @@ def summarize_comms(contact: dict) -> str:
     """Summarize communication history into a readable string."""
     last_date = contact.get("comms_last_date")
     thread_count = contact.get("comms_thread_count", 0)
+    closeness = contact.get("comms_closeness")
+    momentum = contact.get("comms_momentum")
 
     if not last_date and not thread_count:
-        return "No email history"
+        return "No communication history (email, LinkedIn, or SMS)"
 
     parts = []
+
+    # Communication closeness and momentum (behavioral/data-derived signals)
+    if closeness:
+        parts.append(f"Communication Closeness (behavioral): {closeness}")
+    if momentum:
+        parts.append(f"Communication Momentum: {momentum}")
+
     if last_date:
         parts.append(f"Last contact: {last_date}")
     if thread_count:
-        parts.append(f"Total threads: {thread_count}")
+        parts.append(f"Total threads (email + LinkedIn DMs + SMS): {thread_count}")
 
     # Extract relationship summary and recent threads from communication_history
     comms = parse_jsonb(contact.get("communication_history"))
@@ -379,6 +488,96 @@ def get_topics_and_philanthropy(ai_tags: dict) -> tuple[str, str]:
     return topics_str, philanthropy_str
 
 
+def summarize_employment(employment_data) -> str:
+    """Summarize LinkedIn employment history into readable text."""
+    data = parse_jsonb(employment_data)
+    if not data or not isinstance(data, list):
+        return "No employment history available"
+    positions = []
+    for job in data[:8]:  # Cap at 8 most recent positions
+        if not isinstance(job, dict):
+            continue
+        title = job.get("title", "")
+        company = job.get("companyName", job.get("company", ""))
+        start = job.get("startDate", "")
+        end = job.get("endDate", "Present")
+        desc = job.get("description", "")
+        line = f"  - {title} at {company}"
+        if start:
+            line += f" ({start} – {end})"
+        if desc:
+            # Truncate long descriptions
+            desc_short = desc[:200] + "..." if len(desc) > 200 else desc
+            line += f"\n    {desc_short}"
+        positions.append(line)
+    return "\n".join(positions) if positions else "No employment history available"
+
+
+def summarize_education(education_data) -> str:
+    """Summarize LinkedIn education history into readable text."""
+    data = parse_jsonb(education_data)
+    if not data or not isinstance(data, list):
+        return "No education history available"
+    schools = []
+    for edu in data:
+        if not isinstance(edu, dict):
+            continue
+        school = edu.get("schoolName", edu.get("school", ""))
+        degree = edu.get("degreeName", edu.get("degree", ""))
+        field = edu.get("fieldOfStudy", edu.get("field", ""))
+        start = edu.get("startDate", "")
+        end = edu.get("endDate", "")
+        line = f"  - {school}"
+        if degree:
+            line += f", {degree}"
+        if field:
+            line += f" in {field}"
+        if start or end:
+            line += f" ({start}–{end})"
+        schools.append(line)
+    return "\n".join(schools) if schools else "No education history available"
+
+
+def summarize_volunteering_data(volunteering_data) -> str:
+    """Summarize LinkedIn volunteering into readable text."""
+    data = parse_jsonb(volunteering_data)
+    if not data or not isinstance(data, list):
+        return "No volunteering history"
+    items = []
+    for vol in data:
+        if not isinstance(vol, dict):
+            continue
+        role = vol.get("role", vol.get("title", ""))
+        org = vol.get("companyName", vol.get("organization", ""))
+        cause = vol.get("cause", "")
+        line = f"  - {role} at {org}"
+        if cause:
+            line += f" (cause: {cause})"
+        items.append(line)
+    return "\n".join(items) if items else "No volunteering history"
+
+
+def summarize_oc_engagement(oc_data) -> str:
+    """Summarize Outdoorithm Collective CRM engagement into readable text."""
+    data = parse_jsonb(oc_data)
+    if not data or not isinstance(data, dict):
+        return ""
+    parts = []
+    roles = data.get("crm_roles", [])
+    if roles:
+        parts.append(f"CRM Roles: {', '.join(roles)}")
+    if data.get("is_oc_donor"):
+        total = data.get("oc_total_donated", 0)
+        count = data.get("oc_donation_count", 0)
+        last = data.get("oc_last_donation", "")
+        parts.append(f"OC Donor: ${total:,.0f} total across {count} donations (last: {last})")
+    trips_attended = data.get("trips_attended", 0)
+    trips_registered = data.get("trips_registered", 0)
+    if trips_attended or trips_registered:
+        parts.append(f"Trip participation: {trips_attended} attended, {trips_registered} registered")
+    return "\n  ".join(parts)
+
+
 def build_contact_context(contact: dict, goal: str) -> str:
     """Assemble the full per-contact context for the donor psychology prompt."""
     parts = []
@@ -401,7 +600,25 @@ def build_contact_context(contact: dict, goal: str) -> str:
     if contact.get("city") or contact.get("state"):
         loc = ", ".join(filter(None, [contact.get("city"), contact.get("state")]))
         parts.append(f"Location: {loc}")
+
+    # LinkedIn About/Summary — rich self-description of values and identity
+    if contact.get("summary"):
+        parts.append(f"LinkedIn About: {contact['summary']}")
     parts.append("")
+
+    # Prior fundraising signals
+    prior_signals = []
+    if contact.get("known_donor"):
+        prior_signals.append("KNOWN DONOR (has given before)")
+    if contact.get("joshua_tree_invited"):
+        prior_signals.append("Previously invited to Outdoorithm Joshua Tree trip")
+    if prior_signals:
+        parts.append(f"Prior Fundraising History: {'; '.join(prior_signals)}")
+
+    # Outdoorithm Collective CRM engagement (direct organizational involvement)
+    oc_summary = summarize_oc_engagement(contact.get("oc_engagement"))
+    if oc_summary:
+        parts.append(f"Outdoorithm Collective Engagement:\n  {oc_summary}")
 
     # Shared institutions (structured)
     institutions = parse_jsonb(contact.get("shared_institutions"))
@@ -426,8 +643,23 @@ def build_contact_context(contact: dict, goal: str) -> str:
         if fallback_parts:
             parts.append(f"AI-Detected Overlap (unstructured):\n" + "\n".join(fallback_parts))
 
-    parts.append(f"AI Capacity Tier: {contact.get('ai_capacity_tier', 'unknown')} (score: {contact.get('ai_capacity_score', '?')})")
+    parts.append(f"AI Capacity Estimate (rough, title-based — use employment history above to form your own judgment): {contact.get('ai_capacity_tier', 'unknown')} (score: {contact.get('ai_capacity_score', '?')})")
     parts.append(f"AI Outdoorithm Fit: {contact.get('ai_outdoorithm_fit', 'unknown')}")
+
+    # Mission alignment flags
+    alignment_flags = []
+    if contact.get("outdoor_environmental_affinity"):
+        evidence = contact.get("outdoor_affinity_evidence") or []
+        alignment_flags.append(f"Outdoor/environmental affinity: YES" +
+                               (f" — {'; '.join(evidence[:3])}" if evidence else ""))
+    if contact.get("equity_access_focus"):
+        evidence = contact.get("equity_focus_evidence") or []
+        alignment_flags.append(f"Equity/access focus: YES" +
+                               (f" — {'; '.join(evidence[:3])}" if evidence else ""))
+    if contact.get("nonprofit_board_member"):
+        alignment_flags.append("Nonprofit board member: YES")
+    if alignment_flags:
+        parts.append("Mission Alignment Flags:\n  " + "\n  ".join(alignment_flags))
 
     # Wealth signals
     fec = parse_jsonb(contact.get("fec_donations"))
@@ -440,6 +672,14 @@ def build_contact_context(contact: dict, goal: str) -> str:
     topics_str, philanthropy_str = get_topics_and_philanthropy(ai_tags)
     parts.append(f"Topics of Interest: {topics_str}")
     parts.append(f"Philanthropic Signals: {philanthropy_str}")
+    parts.append("")
+
+    # Raw LinkedIn career data
+    parts.append(f"Employment History:\n{summarize_employment(contact.get('enrich_employment'))}")
+    parts.append(f"Education:\n{summarize_education(contact.get('enrich_education'))}")
+    vol_summary = summarize_volunteering_data(contact.get("enrich_volunteering"))
+    if vol_summary != "No volunteering history":
+        parts.append(f"Volunteering:\n{vol_summary}")
     parts.append("")
 
     # Communication history
@@ -581,6 +821,17 @@ class AskReadinessScorer:
 
         return None
 
+    @staticmethod
+    def _strip_null_bytes(obj):
+        """Recursively strip \\u0000 null bytes that PostgreSQL JSONB rejects."""
+        if isinstance(obj, str):
+            return obj.replace("\u0000", "")
+        if isinstance(obj, dict):
+            return {k: AskReadinessScorer._strip_null_bytes(v) for k, v in obj.items()}
+        if isinstance(obj, list):
+            return [AskReadinessScorer._strip_null_bytes(v) for v in obj]
+        return obj
+
     def save_score(self, contact_id: int, existing_ar: object, result: AskReadinessResult) -> bool:
         """Save the ask-readiness score to Supabase, preserving other goal scores."""
         score_data = result.model_dump(mode="json")
@@ -590,7 +841,7 @@ class AskReadinessScorer:
         ar = {}
         if existing_ar and isinstance(existing_ar, dict):
             ar = dict(existing_ar)
-        ar[self.goal] = score_data
+        ar[self.goal] = self._strip_null_bytes(score_data)
 
         try:
             self.supabase.table("contacts").update({
@@ -742,8 +993,8 @@ def main():
                         help="Skip first N contacts (for resuming)")
     parser.add_argument("--goal", "-g", type=str, default="outdoorithm_fundraising",
                         help="Goal to score for (default: outdoorithm_fundraising)")
-    parser.add_argument("--workers", "-w", type=int, default=8,
-                        help="Number of concurrent workers (default: 8)")
+    parser.add_argument("--workers", "-w", type=int, default=150,
+                        help="Number of concurrent workers (default: 50)")
     parser.add_argument("--force", "-f", action="store_true",
                         help="Re-score contacts already scored for this goal")
     args = parser.parse_args()
