@@ -72,7 +72,7 @@ Install the dnd-kit package and create the API routes needed for the pipeline pa
 
 ### US-003: Build the Kanban board component with dnd-kit
 **Priority:** 3
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Create the core Kanban board component that displays deals as draggable cards organized by stage columns.

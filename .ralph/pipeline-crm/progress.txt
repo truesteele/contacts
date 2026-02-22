@@ -37,3 +37,15 @@ Started: 2026-02-22
 - Next.js 15 dynamic route params use `Promise<{ id: string }>` pattern (must await params)
 - Deal SELECT includes contact join: `*, contacts(id, first_name, last_name, company, position, headline, city, state)`
 - Typecheck passes clean
+
+### US-003: Build the Kanban Board Component (2026-02-22)
+- Created 3 components in `components/pipeline/`:
+  - `deal-card.tsx` - Draggable card with useSortable hook, shows title, contact name + company, amount badge, next action + date, source badge, days in stage
+  - `kanban-column.tsx` - Droppable column with useDroppable hook, SortableContext with verticalListSortingStrategy, header shows stage name + color dot + deal count + total value, ScrollArea for vertical overflow
+  - `kanban-board.tsx` - DndContext with closestCorners collision, PointerSensor with 5px activation distance, DragOverlay for floating card, optimistic updates via onDealsChange callback, background API persist via persistReorder()
+- Exported `Deal` and `DealContact` types from deal-card.tsx for reuse
+- Stage keys derived from stage names via lowercase + underscore (e.g., "Reached Out" -> "reached_out")
+- Drag between columns: handleDragOver moves deal optimistically, handleDragEnd recalculates positions for both source and target columns and persists
+- Drag within column: arrayMove for reorder, positions recalculated sequentially
+- hideLost prop filters out the "lost" column when true
+- Typecheck passes clean
