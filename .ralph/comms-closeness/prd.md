@@ -53,19 +53,19 @@ Add columns to support the unified communication architecture and closeness scor
 
 ### US-002: Backfill Channel and Group Status on Existing Threads
 **Priority:** 2
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Set the `channel` and `is_group` fields for all existing rows in `contact_email_threads`.
 
 **Acceptance Criteria:**
-- [ ] Set `channel = 'linkedin'` for all rows where `account_email = 'linkedin'`
-- [ ] Set `channel = 'email'` for all rows where `account_email != 'linkedin'` (these are Gmail accounts)
-- [ ] Set `is_group = true` for email threads where participants JSONB array has more than 2 entries (or where raw_messages contain multiple distinct non-Justin recipients)
-- [ ] Set `is_group = false` for LinkedIn threads (always 1:1) and email threads with ≤2 participants
-- [ ] Set `participant_count` based on the length of the `participants` JSONB array
-- [ ] Verify with: `SELECT channel, is_group, count(*) FROM contact_email_threads GROUP BY channel, is_group`
-- [ ] All 10,216 existing rows should have non-null channel values
+- [x] Set `channel = 'linkedin'` for all rows where `account_email = 'linkedin'`
+- [x] Set `channel = 'email'` for all rows where `account_email != 'linkedin'` (these are Gmail accounts)
+- [x] Set `is_group = true` for email threads where participants JSONB array has more than 2 entries (or where raw_messages contain multiple distinct non-Justin recipients)
+- [x] Set `is_group = false` for LinkedIn threads (always 1:1) and email threads with ≤2 participants
+- [x] Set `participant_count` based on the length of the `participants` JSONB array
+- [x] Verify with: `SELECT channel, is_group, count(*) FROM contact_email_threads GROUP BY channel, is_group`
+- [x] All 10,216 existing rows should have non-null channel values
 
 **Notes:**
 - Use `execute_sql` for UPDATE statements

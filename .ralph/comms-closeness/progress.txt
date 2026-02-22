@@ -27,3 +27,14 @@ Started: 2026-02-22
 - Added to `contacts`: comms_closeness (text), comms_momentum (text), comms_reasoning (text), comms_summary (jsonb)
 - All 7 columns verified with SELECT queries against information_schema
 - No issues encountered
+
+### US-002: Backfill Channel and Group Status on Existing Threads (DONE)
+- Set `channel = 'linkedin'` for 791 rows where `account_email = 'linkedin'`
+- Remaining 9,425 rows already had `channel = 'email'` (the DEFAULT)
+- Set `participant_count = jsonb_array_length(participants)` for all 10,216 rows
+- Set `is_group = true` for email threads with >2 participants (7,150 rows), false otherwise
+- LinkedIn threads: all 791 correctly set to is_group=false
+- participant_count range: 1 to 1,084, avg 21.2
+- High group ratio (76% of email threads) makes sense — Gmail participants include CC recipients
+- All 10,216 rows verified: non-null channel, is_group, participant_count
+- No file changes — all SQL DML via Supabase MCP execute_sql
