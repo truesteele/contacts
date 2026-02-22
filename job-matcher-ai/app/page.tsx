@@ -10,6 +10,7 @@ import {
   MapPin,
   Heart,
   Mountain,
+  Columns3,
   ArrowUpRight,
   Sparkles,
   Star,
@@ -65,6 +66,15 @@ const TOOLS = [
     icon: Heart,
     accent: 'from-green-500/10 to-emerald-500/5',
     iconColor: 'text-green-600',
+  },
+  {
+    title: 'Pipeline',
+    description:
+      'Track outreach and deals across Kindora, Outdoorithm, and True Steele. Drag-and-drop Kanban board with deal stages, contacts, and notes.',
+    href: '/tools/pipeline',
+    icon: Columns3,
+    accent: 'from-indigo-500/10 to-violet-500/5',
+    iconColor: 'text-indigo-600',
   },
   {
     title: 'Email Finder',
