@@ -108,15 +108,15 @@ Copy data from `contact_sms_conversations` into `contact_email_threads` with `ch
 
 ### US-004: Build rebuild_comms_summary.py Script
 **Priority:** 4
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Create a Python script that aggregates communication data across all channels per contact and stores a structured `comms_summary` JSONB on the contacts table.
 
 **Acceptance Criteria:**
-- [ ] Create `scripts/intelligence/rebuild_comms_summary.py`
-- [ ] Script queries `contact_email_threads` grouped by contact_id
-- [ ] Per contact, computes:
+- [x] Create `scripts/intelligence/rebuild_comms_summary.py`
+- [x] Script queries `contact_email_threads` grouped by contact_id
+- [x] Per contact, computes:
   - `total_threads` (int)
   - `total_messages` (int, sum of message_count)
   - `channels` object with per-channel breakdown: `{email: {threads, messages, first_date, last_date, bidirectional, inbound, outbound, group_threads}, linkedin: {...}, sms: {...}}`
@@ -125,12 +125,12 @@ Create a Python script that aggregates communication data across all channels pe
   - `group_thread_pct` (float, % of email threads that are group)
   - `most_recent_channel` (which channel had the most recent activity)
   - `chronological_summary` (string, e.g., "3 emails in 2024, 1 LinkedIn DM in Jan 2025, 2 SMS in Feb 2026")
-- [ ] Also updates `comms_last_date` and `comms_thread_count` on contacts table
-- [ ] Supports `--test` flag to preview 5 contacts without writing
-- [ ] Supports `--contact-id N` flag to process a single contact
-- [ ] Uses Supabase Python client (not psycopg2) following existing patterns
-- [ ] Handles pagination for >1000 rows
-- [ ] Script runs without errors in test mode
+- [x] Also updates `comms_last_date` and `comms_thread_count` on contacts table
+- [x] Supports `--test` flag to preview 5 contacts without writing
+- [x] Supports `--contact-id N` flag to process a single contact
+- [x] Uses Supabase Python client (not psycopg2) following existing patterns
+- [x] Handles pagination for >1000 rows
+- [x] Script runs without errors in test mode
 
 **Notes:**
 - Follow patterns from `scripts/intelligence/gather_comms_history.py` for Supabase client setup
@@ -141,17 +141,17 @@ Create a Python script that aggregates communication data across all channels pe
 
 ### US-005: Run rebuild_comms_summary.py on All Contacts
 **Priority:** 5
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Execute the comms summary rebuild script to populate `comms_summary` JSONB for all contacts.
 
 **Acceptance Criteria:**
-- [ ] Run `python scripts/intelligence/rebuild_comms_summary.py` (no --test flag)
-- [ ] Script completes without errors
-- [ ] Verify: `SELECT count(*) FROM contacts WHERE comms_summary IS NOT NULL` shows contacts with communication data populated
-- [ ] Verify: `SELECT comms_summary FROM contacts WHERE comms_summary IS NOT NULL LIMIT 1` shows expected JSONB structure
-- [ ] Verify: `comms_last_date` and `comms_thread_count` are updated
+- [x] Run `python scripts/intelligence/rebuild_comms_summary.py` (no --test flag)
+- [x] Script completes without errors
+- [x] Verify: `SELECT count(*) FROM contacts WHERE comms_summary IS NOT NULL` shows contacts with communication data populated
+- [x] Verify: `SELECT comms_summary FROM contacts WHERE comms_summary IS NOT NULL LIMIT 1` shows expected JSONB structure
+- [x] Verify: `comms_last_date` and `comms_thread_count` are updated
 
 **Notes:**
 - If script errors, fix the bug and retry

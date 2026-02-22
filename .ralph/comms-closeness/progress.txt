@@ -51,3 +51,26 @@ Started: 2026-02-22
 - Verified: zero duplicate thread_ids in SMS channel
 - Original `contact_sms_conversations` table preserved as backup
 - No file changes — all SQL DML via Supabase MCP execute_sql
+
+### US-004: Build rebuild_comms_summary.py Script (DONE)
+- Created `scripts/intelligence/rebuild_comms_summary.py` (371 lines)
+- Pure aggregation script — no GPT/LLM calls, just SQL + Python math
+- Fetches all 10,363 threads via Supabase pagination, groups by contact_id (1,210 contacts)
+- Per-contact comms_summary JSONB includes: total_threads, total_messages, channels breakdown (per-channel threads/messages/dates/directions/groups), overall dates, bidirectional_pct, group_thread_pct, most_recent_channel, chronological_summary
+- chronological_summary is human-readable: "3 emails in 2024, 1 LinkedIn DM in Jan 2025, 2 SMS in Feb 2026"
+- For current year, breaks down by month (if ≤3 months) for more detail
+- Also writes comms_last_date (date) and comms_thread_count (smallint) on contacts table
+- Supports --test (preview 5), --contact-id N (single contact)
+- Tested with contact 1917 who has all 3 channels (email:203, sms:1, linkedin:2) — summary correctly shows 5,597 messages across 206 threads
+- Follows existing patterns: Supabase Python client, dotenv, argparse, pagination with .range()
+- No OpenAI dependency — pure data aggregation
+
+### US-005: Run rebuild_comms_summary.py on All Contacts (DONE)
+- Ran `python scripts/intelligence/rebuild_comms_summary.py` (full run, no --test flag)
+- Script completed with zero errors
+- 1,210 contacts updated with comms_summary JSONB
+- Verified: comms_summary JSONB structure correct (channels breakdown, dates, thread/message counts, chronological_summary, bidirectional_pct, group_thread_pct, most_recent_channel)
+- Verified: comms_last_date populated for all 1,210 contacts
+- Verified: comms_thread_count populated for all 1,210 contacts
+- Exceeds expected ~1,100+ contacts (actual: 1,210)
+- No file changes — script execution only + data verification via Supabase MCP
