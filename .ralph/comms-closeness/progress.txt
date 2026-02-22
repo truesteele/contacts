@@ -88,3 +88,15 @@ Started: 2026-02-22
 - Test run: 5 contacts, 0 errors, 2 no_history (no GPT), 2 one_way, 1 dormant — sensible results
 - Model ID: gpt-5-mini (same as score_ask_readiness.py)
 - Color-coded terminal output with closeness colors + momentum icons
+
+### US-007: Run score_comms_closeness.py on All Contacts (DONE)
+- Ran `python scripts/intelligence/score_comms_closeness.py --workers 150` (full run)
+- Script completed in 110.6 seconds (26.6 contacts/sec) at $0.85 total cost
+- 2,900 contacts scored successfully, 37 errors during processing (all eventually covered — 0 null comms_closeness in DB)
+- 1,727 contacts assigned no_history without GPT call (cost-saving), 1,210 scored by GPT-5 mini
+- Closeness distribution: no_history=1,727, one_way=498, dormant=343, occasional=272, active_inner_circle=53, regular_contact=44
+- Momentum distribution: inactive=2,515, growing=212, fading=147, stable=63
+- Reasoning quality: detailed 1-2 sentences referencing channel hierarchy, bidirectional rates, recency patterns
+- All 2,937 contacts have non-null comms_closeness (verified with SELECT count)
+- Input tokens: 1,663,568 | Output tokens: 1,006,328
+- No file changes — script execution only + data verification via Supabase MCP

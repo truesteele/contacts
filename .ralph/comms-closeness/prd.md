@@ -197,18 +197,18 @@ Create a GPT-5 mini scoring script that reads each contact's `comms_summary` JSO
 
 ### US-007: Run score_comms_closeness.py on All Contacts
 **Priority:** 7
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Execute the comms closeness scoring script to label all contacts.
 
 **Acceptance Criteria:**
-- [ ] Run `python scripts/intelligence/score_comms_closeness.py` (no --test flag, 150 workers)
-- [ ] Script completes without errors (or with <5 errors)
-- [ ] Verify distribution: `SELECT comms_closeness, count(*) FROM contacts GROUP BY comms_closeness ORDER BY count(*) DESC`
-- [ ] Verify momentum: `SELECT comms_momentum, count(*) FROM contacts GROUP BY comms_momentum ORDER BY count(*) DESC`
-- [ ] Verify reasoning: `SELECT comms_reasoning FROM contacts WHERE comms_closeness = 'active_inner_circle' LIMIT 3`
-- [ ] All contacts should have a comms_closeness value (including 'no_history' for those without comms data)
+- [x] Run `python scripts/intelligence/score_comms_closeness.py` (no --test flag, 150 workers)
+- [x] Script completes without errors (or with <5 errors)
+- [x] Verify distribution: `SELECT comms_closeness, count(*) FROM contacts GROUP BY comms_closeness ORDER BY count(*) DESC`
+- [x] Verify momentum: `SELECT comms_momentum, count(*) FROM contacts GROUP BY comms_momentum ORDER BY count(*) DESC`
+- [x] Verify reasoning: `SELECT comms_reasoning FROM contacts WHERE comms_closeness = 'active_inner_circle' LIMIT 3`
+- [x] All contacts should have a comms_closeness value (including 'no_history' for those without comms data)
 
 **Notes:**
 - Use 150 workers (GPT-5 mini Tier 5 rate limit: 10,000 RPM)
