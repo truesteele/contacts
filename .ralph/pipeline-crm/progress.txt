@@ -1,0 +1,28 @@
+# Ralph Progress Log
+Loop: pipeline-crm
+Started: 2026-02-22
+---
+
+## Codebase Patterns
+- Pages are `'use client'` React components in `job-matcher-ai/app/tools/`
+- API routes at `job-matcher-ai/app/api/network-intel/` use edge runtime
+- Supabase service client: `import { supabase } from '@/lib/supabase'`
+- shadcn/ui components available: badge, button, card, checkbox, dropdown-menu, input, scroll-area, select, separator, sheet, tabs, textarea, tooltip
+- Dark mode: always include `dark:` Tailwind variants
+- `cn()` utility from `@/lib/utils` for conditional classnames
+- Contact table has integer `id` column (not uuid)
+- Supabase MCP server is `supabase-contacts` (NOT `supabase_crm`)
+- No em dashes in UI text (user preference)
+
+---
+
+## Iteration Log
+
+### US-001: Create Supabase Migration (2026-02-22)
+- Created `supabase/migrations/20260222_add_pipeline_crm.sql`
+- `pipelines` table: uuid PK, name, slug (unique), entity, stages (jsonb with 7 default stages), timestamps
+- `deals` table: uuid PK, pipeline_id (FK cascade), contact_id (int FK to contacts), title, stage, amount, close_date, notes, next_action, next_action_date, source, lost_reason, position, timestamps
+- Indexes: `idx_deals_pipeline_stage` (pipeline_id, stage), `idx_deals_contact_id` (contact_id)
+- Seeded 3 pipelines: Kindora Fundraising, Outdoorithm Partnerships, True Steele Consulting
+- Applied via `supabase-contacts` MCP `apply_migration`, verified with `execute_sql`
+- Pipeline IDs: kindora=5359ab5a, outdoorithm=9699ccfb, truesteele=a8ce2a4f
