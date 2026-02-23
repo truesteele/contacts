@@ -27,7 +27,7 @@ This is the single source of truth for all LinkedIn enrichment at Kindora. It co
 15. [Cost Reference](#15-cost-reference)
 16. [Key Files](#16-key-files)
 17. [Production Run Log: Feb 2026](#17-production-run-log-feb-2026)
-18. [Network Intelligence Pipelines](#18-network-intelligence-pipelines-feb-2026)
+18. [Network Intelligence Pipelines](#18-network-intelligence-pipelines-feb-2026) (incl. Pipeline Q: Article Reactions)
 
 ---
 
@@ -45,6 +45,7 @@ Kindora uses seven pipelines for LinkedIn data. All share Apify as the core scra
 | **F** | Import LinkedIn Connections.csv | CLI script | 1,000-10,000 contacts |
 | **G** | Bulk-scrape contact LinkedIn posts | CLI script with concurrency | 1,000-10,000 contacts |
 | **P** | Import LinkedIn DM messages | CLI script | 1,000-3,000 messages |
+| **Q** | Import LinkedIn article reactions | CLI script | 1,000-5,000 reactions |
 
 **Shared infrastructure:**
 - **Apify** `harvestapi/linkedin-profile-scraper` — $0.004/profile
@@ -728,6 +729,25 @@ contact_linkedin_posts (
 
 Indexes: `contact_id`, `linkedin_url`, `post_date`
 
+### Article reactions table (Pipeline Q)
+
+```sql
+linkedin_article_reactions (
+    id SERIAL PRIMARY KEY,
+    article_title TEXT NOT NULL,
+    reaction_type TEXT NOT NULL,       -- like, insightful, love, support, celebrate
+    reactor_name TEXT NOT NULL,        -- name as shown on LinkedIn
+    reactor_headline TEXT,
+    connection_degree TEXT,            -- 1st, 2nd, 3rd+
+    contact_id INT REFERENCES contacts(id),  -- matched contact (nullable)
+    match_method TEXT,                 -- exact, fuzzy, gpt, unmatched
+    match_confidence REAL,
+    created_at TIMESTAMPTZ DEFAULT now()
+)
+```
+
+Indexes: `contact_id`, `article_title`
+
 ### Camelback tables (Pipeline D)
 
 | Table | Purpose |
@@ -1129,6 +1149,58 @@ python scripts/import_linkedin_messages.py --clear-first   # Clear existing link
 - 613 contacts had their most recent contact date extended (LinkedIn DM more recent than last email)
 - After import, `comms_last_date` and `comms_thread_count` on contacts must be recalculated to include LinkedIn threads
 
+### Pipeline Q: LinkedIn Article Reactions
+
+**Script:** `scripts/intelligence/import_article_reactions.py`
+**Source:** `docs/LinkedIn/LinkedIn Article Reactions.md` (copy-pasted from LinkedIn)
+**Cost:** ~$0.50 (GPT-5 mini for fuzzy name matching)
+
+Imports reactions to Justin's LinkedIn articles, matches reactors to contacts via 3-pass matching (exact → fuzzy → GPT), and stores engagement summaries on each contact.
+
+```
+LinkedIn Article Reactions.md
+  │
+  ├── Parse markdown → extract article titles, reaction types, reactor names/headlines
+  │
+  ├── Insert into linkedin_article_reactions table (2,293 reactions across 9 articles)
+  │
+  ├── 3-pass contact matching:
+  │   ├── Pass 1: Exact name match (normalized, case-insensitive)
+  │   ├── Pass 2: Fuzzy match (difflib SequenceMatcher, threshold 0.85)
+  │   └── Pass 3: GPT-5 mini adjudication (candidates from first name + fuzzy)
+  │
+  └── Build linkedin_reactions JSONB summary per contact
+```
+
+**CLI usage:**
+
+```bash
+python scripts/intelligence/import_article_reactions.py --test          # Parse only, no DB
+python scripts/intelligence/import_article_reactions.py                 # Full import + match
+python scripts/intelligence/import_article_reactions.py --match-only    # Re-run matching only
+```
+
+**Production run: Feb 22, 2026**
+
+| Metric | Value |
+|--------|-------|
+| Reactions parsed | 2,293 |
+| Articles | 9 |
+| Exact match | 1,023 (44.6%) |
+| Fuzzy match | 78 (3.4%) |
+| GPT match | 26 (1.1%) |
+| Unmatched | 1,166 (50.8%) |
+| Total matched to contacts | 1,128 (49.1%) |
+| 1st-degree match rate | 99.6% (1,097 of 1,101) |
+| Unique contacts linked | 693 |
+| Cost | $0.46 |
+
+**Unmatched reactions are expected:** ~50% of reactors are 2nd/3rd-degree connections not in Justin's contacts DB. The 99.6% match rate for 1st-degree connections is the meaningful metric.
+
+**Reaction type distribution:** like (1,363), insightful (394), love (336), celebrate (143), support (57)
+
+**Downstream usage:** `linkedin_reactions` JSONB is consumed by ask-readiness scoring (Pipeline N) as an engagement signal. Contacts who react to 3+ articles are considered warm even without other comms data. Reaction types indicate emotional intensity ('love'/'insightful' > 'like').
+
 ### Pipeline N: Ask-Readiness Scoring
 
 **Script:** `scripts/intelligence/score_ask_readiness.py`
@@ -1196,6 +1268,9 @@ communication_history jsonb,      -- {thread_count, last_contact, accounts[], ..
 -- Ask-Readiness (Pipeline N)
 ask_readiness jsonb,              -- {goal_name: {score, tier, reasoning, ...}}
 
+-- LinkedIn Article Reactions (Pipeline Q)
+linkedin_reactions jsonb,         -- {total_reactions, reaction_types, articles_reacted_to[], article_count}
+
 -- Familiarity (manual + AI)
 familiarity_rating integer,       -- 0-4
 familiarity_rated_at timestamptz,
@@ -1221,4 +1296,5 @@ location_name text,               -- Raw LinkedIn location string
 | `scripts/intelligence/discover_emails.py` | Pipeline M: Email address discovery |
 | `scripts/intelligence/score_ask_readiness.py` | Pipeline N: Ask-readiness scoring |
 | `scripts/import_linkedin_messages.py` | Pipeline P: LinkedIn DM message import |
+| `scripts/intelligence/import_article_reactions.py` | Pipeline Q: LinkedIn article reaction import + matching |
 | `scripts/intelligence/gather_sms_history.py` | Pipeline O: SMS communication history (see `docs/SMS_ENRICHMENT.md`) |

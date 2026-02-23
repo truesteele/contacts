@@ -248,6 +248,7 @@ The three pillars of donor readiness are Capacity, Propensity, and Relationship 
    HNW donors especially want PARTNERSHIP, not transactions. They want impact evidence, involvement opportunities, and to feel like co-creators — not ATMs.
 
 CRITICAL BEHAVIORAL INSIGHTS:
+- LinkedIn article reactions are a POWERFUL engagement signal. Someone who reacted to 3+ of Justin's 9 articles is actively following his thinking — they're warm even if other comms data is sparse. Use the reaction types as emotional intensity signals: 'love' and 'insightful' indicate deeper engagement than 'like'. Reference specific article topics in outreach to show the connection is natural.
 - Warm outreach converts at 14.6% vs 1.7% for cold (8.6x). ALWAYS prioritize warming the relationship before asking.
 - Donors who feel like insiders give more. Shared institutional membership creates insider feeling.
 - Identity effect: "I am the kind of person who..." framing (r=.32) is the strongest predictor — twice as powerful as shared identity alone (r=.15).
@@ -308,6 +309,7 @@ SELECT_COLS = (
     "outdoor_environmental_affinity, outdoor_affinity_evidence, "
     "equity_access_focus, equity_focus_evidence, "
     "joshua_tree_invited, oc_engagement, "
+    "linkedin_reactions, "
     "ask_readiness"
 )
 
@@ -694,6 +696,32 @@ def summarize_oc_engagement(oc_data) -> str:
     return "\n  ".join(parts)
 
 
+def summarize_linkedin_reactions(reactions_data) -> str:
+    """Summarize LinkedIn article reaction data into readable text."""
+    data = parse_jsonb(reactions_data)
+    if not data or not isinstance(data, dict):
+        return ""
+    total = data.get("total_reactions", 0)
+    article_count = data.get("article_count", 0)
+    if total == 0:
+        return ""
+
+    reaction_types = data.get("reaction_types", {})
+    articles = data.get("articles_reacted_to", [])
+
+    parts = [f"Reacted to {article_count} of Justin's 9 LinkedIn articles ({total} total reactions)"]
+
+    type_strs = [f"{count} {rtype}" for rtype, count in
+                 sorted(reaction_types.items(), key=lambda x: -x[1])]
+    if type_strs:
+        parts.append(f"Reaction types: {', '.join(type_strs)}")
+
+    if articles:
+        parts.append(f"Articles: {'; '.join(articles[:5])}")
+
+    return "\n  ".join(parts)
+
+
 def build_contact_context(contact: dict, goal: str) -> str:
     """Assemble the full per-contact context for the donor psychology prompt."""
     parts = []
@@ -797,6 +825,11 @@ def build_contact_context(contact: dict, goal: str) -> str:
     if vol_summary != "No volunteering history":
         parts.append(f"Volunteering:\n{vol_summary}")
     parts.append("")
+
+    # LinkedIn article engagement
+    reactions_summary = summarize_linkedin_reactions(contact.get("linkedin_reactions"))
+    if reactions_summary:
+        parts.append(f"LinkedIn Article Engagement:\n  {reactions_summary}")
 
     # Communication history
     parts.append(f"Communication History:")
