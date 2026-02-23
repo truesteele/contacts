@@ -146,7 +146,7 @@ When clicking a deal card, open a detail sheet (right drawer) showing full deal 
 
 ### US-006: Add pipeline page to tools navigation
 **Priority:** 6
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Wire the pipeline page into the app's navigation so it's accessible from the tools page.

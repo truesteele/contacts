@@ -78,3 +78,14 @@ Started: 2026-02-22
 - Nested sheet support: deal detail sheet -> contact detail sheet
 - Follows existing `ContactDetailSheet` pattern: same width, flex column layout, overflow scroll
 - Typecheck passes clean
+
+### US-006: Add Pipeline Page to Tools Navigation (2026-02-22)
+- Added Pipeline entry to `TOOLS` array in `app/page.tsx` (main dashboard)
+- Placed after Ask Readiness in the grid
+- Icon: `Columns3` from lucide-react (Kanban-style column icon)
+- Accent: indigo-to-violet gradient (distinct from other tools)
+- Description: "Track outreach and deals across Kindora, Outdoorithm, and True Steele. Drag-and-drop Kanban board with deal stages, contacts, and notes."
+- Links to `/tools/pipeline`
+- Typecheck passes clean
+- Full production build passes clean (only pre-existing warnings from resend package)
+- **ALL 6 STORIES COMPLETE** -- Pipeline CRM feature fully implemented

@@ -448,12 +448,6 @@ function PipelinePageInner() {
     setContactSheetOpen(true);
   }, []);
 
-  // Filter deals for display (exclude lost if hidden)
-  const displayDeals = useMemo(
-    () => (hideLost ? deals.filter((d) => d.stage !== 'lost') : deals),
-    [deals, hideLost]
-  );
-
   const lostCount = useMemo(() => deals.filter((d) => d.stage === 'lost').length, [deals]);
 
   // ── Loading State ────────────────────────────────────────────────
@@ -463,7 +457,7 @@ function PipelinePageInner() {
       <main className="min-h-screen bg-background">
         <div className="max-w-[1600px] mx-auto p-4">
           <div className="page-header">
-            <Link href="/tools/network-intel" className="page-back">
+            <Link href="/" className="page-back">
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
@@ -487,7 +481,7 @@ function PipelinePageInner() {
       <main className="min-h-screen bg-background">
         <div className="max-w-[1600px] mx-auto p-4">
           <div className="page-header">
-            <Link href="/tools/network-intel" className="page-back">
+            <Link href="/" className="page-back">
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <h1 className="text-lg font-semibold">Pipeline</h1>
@@ -503,7 +497,7 @@ function PipelinePageInner() {
       <div className="max-w-[1600px] mx-auto p-4">
         {/* Header */}
         <div className="page-header">
-          <Link href="/tools/network-intel" className="page-back" aria-label="Back to tools">
+          <Link href="/" className="page-back" aria-label="Back to tools">
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
@@ -628,7 +622,7 @@ export default function PipelinePage() {
         <main className="min-h-screen bg-background">
           <div className="max-w-[1600px] mx-auto p-4">
             <div className="page-header">
-              <Link href="/tools/network-intel" className="page-back">
+              <Link href="/" className="page-back">
                 <ArrowLeft className="w-5 h-5" />
               </Link>
               <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
