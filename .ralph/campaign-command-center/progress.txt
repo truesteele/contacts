@@ -1,0 +1,30 @@
+# Ralph Progress Log
+Loop: campaign-command-center
+Started: 2026-02-23
+---
+
+## Codebase Patterns
+- Next.js 15 + React 19 app at job-matcher-ai/
+- shadcn/radix UI components in components/ui/
+- 'use client' pages that fetch from /api/ routes on mount via useEffect
+- API routes use edge runtime, Supabase server-side via lib/supabase.ts
+- SUPABASE_SERVICE_KEY env var (not SUPABASE_KEY)
+- Resend already installed (v6.9.2), working send route at app/api/network-intel/outreach/send/route.ts
+- Page layout: max-w-7xl mx-auto p-4, page-header class with back arrow
+- Existing pages to study: ask-readiness (filterable table), pipeline (kanban + detail sheets)
+- campaign_2026 JSONB has: scaffold, personal_outreach (List A), campaign_copy (Lists B-D)
+- 317 total contacts: 25 List A, 107 B, 42 C, 143 D
+- Contact email priority: personal_email || email || work_email
+
+---
+
+## Iteration Log
+
+### US-001 — Campaign API: Fetch contacts ✓
+- **Created:** `app/api/network-intel/campaign/route.ts`
+- **Pattern followed:** ask-readiness/route.ts (Supabase pagination, JSONB flattening, edge runtime)
+- **Flattened fields:** list, persona, ask_amount, capacity_tier, lifecycle, motivation, channel, subject, has_outreach, has_copy, send_status, donation, responded_at
+- **Stats object:** counts by list (A/B/C/D), persona, capacity, lifecycle, send_status
+- **TypeScript:** passes clean (`npx tsc --noEmit`)
+- **Build:** passes clean (`npx next build`)
+- **Notes:** Used `send_status && Object.keys(sendStatus).length > 0` check since send_status defaults to empty `{}`
