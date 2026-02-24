@@ -177,3 +177,34 @@ Started: 2026-02-23
 - Contact context is lighter than scaffold (~1.5K tokens) since we only need scaffold data + brief comms, not full employment/FEC/real estate
 - The system prompt is smaller than scaffold's (~2.8K vs ~4.5K) since copy generation needs persona/voice guidance, not the full decision tree
 - Thank-you channel defaults to email for most B-D contacts; text only for those with SMS history and high familiarity
+
+### Iteration 7 — US-007: Run write_campaign_copy.py and Verify Output (2026-02-24)
+**Status:** Complete
+**What was done:**
+- Ran `write_campaign_copy.py` on all Lists B-D contacts — 291 contacts written, 0 errors, 77.9s, $0.45 cost
+- Distribution: Believer 113, Impact Professional 151, Network Peer 27
+- Capacity: Leadership 27, Major 125, Mid 113, Base 24, Community 2
+- Lifecycle: New 267, Prior Donor 18, Lapsed 6 (+1 from US-006 test = 7 total)
+- Pre-email notes: 24 from this run (25 total including US-006 test)
+- All email sequences are [1, 2, 3] — no contacts skipped emails (expected for B-D)
+- Pre-email note accuracy verified via SQL: 7/7 lapsed have notes, 18/18 prior_donor have notes, 0/267 new have notes — perfect
+- Spot-checked 10 contacts across all personas, motivation flags, and lifecycle stages:
+  1. Neela Pal (D, believer, lapsed, relationship, $5K) — pre-email note present, references UVA connection. Pass.
+  2. Kay Fernandez Smith (C, believer, lapsed, mission_alignment, $5K) — pre-email note present, references SFF/HKS. Pass.
+  3. Hector Javier Preciado (D, IP, new, justice_equity, $5K) — no pre-email (correct). Thank-you: "$5,000 → half trip → 10 families + public lands" (correct IP+justice matrix). Pass.
+  4. Sujatha Baliga (B, IP, new, justice_equity, $5K) — personalized restorative justice framing. Pass.
+  5. Elizabeth Woodson (D, IP, new, justice_equity, $2.5K) — "$2,500 → quarter trip" (correct impact language). References racial repair. Pass.
+  6. Natasha Logan (D, IP, new, justice_equity, $1K) — "$1,000 sends two families" (correct). Studio Museum reference. Pass.
+  7. Saul Sutcher (D, NP, new, mission_alignment, $2.5K) — "You're the kind of person who shows up" (correct NP frame). Email channel (correct). Pass.
+  8. Kiki Nyagah (D, NP, new, mission_alignment, $2.5K) — identity-affirming NP thank-you. Email channel. Pass.
+  9. Donna Steele (D, believer, new, parental_empathy, $250) — "Means the world" (correct believer frame). Text channel. Ask adjusted for community tier. Pass.
+  10. Lara Holmes (D, believer, new, parental_empathy, $1K) — mixes believer warmth + parental empathy: "kind of person who shows up for families." Pass.
+- All 10/10 pass quality checks: identity-affirming thank-yous, natural text follow-ups, correct pre-email note presence, correct email sequences
+**Learnings:**
+- GPT-5 mini batch throughput: 3.7 contacts/sec with 150 workers — very fast, 78s total for 291 contacts
+- Total cost $0.45 (1M input, 505K output tokens) — much cheaper than projected $1-2 due to GPT-5 mini's low pricing
+- Pre-email note logic is perfectly deterministic: exactly aligned with lifecycle_stage (prior_donor/lapsed = note, new = null)
+- Thank-you frame matrix works correctly across all persona × motivation flag combinations — IP+justice contacts get "helping build what public lands should have been," NP contacts get "kind of person who shows up," Believers get "means the world"
+- Impact language dollar amounts are correct ($500=1 family, $1K=2 families, $2.5K=quarter trip, $5K=half trip)
+- Thank-you channel assignment: believers get text (close relationship), IP and NP get email (correct per timing matrix)
+- 292 total B-D contacts with campaign copy (291 from full run + 1 from US-006 test)

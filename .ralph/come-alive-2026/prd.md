@@ -270,21 +270,21 @@ Create the campaign copy variant writer for Lists B-D contacts (~175). Generates
 
 ### US-007: Run write_campaign_copy.py and Verify Output
 **Priority:** 7
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Run the campaign copy writer on Lists B-D contacts and verify the output quality.
 
 **Acceptance Criteria:**
-- [ ] Run: `source .venv/bin/activate && python scripts/intelligence/write_campaign_copy.py`
-- [ ] Script completes without errors
-- [ ] Print count of contacts with copy written
-- [ ] Spot-check 10 contacts across different personas and motivation flags:
+- [x] Run: `source .venv/bin/activate && python scripts/intelligence/write_campaign_copy.py`
+- [x] Script completes without errors
+- [x] Print count of contacts with copy written
+- [x] Spot-check 10 contacts across different personas and motivation flags:
   - Is the thank-you identity-affirming (not generic)?
   - Do text follow-ups sound natural and brief?
   - Are pre-email notes present only for prior/lapsed donors?
   - Does the email_sequence make sense for their lifecycle?
-- [ ] Print distribution: count by persona, capacity tier, lifecycle
+- [x] Print distribution: count by persona, capacity tier, lifecycle
 
 **Notes:**
 - Expected runtime: ~2-5 minutes with 150 workers
