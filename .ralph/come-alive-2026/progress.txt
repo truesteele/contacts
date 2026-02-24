@@ -123,3 +123,26 @@ Started: 2026-02-23
 - Cost: ~$0.11 per contact ($15/M input, $75/M output) — projected ~$2.75 for 25 List A contacts
 - Latency: ~18s per contact — sequential for small batches is fine, parallel with 3 workers for full run
 - The SUPABASE_SERVICE_KEY env var (not SUPABASE_KEY) pattern confirmed from previous iterations
+
+### Iteration 5 — US-005: Run write_personal_outreach.py and Verify Output (2026-02-23)
+**Status:** Complete
+**What was done:**
+- Ran `write_personal_outreach.py --force` on all 25 List A contacts
+- 25 messages written, 0 errors, 141.2s runtime, $2.85 cost
+- Channel split: 24 email, 1 text (Hector Mujica — SMS history justified text channel)
+- All messages printed to stdout in readable format with contact name, channel, subject, body, follow-up, thank-you, internal notes
+- Manually verified 3 messages:
+  1. Adrian Schurr (prior donor, $5K ask) — references "$2K last year," casual tone, 142 words. Step-up ask appropriate.
+  2. Tyler Scriven (believer, $10K ask) — references recent text exchange, mentions Atlanta/Serenbe pilot. 195 words. Highly personalized.
+  3. Roxana Shirkhoda (prior donor, $5K ask) — references "$500 last year and being on that trip." 156 words. Partnership framing.
+- All 3 pass: Justin's voice (casual, fragments, em dashes, "Quick thing"), appropriate ask amounts, accurate shared history references, 100-200 word range
+- All 25 messages are Believers (correct — all List A contacts were scaffolded as Believers in US-003)
+- Subject lines varied but consistent with Justin's voice: "quick thing," "a personal ask," "quick thing — before I go wide"
+**Learnings:**
+- Opus 4.6 with --force generates consistent quality across all 25 contacts — no quality degradation in batch mode
+- Average 5.65s/contact with 3 workers — faster than the 18s single-contact test (concurrent pipeline efficiency)
+- Total cost $2.85 for 25 contacts (123K input, 13K output tokens) — within the projected $2-5 range
+- Valencia story dominates (most contacts got it) — expected since most List A are Believers with relationship-first framing
+- Messages that reference specific shared history (recent texts, prior gifts, events) feel most authentic
+- The "advisory/founding partner" frame appears in ~80% of messages — Opus correctly identifies that List A contacts should be treated as partners, not just donors
+- One text channel selection (Hector) — Opus correctly reads SMS comms history to determine channel appropriateness
