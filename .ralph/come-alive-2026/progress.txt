@@ -85,3 +85,41 @@ Started: 2026-02-23
 - GPT-5 mini batch throughput: 3.8 contacts/sec with 150 workers (much faster than single-contact test suggested)
 - Lifecycle stage detection has ~0.3% hallucination rate on donor status — acceptable
 - The `known_donor` field provides a valid backup signal when `is_oc_donor` is absent
+
+### Iteration 4 — US-004: Create write_personal_outreach.py (2026-02-23)
+**Status:** Complete
+**What was done:**
+- Created `scripts/intelligence/write_personal_outreach.py` — personal outreach writer using Claude Opus 4.6
+- Uses `anthropic.Anthropic()` client with `client.messages.create()` API
+- JSON-mode output (not Pydantic) — system prompt instructs Opus to return raw JSON with 6 fields: subject_line, message_body, channel, follow_up_text, thank_you_message, internal_notes
+- Comprehensive system prompt (~3,500 tokens) embedding:
+  - Justin's voice guide with REAL example message from COME_ALIVE_2026_Campaign.md
+  - All 3 persona scaffolds (Believer, Impact Pro, Network Peer) with outreach strategies
+  - Full execution matrix: Persona × Lifecycle → opener inserts
+  - Thank-you frame matrix: Persona × Motivation Flag → thank-you variants
+  - Complete story bank with 9 stories and matching rules
+  - Donor psychology quick reference (identity circuit, warm glow, endowed progress, etc.)
+  - Campaign context ($100K goal, 10 trips, $20K match, Feb 26 launch)
+  - Explicit voice instruction: "Sound like Justin texting or emailing a friend. NOT a development officer."
+- Rich per-contact context includes:
+  - Full scaffold data from campaign_2026 (persona, list, capacity, motivation, story, opener, etc.)
+  - Full ask_readiness data (score, tier, personalization_angle, receiver_frame, reasoning)
+  - Detailed communication history with up to 8 recent threads (subject, date, channel)
+  - OC engagement (donor status, trips, roles)
+  - Shared institutions with temporal overlap markers
+  - Employment (5 most recent), education, alignment flags, LinkedIn reactions
+- Selects List A contacts: filters on campaign_2026 scaffold campaign_list = "A"
+- Low concurrency: 3 workers default (ThreadPoolExecutor for batch, sequential for test/small)
+- JSONB merge preserves existing scaffold and campaign_copy keys
+- CLI args: --test, --force, --contact-id, --workers (default 3)
+- Error handling: retries for RateLimitError and APIError, JSON parse error recovery (strips markdown fencing)
+- `print_all_messages()` method prints every message for review after full run
+- Test run: 1 contact (Sergio Garcia) — 188-word email, $0.11 cost, 18.4s, sounds like Justin
+**Learnings:**
+- Opus 4.6 reliably returns clean JSON when instructed — no need for tool_use pattern
+- Opus sometimes wraps JSON in markdown code fences (```json ... ```) — added parser to strip these
+- ~5K input tokens per contact (system prompt ~3.5K + contact context ~1.5K)
+- ~550 output tokens per contact (subject + 188-word body + follow-up + thank-you + notes)
+- Cost: ~$0.11 per contact ($15/M input, $75/M output) — projected ~$2.75 for 25 List A contacts
+- Latency: ~18s per contact — sequential for small batches is fine, parallel with 3 workers for full run
+- The SUPABASE_SERVICE_KEY env var (not SUPABASE_KEY) pattern confirmed from previous iterations

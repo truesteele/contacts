@@ -168,23 +168,23 @@ Run the scaffold on all ~200 campaign contacts and verify the output quality.
 
 ### US-004: Create write_personal_outreach.py (Opus 4.6)
 **Priority:** 4
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Create the personal outreach writer script that uses Claude Opus 4.6 to write high-quality, voice-authentic personal messages for List A contacts (~20 inner circle). These are the highest-stakes messages in the campaign.
 
 **Acceptance Criteria:**
-- [ ] Script created at `scripts/intelligence/write_personal_outreach.py`
-- [ ] Uses `anthropic` SDK: `client = anthropic.Anthropic()` (reads ANTHROPIC_API_KEY from env)
-- [ ] Output schema per contact (use JSON mode or structured extraction): subject_line (str), message_body (str, 100-200 words), channel (text/email), follow_up_text (str), thank_you_message (str), internal_notes (str)
-- [ ] System prompt includes:
+- [x] Script created at `scripts/intelligence/write_personal_outreach.py`
+- [x] Uses `anthropic` SDK: `client = anthropic.Anthropic()` (reads ANTHROPIC_API_KEY from env)
+- [x] Output schema per contact (use JSON mode or structured extraction): subject_line (str), message_body (str, 100-200 words), channel (text/email), follow_up_text (str), thank_you_message (str), internal_notes (str)
+- [x] System prompt includes:
   - Justin's voice patterns: direct, punchy, sentence fragments for emphasis, em dashes, conversational, "this keeps happening" transitions, "quick thing" openers. Reads like a text from a friend, not a fundraiser.
   - Full personal outreach template from COME_ALIVE_2026_Campaign.md
   - Believer + Impact Professional persona scaffolds from DONOR_SEGMENTATION.md
   - Donor psychology framework (identity circuits, warm glow, matching)
   - Explicit instruction: "Sound like Justin texting or emailing a friend. NOT a development officer. NOT a nonprofit pitch."
   - Story bank with when to use each story
-- [ ] Per-contact context includes:
+- [x] Per-contact context includes:
   - All scaffold data (persona, list, capacity, motivation, story, opener_insert, etc.)
   - Full communication_history (recent thread subjects, last exchange date)
   - LinkedIn headline, summary, current title/company
@@ -192,12 +192,12 @@ Create the personal outreach writer script that uses Claude Opus 4.6 to write hi
   - receiver_frame and personalization_angle from ask_readiness
   - OC engagement details (trips attended, roles, donation history)
   - The specific ask amount and lead story from scaffold
-- [ ] Selects List A contacts: `WHERE campaign_2026->'scaffold'->>'campaign_list' = 'A'`
-- [ ] Low concurrency: 3-5 workers (quality over speed)
-- [ ] Saves to `campaign_2026` JSONB as `{"personal_outreach": {...}, "outreach_written_at": "..."}` — preserves existing scaffold data
-- [ ] CLI args: `--test` (1 contact), `--force`, `--contact-id ID`, `--workers N` (default 3)
-- [ ] Error handling for Anthropic API errors
-- [ ] Script runs without errors: `source .venv/bin/activate && python scripts/intelligence/write_personal_outreach.py --test`
+- [x] Selects List A contacts: `WHERE campaign_2026->'scaffold'->>'campaign_list' = 'A'`
+- [x] Low concurrency: 3-5 workers (quality over speed)
+- [x] Saves to `campaign_2026` JSONB as `{"personal_outreach": {...}, "outreach_written_at": "..."}` — preserves existing scaffold data
+- [x] CLI args: `--test` (1 contact), `--force`, `--contact-id ID`, `--workers N` (default 3)
+- [x] Error handling for Anthropic API errors
+- [x] Script runs without errors: `source .venv/bin/activate && python scripts/intelligence/write_personal_outreach.py --test`
 
 **Notes:**
 - Use `claude-opus-4-6` as the model name for Anthropic API
