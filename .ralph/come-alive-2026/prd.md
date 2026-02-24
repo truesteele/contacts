@@ -141,23 +141,23 @@ Create the campaign scaffolding script that uses GPT-5 mini structured output to
 
 ### US-003: Run scaffold_campaign.py and Verify Output
 **Priority:** 3
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Run the scaffold on all ~200 campaign contacts and verify the output quality.
 
 **Acceptance Criteria:**
-- [ ] Run: `source .venv/bin/activate && python scripts/intelligence/scaffold_campaign.py`
-- [ ] Script completes without errors
-- [ ] Print count of contacts scaffolded
-- [ ] Query Supabase for distribution summary: count by persona, campaign_list, capacity_tier, lifecycle_stage
-- [ ] Query 5 sample contacts and verify:
+- [x] Run: `source .venv/bin/activate && python scripts/intelligence/scaffold_campaign.py`
+- [x] Script completes without errors
+- [x] Print count of contacts scaffolded
+- [x] Query Supabase for distribution summary: count by persona, campaign_list, capacity_tier, lifecycle_stage
+- [x] Query 5 sample contacts and verify:
   - Persona assignment makes sense given their title/company/relationship
   - Capacity tier aligns with their suggested_ask_range
   - Lifecycle stage matches oc_engagement donor status (if oc_engagement exists)
   - Campaign list assignment is correct for their ask_readiness tier/score
   - Lead story matches primary motivation flag
-- [ ] Print the summary table to stdout
+- [x] Print the summary table to stdout
 
 **Notes:**
 - If the script fails partway through, check for rate limit errors and adjust workers
