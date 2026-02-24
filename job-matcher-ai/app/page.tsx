@@ -14,6 +14,7 @@ import {
   ArrowUpRight,
   Sparkles,
   Star,
+  Megaphone,
 } from 'lucide-react';
 
 interface Stats {
@@ -75,6 +76,15 @@ const TOOLS = [
     icon: Columns3,
     accent: 'from-indigo-500/10 to-violet-500/5',
     iconColor: 'text-indigo-600',
+  },
+  {
+    title: 'Campaign',
+    description:
+      'Come Alive 2026 fundraising campaign. Review messages, send emails, track donations, and manage 317 contacts across 4 lists.',
+    href: '/tools/campaign',
+    icon: Megaphone,
+    accent: 'from-orange-500/10 to-amber-500/5',
+    iconColor: 'text-orange-600',
   },
   {
     title: 'Email Finder',

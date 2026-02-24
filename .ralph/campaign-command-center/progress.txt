@@ -28,3 +28,38 @@ Started: 2026-02-23
 - **TypeScript:** passes clean (`npx tsc --noEmit`)
 - **Build:** passes clean (`npx next build`)
 - **Notes:** Used `send_status && Object.keys(sendStatus).length > 0` check since send_status defaults to empty `{}`
+
+### US-002 — Campaign API: Update contact + Record donation ✓
+- **Created:** `app/api/network-intel/campaign/[id]/route.ts`
+- **Pattern followed:** pipeline/deals/[id]/route.ts (PATCH with params Promise, error handling)
+- **GET:** Returns single contact with full `campaign_2026` JSONB (not flattened) for the detail sheet
+- **PATCH:** Supports three update patterns:
+  - Nested field update: `{ section: "personal_outreach", field: "message_body", value: "..." }` — modifies specific nested JSONB field
+  - Donation recording: `{ section: "donation", value: { amount, donated_at, source } }` — sets top-level donation
+  - Response recording: `{ section: "responded_at", value: "2026-02-25" }` — sets top-level responded_at
+  - Send status: `{ section: "send_status", field: "personal_outreach", value: { sent_at, resend_id } }` — merges into send_status object
+- **Approach:** Fetch-modify-write (read full JSONB, update in JS, write back) — simpler than raw SQL jsonb_set and safer for preserving other keys
+- **TypeScript:** passes clean (`npx tsc --noEmit`)
+- **Build:** passes clean (`npx next build`)
+
+### US-003 — Campaign page: Dashboard tab + List A tab ✓
+- **Created:** `app/tools/campaign/page.tsx`
+- **Modified:** `app/page.tsx` — added Campaign tool to dashboard TOOLS array with Megaphone icon, orange accent
+- **Pattern followed:** network-intel/page.tsx (page layout), ask-readiness/page.tsx (data fetching, table, contact selection)
+- **Dashboard tab:**
+  - Campaign progress: "$X raised of $100K" with green progress bar
+  - Stats row: Donors, Total Raised, List A Sent (X/25), Responded
+  - Contacts by List: A/B/C/D counts from API stats
+  - Breakdown cards: By Persona, By Capacity, Send Status (with colored dots)
+  - Phase indicator: computed from current date vs campaign timeline phases
+- **List A tab:**
+  - Table of contacts with #, Name, Company, Ask ($), Channel, Subject, Status columns
+  - Sorted by ask amount descending (leadership/highest asks first)
+  - Status shows: draft (gray), sent (blue), responded (yellow), donated (green) with colored dot indicators
+  - Rows are clickable — sets selectedContactId + sheetOpen state (ready for US-004 detail sheet)
+  - Responsive: Company hidden on mobile, Channel hidden on small, Subject hidden on medium
+- **Placeholder tabs:** Lists B-D and Activity show "coming soon" (US-005 and US-008)
+- **Types:** Full CampaignContact and CampaignStats interfaces — no `any` in component props
+- **Helpers:** getContactStatus(), formatCurrency(), resolveEmail()
+- **TypeScript:** passes clean (`npx tsc --noEmit`)
+- **Build:** passes clean (`npx next build`) — page is 6.76 kB

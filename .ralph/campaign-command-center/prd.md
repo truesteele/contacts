@@ -74,7 +74,7 @@ Build a campaign management frontend at `/tools/campaign` for the Come Alive 202
 
 - From: `Justin Steele <justin@outdoorithmcollective.org>`
 - Reply-to: `justinrsteele@gmail.com`
-- Env var: `RESEND_API_KEY`
+- Env var: `RESEND_API_KEY_OC`
 - Existing `textToHtml()` in `app/api/network-intel/outreach/send/route.ts` — converts plain text to styled HTML
 
 ### Contact Email Resolution
@@ -112,7 +112,7 @@ Create `app/api/network-intel/campaign/route.ts`
 - [ ] Verify: `curl localhost:3000/api/network-intel/campaign | jq '.total'` returns 317
 
 ### US-002: Campaign API — Update contact + Record donation
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 Create `app/api/network-intel/campaign/[id]/route.ts`
 
@@ -128,7 +128,7 @@ Create `app/api/network-intel/campaign/[id]/route.ts`
 - [ ] `export const runtime = 'edge';`
 
 ### US-003: Campaign page — Dashboard tab + List A tab
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 Create `app/tools/campaign/page.tsx` and add to tools navigation.
 
@@ -204,7 +204,7 @@ Create `app/api/network-intel/campaign/send/route.ts`
 **Acceptance Criteria:**
 - [ ] `POST /api/network-intel/campaign/send`
 - [ ] Body: `{ "contact_ids": [1,2,3], "email_type": "personal_outreach" | "pre_email_note" | "email_1" }`
-- [ ] Resend client setup: `new Resend(process.env.RESEND_API_KEY)`
+- [ ] Resend client setup: `new Resend(process.env.RESEND_API_KEY_OC)`
 - [ ] From: `Justin Steele <justin@outdoorithmcollective.org>`
 - [ ] Reply-to: `justinrsteele@gmail.com`
 - [ ] **For `personal_outreach`:** reads `campaign_2026.personal_outreach.subject_line` and `.message_body` from each contact
