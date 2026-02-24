@@ -1,0 +1,31 @@
+# Ralph Progress Log
+Loop: come-alive-2026
+Started: 2026-02-23
+---
+
+## Codebase Patterns
+- score_ask_readiness.py is the template for scaffold_campaign.py
+- Pydantic schemas with openai.responses.parse() for structured output
+- ThreadPoolExecutor(max_workers=150) for GPT-5 mini batch processing
+- Supabase pagination: .range(offset, offset + page_size - 1)
+- _strip_null_bytes() for PostgreSQL JSONB compatibility
+- Env vars: OPENAI_APIKEY, ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_KEY
+- Strategy docs in docs/Outdoorithm/: DONOR_SEGMENTATION.md, COME_ALIVE_2026_Campaign.md, OC_FUNDRAISING_PLAYBOOK.md
+- Python venv at .venv/, activate with source .venv/bin/activate
+- GPT-5 mini does NOT support temperature=0
+- supabase-contacts MCP server for DB operations
+
+---
+
+## Iteration Log
+
+### Iteration 1 — US-001: Setup (2026-02-23)
+**Status:** Complete
+**What was done:**
+- Added `campaign_2026` JSONB column to contacts table via `apply_migration` MCP tool
+- Verified column exists: `{column_name: campaign_2026, data_type: jsonb}`
+- Installed anthropic SDK v0.83.0 in .venv
+- Verified both anthropic (0.83.0) and openai (2.21.0) imports work
+**Learnings:**
+- Use `apply_migration` (not `execute_sql`) for DDL operations per Supabase MCP guidance
+- anthropic 0.83.0 installed cleanly with no dependency conflicts
