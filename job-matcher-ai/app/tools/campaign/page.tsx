@@ -8,13 +8,27 @@ import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import {
   ArrowLeft,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
   Megaphone,
   DollarSign,
   Users,
   Mail,
   TrendingUp,
   Loader2,
+  Search,
+  Filter,
+  X,
 } from 'lucide-react';
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -76,6 +90,14 @@ const PERSONA_LABELS: Record<string, string> = {
   network_peer: 'Network Peer',
 };
 
+const LIFECYCLE_LABELS: Record<string, string> = {
+  new: 'New',
+  prior_donor: 'Prior Donor',
+  lapsed: 'Lapsed',
+};
+
+type BcdSortField = 'name' | 'list' | 'ask_amount' | 'persona';
+
 // ── Helpers ────────────────────────────────────────────────────────────
 
 function getContactStatus(c: CampaignContact): string {
@@ -104,6 +126,15 @@ export default function CampaignPage() {
   const [selectedContactId, setSelectedContactId] = useState<number | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
 
+  // Lists B-D filter state
+  const [bcdSearch, setBcdSearch] = useState('');
+  const [bcdFilterList, setBcdFilterList] = useState('all');
+  const [bcdFilterPersona, setBcdFilterPersona] = useState('all');
+  const [bcdFilterCapacity, setBcdFilterCapacity] = useState('all');
+  const [bcdFilterLifecycle, setBcdFilterLifecycle] = useState('all');
+  const [bcdSortBy, setBcdSortBy] = useState<BcdSortField>('ask_amount');
+  const [bcdSortOrder, setBcdSortOrder] = useState<'asc' | 'desc'>('desc');
+
   const loadData = useCallback(async () => {
     try {
       const res = await fetch('/api/network-intel/campaign');
@@ -130,6 +161,95 @@ export default function CampaignPage() {
         .sort((a, b) => (b.ask_amount || 0) - (a.ask_amount || 0)),
     [contacts]
   );
+
+  // Lists B-D contacts with filtering and sorting
+  const bcdAllContacts = useMemo(
+    () => contacts.filter((c) => c.list && c.list !== 'A'),
+    [contacts]
+  );
+
+  const bcdFiltered = useMemo(() => {
+    let result = bcdAllContacts;
+
+    if (bcdFilterList !== 'all') {
+      result = result.filter((c) => c.list === bcdFilterList);
+    }
+    if (bcdFilterPersona !== 'all') {
+      result = result.filter((c) => c.persona === bcdFilterPersona);
+    }
+    if (bcdFilterCapacity !== 'all') {
+      result = result.filter((c) => c.capacity_tier === bcdFilterCapacity);
+    }
+    if (bcdFilterLifecycle !== 'all') {
+      result = result.filter((c) => c.lifecycle === bcdFilterLifecycle);
+    }
+    if (bcdSearch) {
+      const term = bcdSearch.toLowerCase();
+      result = result.filter(
+        (c) =>
+          `${c.first_name} ${c.last_name}`.toLowerCase().includes(term) ||
+          (c.company || '').toLowerCase().includes(term)
+      );
+    }
+
+    const sorted = [...result].sort((a, b) => {
+      let cmp = 0;
+      switch (bcdSortBy) {
+        case 'name':
+          cmp = `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`);
+          break;
+        case 'list':
+          cmp = (a.list || '').localeCompare(b.list || '');
+          break;
+        case 'ask_amount':
+          cmp = (a.ask_amount || 0) - (b.ask_amount || 0);
+          break;
+        case 'persona':
+          cmp = (a.persona || '').localeCompare(b.persona || '');
+          break;
+      }
+      return bcdSortOrder === 'asc' ? cmp : -cmp;
+    });
+
+    return sorted;
+  }, [bcdAllContacts, bcdFilterList, bcdFilterPersona, bcdFilterCapacity, bcdFilterLifecycle, bcdSearch, bcdSortBy, bcdSortOrder]);
+
+  const handleBcdSort = useCallback((field: BcdSortField) => {
+    setBcdSortBy((prev) => {
+      if (prev === field) {
+        setBcdSortOrder((o) => (o === 'asc' ? 'desc' : 'asc'));
+        return prev;
+      }
+      setBcdSortOrder(field === 'name' || field === 'list' || field === 'persona' ? 'asc' : 'desc');
+      return field;
+    });
+  }, []);
+
+  const bcdActiveFilterCount = useMemo(() => {
+    let count = 0;
+    if (bcdFilterList !== 'all') count++;
+    if (bcdFilterPersona !== 'all') count++;
+    if (bcdFilterCapacity !== 'all') count++;
+    if (bcdFilterLifecycle !== 'all') count++;
+    return count;
+  }, [bcdFilterList, bcdFilterPersona, bcdFilterCapacity, bcdFilterLifecycle]);
+
+  const clearBcdFilters = useCallback(() => {
+    setBcdFilterList('all');
+    setBcdFilterPersona('all');
+    setBcdFilterCapacity('all');
+    setBcdFilterLifecycle('all');
+    setBcdSearch('');
+  }, []);
+
+  function getBcdSortIcon(field: BcdSortField) {
+    if (bcdSortBy !== field) return <ArrowUpDown className="w-3 h-3 ml-1 opacity-40" />;
+    return bcdSortOrder === 'asc' ? (
+      <ArrowUp className="w-3 h-3 ml-1" />
+    ) : (
+      <ArrowDown className="w-3 h-3 ml-1" />
+    );
+  }
 
   // Dashboard computed values
   const dashboardData = useMemo(() => {
@@ -222,7 +342,7 @@ export default function CampaignPage() {
           <TabsList>
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="list-a">List A ({listAContacts.length})</TabsTrigger>
-            <TabsTrigger value="lists-bcd">Lists B-D</TabsTrigger>
+            <TabsTrigger value="lists-bcd">Lists B-D ({bcdAllContacts.length})</TabsTrigger>
             <TabsTrigger value="activity">Activity</TabsTrigger>
           </TabsList>
 
@@ -440,10 +560,195 @@ export default function CampaignPage() {
             </div>
           </TabsContent>
 
-          {/* ── Lists B-D Tab (placeholder for US-005) ── */}
+          {/* ── Lists B-D Tab ── */}
           <TabsContent value="lists-bcd">
-            <div className="flex items-center justify-center h-48 text-sm text-muted-foreground">
-              Lists B-D view coming soon
+            <div className="mt-2">
+              {/* Search + count */}
+              <div className="flex items-center gap-3 mb-2">
+                <div className="relative flex-1 max-w-sm">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <input
+                    type="text"
+                    placeholder="Search by name, company..."
+                    value={bcdSearch}
+                    onChange={(e) => setBcdSearch(e.target.value)}
+                    className="w-full pl-9 pr-3 py-1.5 text-sm rounded-md border bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                  {bcdSearch && (
+                    <button
+                      onClick={() => setBcdSearch('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+                <span className="text-xs text-muted-foreground ml-auto">
+                  Showing {bcdFiltered.length} of {bcdAllContacts.length} contacts
+                </span>
+              </div>
+
+              {/* Filter bar */}
+              <div className="flex items-center gap-2 mb-3 flex-wrap">
+                <Filter className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+
+                <Select value={bcdFilterList} onValueChange={setBcdFilterList}>
+                  <SelectTrigger className="h-7 w-[100px] text-xs">
+                    <SelectValue placeholder="List" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Lists</SelectItem>
+                    <SelectItem value="B">List B</SelectItem>
+                    <SelectItem value="C">List C</SelectItem>
+                    <SelectItem value="D">List D</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={bcdFilterPersona} onValueChange={setBcdFilterPersona}>
+                  <SelectTrigger className="h-7 w-[140px] text-xs">
+                    <SelectValue placeholder="Persona" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Personas</SelectItem>
+                    {Object.entries(PERSONA_LABELS).map(([val, label]) => (
+                      <SelectItem key={val} value={val}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={bcdFilterCapacity} onValueChange={setBcdFilterCapacity}>
+                  <SelectTrigger className="h-7 w-[130px] text-xs">
+                    <SelectValue placeholder="Capacity" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Capacity</SelectItem>
+                    {Object.entries(CAPACITY_LABELS).map(([val, label]) => (
+                      <SelectItem key={val} value={val}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={bcdFilterLifecycle} onValueChange={setBcdFilterLifecycle}>
+                  <SelectTrigger className="h-7 w-[130px] text-xs">
+                    <SelectValue placeholder="Lifecycle" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Lifecycle</SelectItem>
+                    {Object.entries(LIFECYCLE_LABELS).map(([val, label]) => (
+                      <SelectItem key={val} value={val}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {bcdActiveFilterCount > 0 && (
+                  <button
+                    onClick={clearBcdFilters}
+                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground h-7 px-2 rounded-md hover:bg-muted transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                    Clear ({bcdActiveFilterCount})
+                  </button>
+                )}
+              </div>
+
+              {/* Table */}
+              <Card>
+                <ScrollArea className="h-[calc(100vh-340px)] min-h-[400px]">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/50 sticky top-0 z-10">
+                      <tr className="border-b">
+                        {([
+                          ['name', 'Name', 'min-w-[160px]'],
+                          ['list', 'List', 'w-[70px]'],
+                          ['persona', 'Persona', 'w-[120px]'],
+                          ['ask_amount', 'Ask ($)', 'w-[100px]'],
+                        ] as [BcdSortField, string, string][]).map(([field, label, width]) => (
+                          <th key={field} className={cn('text-left px-3 py-2', width)}>
+                            <button
+                              onClick={() => handleBcdSort(field)}
+                              className={cn(
+                                'flex items-center font-medium text-xs uppercase tracking-wide transition-colors',
+                                bcdSortBy === field
+                                  ? 'text-foreground'
+                                  : 'text-muted-foreground hover:text-foreground'
+                              )}
+                            >
+                              {label}
+                              {getBcdSortIcon(field)}
+                            </button>
+                          </th>
+                        ))}
+                        <th className="text-left px-3 py-2 w-[100px]">
+                          <span className="font-medium text-xs uppercase tracking-wide text-muted-foreground">
+                            Lifecycle
+                          </span>
+                        </th>
+                        <th className="text-center px-3 py-2 w-[80px]">
+                          <span className="font-medium text-xs uppercase tracking-wide text-muted-foreground">
+                            Status
+                          </span>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {bcdFiltered.map((c) => {
+                        const status = getContactStatus(c);
+                        const config = STATUS_CONFIG[status];
+                        return (
+                          <tr
+                            key={c.id}
+                            className="border-b last:border-b-0 hover:bg-muted/30 cursor-pointer transition-colors"
+                            onClick={() => {
+                              setSelectedContactId(c.id);
+                              setSheetOpen(true);
+                            }}
+                          >
+                            <td className="px-3 py-2.5">
+                              <div className="font-medium">{c.first_name} {c.last_name}</div>
+                              {c.company && (
+                                <div className="text-xs text-muted-foreground truncate max-w-[200px]">
+                                  {c.company}
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-3 py-2.5">
+                              <Badge variant="outline" className="text-[10px] font-mono">
+                                {c.list}
+                              </Badge>
+                            </td>
+                            <td className="px-3 py-2.5">
+                              <Badge variant="outline" className="text-[10px]">
+                                {PERSONA_LABELS[c.persona || ''] || c.persona || '—'}
+                              </Badge>
+                            </td>
+                            <td className="px-3 py-2.5 font-mono font-medium">
+                              {c.ask_amount ? formatCurrency(c.ask_amount) : '—'}
+                            </td>
+                            <td className="px-3 py-2.5">
+                              <Badge variant="outline" className="text-[10px]">
+                                {LIFECYCLE_LABELS[c.lifecycle || ''] || c.lifecycle || '—'}
+                              </Badge>
+                            </td>
+                            <td className="px-3 py-2.5 text-center">
+                              <div className="flex items-center justify-center gap-1.5">
+                                <div className={cn('w-2 h-2 rounded-full', config.dot)} />
+                                <span className="text-xs">{config.label}</span>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {bcdFiltered.length === 0 && (
+                        <tr>
+                          <td colSpan={6} className="px-3 py-8 text-center text-sm text-muted-foreground">
+                            No contacts match the current filters
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </ScrollArea>
+              </Card>
             </div>
           </TabsContent>
 

@@ -179,7 +179,7 @@ Create `components/campaign/message-detail-sheet.tsx`
 - [ ] Wire into the campaign page: clicking a row in List A or Lists B-D opens this sheet
 
 ### US-005: Lists B-D tab with filters
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 Add Lists B-D tab to the campaign page.
 

@@ -81,3 +81,19 @@ Started: 2026-02-23
 - **Types:** Fully typed interfaces for Campaign2026, Scaffold, PersonalOutreach, CampaignCopy, ContactFull, MessageDetailSheetProps — no `any` in component props
 - **TypeScript:** passes clean (`npx tsc --noEmit`)
 - **Build:** passes clean (`npx next build`) — page is 10.1 kB
+
+### US-005 — Lists B-D tab with filters ✓
+- **Modified:** `app/tools/campaign/page.tsx`
+- **Pattern followed:** ask-readiness/page.tsx (filter bar with Select dropdowns, search input, sort headers, ScrollArea table)
+- **Filter bar:** 4 dropdowns — List (B/C/D), Persona (Believer/Impact Pro/Network Peer), Capacity (Leadership/Major/Mid/Base/Community), Lifecycle (New/Prior Donor/Lapsed)
+- **Search:** Filters by name and company, with clear button
+- **Sorting:** Clickable column headers for Name, List, Persona, Ask ($) — with directional arrow icons
+- **Table columns:** Name (with company subtitle), List (badge), Persona (badge), Ask $ (mono), Lifecycle (badge), Status (colored dot + label)
+- **Empty state:** "No contacts match the current filters" when filters yield zero results
+- **Count display:** "Showing X of Y contacts" in top bar
+- **Tab label:** Shows count — "Lists B-D (292)"
+- **Integration:** Rows are clickable → opens MessageDetailSheet (same as List A)
+- **New imports:** Select, SelectContent, SelectItem, SelectTrigger, SelectValue, ScrollArea, Search, Filter, X, ArrowUpDown, ArrowUp, ArrowDown
+- **New types:** BcdSortField, LIFECYCLE_LABELS constant
+- **TypeScript:** passes clean (`npx tsc --noEmit`)
+- **Build:** passes clean (`npx next build`) — page is 12.4 kB
