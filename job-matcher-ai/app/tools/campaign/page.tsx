@@ -16,6 +16,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
 import {
   ArrowLeft,
   ArrowUp,
@@ -32,6 +34,10 @@ import {
   X,
   Send,
   SendHorizonal,
+  MessageSquare,
+  Clock,
+  Plus,
+  Check,
 } from 'lucide-react';
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -119,6 +125,97 @@ function resolveEmail(c: CampaignContact): string | null {
   return c.personal_email || c.email || c.work_email || null;
 }
 
+// ── Activity types ────────────────────────────────────────────────────
+
+interface ActivityEvent {
+  type: 'email_sent' | 'donation' | 'response';
+  contactId: number;
+  contactName: string;
+  timestamp: string;
+  detail: string;
+}
+
+const EMAIL_TYPE_LABELS: Record<string, string> = {
+  personal_outreach: 'Personal Outreach',
+  pre_email_note: 'Pre-Email Note',
+  email_1: 'Email 1',
+  email_2: 'Email 2',
+  email_3: 'Email 3',
+};
+
+const SOURCE_OPTIONS = [
+  { value: 'personal_outreach', label: 'Personal Outreach' },
+  { value: 'email_1', label: 'Email 1' },
+  { value: 'email_2', label: 'Email 2' },
+  { value: 'email_3', label: 'Email 3' },
+  { value: 'other', label: 'Other' },
+];
+
+function buildActivityFeed(contacts: CampaignContact[]): ActivityEvent[] {
+  const events: ActivityEvent[] = [];
+
+  for (const c of contacts) {
+    const name = `${c.first_name} ${c.last_name}`.trim();
+
+    // Collect email send events
+    if (c.send_status) {
+      for (const [emailType, status] of Object.entries(c.send_status)) {
+        if (status?.sent_at) {
+          events.push({
+            type: 'email_sent',
+            contactId: c.id,
+            contactName: name,
+            timestamp: status.sent_at,
+            detail: EMAIL_TYPE_LABELS[emailType] || emailType,
+          });
+        }
+      }
+    }
+
+    // Collect donation events
+    if (c.donation) {
+      events.push({
+        type: 'donation',
+        contactId: c.id,
+        contactName: name,
+        timestamp: c.donation.donated_at || '',
+        detail: `$${c.donation.amount.toLocaleString()}`,
+      });
+    }
+
+    // Collect response events
+    if (c.responded_at) {
+      events.push({
+        type: 'response',
+        contactId: c.id,
+        contactName: name,
+        timestamp: c.responded_at,
+        detail: 'Responded',
+      });
+    }
+  }
+
+  // Sort reverse chronological (most recent first)
+  events.sort((a, b) => {
+    if (!a.timestamp) return 1;
+    if (!b.timestamp) return -1;
+    return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+  });
+
+  return events;
+}
+
+function formatTimestamp(ts: string): string {
+  if (!ts) return '—';
+  const d = new Date(ts);
+  const now = new Date();
+  const isToday = d.toDateString() === now.toDateString();
+  if (isToday) {
+    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  }
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
 // ── Component ──────────────────────────────────────────────────────────
 
 export default function CampaignPage() {
@@ -143,6 +240,16 @@ export default function CampaignPage() {
   const [sendingAllA, setSendingAllA] = useState(false);
   const [sendingPreEmail, setSendingPreEmail] = useState(false);
   const [sendingEmail1, setSendingEmail1] = useState(false);
+
+  // Activity tab state
+  const [donationContactSearch, setDonationContactSearch] = useState('');
+  const [donationContactId, setDonationContactId] = useState<number | null>(null);
+  const [donationAmount, setDonationAmount] = useState('');
+  const [donationDate, setDonationDate] = useState(new Date().toISOString().split('T')[0]);
+  const [donationSource, setDonationSource] = useState('personal_outreach');
+  const [recordingDonation, setRecordingDonation] = useState(false);
+  const [donationSuccess, setDonationSuccess] = useState(false);
+  const [respondingIds, setRespondingIds] = useState<Set<number>>(new Set());
 
   const loadData = useCallback(async () => {
     try {
@@ -347,6 +454,94 @@ export default function CampaignPage() {
       setSendingEmail1(false);
     }
   }, [bcdAllContacts, sendCampaignEmails, loadData]);
+
+  // ── Activity feed ────────────────────────────────────────────────────
+
+  const activityEvents = useMemo(() => buildActivityFeed(contacts), [contacts]);
+
+  // Contacts matching donation search (for autocomplete)
+  const donationSearchResults = useMemo(() => {
+    if (!donationContactSearch || donationContactSearch.length < 2) return [];
+    const term = donationContactSearch.toLowerCase();
+    return contacts
+      .filter((c) =>
+        `${c.first_name} ${c.last_name}`.toLowerCase().includes(term) ||
+        (c.company || '').toLowerCase().includes(term)
+      )
+      .slice(0, 8);
+  }, [contacts, donationContactSearch]);
+
+  const selectedDonationContact = useMemo(
+    () => (donationContactId ? contacts.find((c) => c.id === donationContactId) : null),
+    [contacts, donationContactId]
+  );
+
+  // Auto-fill ask amount when contact selected
+  useEffect(() => {
+    if (selectedDonationContact?.ask_amount && !donationAmount) {
+      setDonationAmount(String(selectedDonationContact.ask_amount));
+    }
+  }, [selectedDonationContact, donationAmount]);
+
+  const handleRecordDonation = useCallback(async () => {
+    if (!donationContactId || !donationAmount) return;
+    setRecordingDonation(true);
+    try {
+      const res = await fetch(`/api/network-intel/campaign/${donationContactId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          section: 'donation',
+          value: {
+            amount: Number(donationAmount),
+            donated_at: donationDate,
+            source: donationSource,
+          },
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to record donation');
+      setDonationSuccess(true);
+      setTimeout(() => setDonationSuccess(false), 2000);
+      // Reset form
+      setDonationContactSearch('');
+      setDonationContactId(null);
+      setDonationAmount('');
+      setDonationDate(new Date().toISOString().split('T')[0]);
+      setDonationSource('personal_outreach');
+      await loadData();
+    } catch {
+      // loadData shows current state
+    } finally {
+      setRecordingDonation(false);
+    }
+  }, [donationContactId, donationAmount, donationDate, donationSource, loadData]);
+
+  const handleMarkResponded = useCallback(async (contact: CampaignContact) => {
+    const name = `${contact.first_name} ${contact.last_name}`.trim();
+    if (!window.confirm(`Mark ${name} as responded?`)) return;
+
+    setRespondingIds((prev) => new Set(prev).add(contact.id));
+    try {
+      const res = await fetch(`/api/network-intel/campaign/${contact.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          section: 'responded_at',
+          value: new Date().toISOString(),
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to record response');
+      await loadData();
+    } catch {
+      // loadData shows current state
+    } finally {
+      setRespondingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(contact.id);
+        return next;
+      });
+    }
+  }, [loadData]);
 
   function getBcdSortIcon(field: BcdSortField) {
     if (bcdSortBy !== field) return <ArrowUpDown className="w-3 h-3 ml-1 opacity-40" />;
@@ -702,6 +897,25 @@ export default function CampaignPage() {
                                   )}
                                 </Button>
                               )}
+                              {status === 'sent' && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 w-7 p-0 text-yellow-600 hover:text-yellow-700"
+                                  disabled={respondingIds.has(c.id)}
+                                  title="Mark responded"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleMarkResponded(c);
+                                  }}
+                                >
+                                  {respondingIds.has(c.id) ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  ) : (
+                                    <MessageSquare className="w-3.5 h-3.5" />
+                                  )}
+                                </Button>
+                              )}
                             </td>
                           </tr>
                         );
@@ -882,6 +1096,7 @@ export default function CampaignPage() {
                             Status
                           </span>
                         </th>
+                        <th className="text-center px-3 py-2 w-[50px]"></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -929,12 +1144,33 @@ export default function CampaignPage() {
                                 <span className="text-xs">{config.label}</span>
                               </div>
                             </td>
+                            <td className="px-3 py-2.5 text-center">
+                              {status === 'sent' && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 w-7 p-0 text-yellow-600 hover:text-yellow-700"
+                                  disabled={respondingIds.has(c.id)}
+                                  title="Mark responded"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleMarkResponded(c);
+                                  }}
+                                >
+                                  {respondingIds.has(c.id) ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  ) : (
+                                    <MessageSquare className="w-3.5 h-3.5" />
+                                  )}
+                                </Button>
+                              )}
+                            </td>
                           </tr>
                         );
                       })}
                       {bcdFiltered.length === 0 && (
                         <tr>
-                          <td colSpan={6} className="px-3 py-8 text-center text-sm text-muted-foreground">
+                          <td colSpan={7} className="px-3 py-8 text-center text-sm text-muted-foreground">
                             No contacts match the current filters
                           </td>
                         </tr>
@@ -946,10 +1182,210 @@ export default function CampaignPage() {
             </div>
           </TabsContent>
 
-          {/* ── Activity Tab (placeholder for US-008) ── */}
+          {/* ── Activity Tab ── */}
           <TabsContent value="activity">
-            <div className="flex items-center justify-center h-48 text-sm text-muted-foreground">
-              Activity view coming soon
+            <div className="mt-2 space-y-4">
+              {/* Record Donation form */}
+              <Card className="p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <Plus className="w-4 h-4 text-green-600" />
+                  <span className="text-sm font-medium">Record Donation</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Contact search */}
+                  <div className="relative sm:col-span-2">
+                    <label className="text-xs text-muted-foreground mb-1 block">Contact</label>
+                    {selectedDonationContact ? (
+                      <div className="flex items-center gap-2 h-9 rounded-md border px-3 bg-muted/30">
+                        <span className="text-sm font-medium">
+                          {selectedDonationContact.first_name} {selectedDonationContact.last_name}
+                        </span>
+                        {selectedDonationContact.company && (
+                          <span className="text-xs text-muted-foreground">
+                            — {selectedDonationContact.company}
+                          </span>
+                        )}
+                        <button
+                          onClick={() => {
+                            setDonationContactId(null);
+                            setDonationContactSearch('');
+                            setDonationAmount('');
+                          }}
+                          className="ml-auto text-muted-foreground hover:text-foreground"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search by name..."
+                          value={donationContactSearch}
+                          onChange={(e) => setDonationContactSearch(e.target.value)}
+                          className="pl-9"
+                        />
+                        {donationSearchResults.length > 0 && (
+                          <div className="absolute z-20 top-full mt-1 w-full bg-popover border rounded-md shadow-md max-h-48 overflow-y-auto">
+                            {donationSearchResults.map((c) => (
+                              <button
+                                key={c.id}
+                                className="w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors"
+                                onClick={() => {
+                                  setDonationContactId(c.id);
+                                  setDonationContactSearch('');
+                                  if (c.ask_amount) setDonationAmount(String(c.ask_amount));
+                                }}
+                              >
+                                <span className="font-medium">{c.first_name} {c.last_name}</span>
+                                {c.company && (
+                                  <span className="text-muted-foreground ml-1">— {c.company}</span>
+                                )}
+                                {c.ask_amount && (
+                                  <span className="text-muted-foreground ml-1 font-mono text-xs">
+                                    ({formatCurrency(c.ask_amount)} ask)
+                                  </span>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Amount */}
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Amount ($)</label>
+                    <Input
+                      type="number"
+                      placeholder="5000"
+                      value={donationAmount}
+                      onChange={(e) => setDonationAmount(e.target.value)}
+                    />
+                  </div>
+
+                  {/* Date */}
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Date</label>
+                    <Input
+                      type="date"
+                      value={donationDate}
+                      onChange={(e) => setDonationDate(e.target.value)}
+                    />
+                  </div>
+
+                  {/* Source */}
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Source</label>
+                    <Select value={donationSource} onValueChange={setDonationSource}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SOURCE_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Record button */}
+                  <div className="flex items-end">
+                    <Button
+                      onClick={handleRecordDonation}
+                      disabled={!donationContactId || !donationAmount || recordingDonation}
+                      className="gap-1.5 w-full"
+                    >
+                      {recordingDonation ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Recording...
+                        </>
+                      ) : donationSuccess ? (
+                        <>
+                          <Check className="w-4 h-4" />
+                          Recorded!
+                        </>
+                      ) : (
+                        <>
+                          <DollarSign className="w-4 h-4" />
+                          Record Donation
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+
+              <Separator />
+
+              {/* Activity feed */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Clock className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Activity Feed</span>
+                  <span className="text-xs text-muted-foreground ml-auto">
+                    {activityEvents.length} events
+                  </span>
+                </div>
+
+                {activityEvents.length === 0 ? (
+                  <div className="flex items-center justify-center h-32 text-sm text-muted-foreground">
+                    No activity yet — send some emails to get started
+                  </div>
+                ) : (
+                  <ScrollArea className="h-[calc(100vh-480px)] min-h-[300px]">
+                    <div className="space-y-1">
+                      {activityEvents.map((event, idx) => (
+                        <div
+                          key={`${event.contactId}-${event.type}-${event.timestamp}-${idx}`}
+                          className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted/30 transition-colors cursor-pointer"
+                          onClick={() => {
+                            setSelectedContactId(event.contactId);
+                            setSheetOpen(true);
+                          }}
+                        >
+                          {/* Icon */}
+                          <div className={cn(
+                            'w-7 h-7 rounded-full flex items-center justify-center shrink-0',
+                            event.type === 'email_sent' && 'bg-blue-100 text-blue-600',
+                            event.type === 'donation' && 'bg-green-100 text-green-600',
+                            event.type === 'response' && 'bg-yellow-100 text-yellow-600',
+                          )}>
+                            {event.type === 'email_sent' && <Mail className="w-3.5 h-3.5" />}
+                            {event.type === 'donation' && <DollarSign className="w-3.5 h-3.5" />}
+                            {event.type === 'response' && <MessageSquare className="w-3.5 h-3.5" />}
+                          </div>
+
+                          {/* Description */}
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm">
+                              <span className="font-medium">{event.contactName}</span>
+                              {event.type === 'email_sent' && (
+                                <span className="text-muted-foreground"> — {event.detail} sent</span>
+                              )}
+                              {event.type === 'donation' && (
+                                <span className="text-green-600 font-medium"> — {event.detail} donated</span>
+                              )}
+                              {event.type === 'response' && (
+                                <span className="text-yellow-600"> — responded</span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Timestamp */}
+                          <span className="text-xs text-muted-foreground font-mono shrink-0">
+                            {formatTimestamp(event.timestamp)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                )}
+              </div>
             </div>
           </TabsContent>
         </Tabs>

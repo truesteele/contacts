@@ -241,7 +241,7 @@ Add send functionality to the campaign page.
 - [ ] After send, refresh contact data from API
 
 ### US-008: Activity tab + donation recording
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 Add Activity tab and donation recording to the campaign page.
 

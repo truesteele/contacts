@@ -141,3 +141,41 @@ Started: 2026-02-23
 - **Confirm dialogs:** `window.confirm()` — no AlertDialog component needed
 - **TypeScript:** passes clean (`npx tsc --noEmit`)
 - **Build:** passes clean (`npx next build`) — page is 13.3 kB
+
+### US-008 — Activity tab + donation recording ✓
+- **Modified:** `app/tools/campaign/page.tsx`
+- **Pattern followed:** existing page patterns (Card forms, ScrollArea lists, Select dropdowns, Button actions)
+- **New imports:** Input, Separator, MessageSquare, Clock, Plus, Check
+- **New types/helpers:** ActivityEvent interface, EMAIL_TYPE_LABELS, SOURCE_OPTIONS, buildActivityFeed(), formatTimestamp()
+- **Activity tab features:**
+  - **Record Donation form** at top of tab:
+    - Contact search with autocomplete dropdown (min 2 chars, shows name + company + ask amount)
+    - Selected contact displayed as chip with dismiss button
+    - Amount input (number, auto-filled from contact's ask_amount when selected)
+    - Date input (defaults to today)
+    - Source dropdown: Personal Outreach, Email 1-3, Other
+    - Record button with spinner + success checkmark state
+    - Calls `PATCH /api/network-intel/campaign/[id]` with donation section
+    - Resets form and refreshes data after success
+  - **Activity feed** below donation form:
+    - Reverse-chronological list built from all contacts' send_status, donation, responded_at
+    - Event types: email_sent (blue icon), donation (green icon), response (yellow icon)
+    - Each event shows: icon, contact name, event detail (email type/amount/responded), timestamp
+    - Timestamps: "Today" shows time, other days show "Feb 24" format
+    - Events are clickable → opens MessageDetailSheet for that contact
+    - Empty state: "No activity yet — send some emails to get started"
+    - ScrollArea for long feeds
+- **Record Response quick actions:**
+  - **List A tab:** MessageSquare button in action column for contacts with "sent" status
+    - Confirmation dialog "Mark {name} as responded?"
+    - Per-row spinner while recording, calls PATCH with responded_at = now
+  - **Lists B-D tab:** New action column with same MessageSquare button for "sent" contacts
+    - Added column header + td, updated colSpan from 6→7 for empty state
+- **Dashboard updates live:** Already implemented — dashboardData memo recomputes from contacts array,
+  which is refreshed via loadData() after every donation recording, response marking, or send
+- **New state:** donationContactSearch, donationContactId, donationAmount, donationDate, donationSource,
+  recordingDonation, donationSuccess, respondingIds (Set<number>)
+- **TypeScript:** passes clean (`npx tsc --noEmit`)
+- **Build:** passes clean (`npx next build`) — page is 15 kB
+
+## ALL STORIES COMPLETE ✓
