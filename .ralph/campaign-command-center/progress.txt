@@ -97,3 +97,20 @@ Started: 2026-02-23
 - **New types:** BcdSortField, LIFECYCLE_LABELS constant
 - **TypeScript:** passes clean (`npx tsc --noEmit`)
 - **Build:** passes clean (`npx next build`) — page is 12.4 kB
+
+### US-006 — Campaign send API route ✓
+- **Created:** `app/api/network-intel/campaign/send/route.ts`
+- **Pattern followed:** outreach/send/route.ts (Resend client, textToHtml, sequential sends, error handling)
+- **Three email types supported:**
+  - `personal_outreach` — reads subject_line + message_body from `campaign_2026.personal_outreach`
+  - `pre_email_note` — reads pre_email_note from `campaign_2026.campaign_copy`, subject: "quick note before the big ask"
+  - `email_1` — hardcoded Email 1 template from COME_ALIVE_2026_Campaign.md, with per-contact `opener_insert` and `personalization_sentence` from scaffold, subject: "10 trips this year"
+- **Resend config:** `RESEND_API_KEY_OC`, from `justin@outdoorithmcollective.org`, reply-to `justinrsteele@gmail.com`
+- **Email resolution:** `personal_email || email || work_email` priority order
+- **Send status tracking:** After successful send, updates `campaign_2026.send_status.<email_type>` with `{ sent_at, resend_id }`
+- **Skip logic:** Contacts already sent for that email_type are skipped (status: 'skipped')
+- **Sequential sends:** One at a time to avoid rate limits
+- **Response format:** `{ results: [...], total_sent, total_failed, total_skipped }`
+- **textToHtml:** Copied from outreach/send/route.ts — Georgia font, paragraph formatting, unsubscribe link
+- **TypeScript:** passes clean (`npx tsc --noEmit`)
+- **Build:** passes clean (`npx next build`)

@@ -197,7 +197,7 @@ Add Lists B-D tab to the campaign page.
 - [ ] Count display: "Showing X of 292 contacts"
 
 ### US-006: Campaign send API route
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 Create `app/api/network-intel/campaign/send/route.ts`
 
