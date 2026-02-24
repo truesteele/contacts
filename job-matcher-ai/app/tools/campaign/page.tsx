@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { MessageDetailSheet } from '@/components/campaign/message-detail-sheet';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
@@ -29,6 +30,8 @@ import {
   Search,
   Filter,
   X,
+  Send,
+  SendHorizonal,
 } from 'lucide-react';
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -134,6 +137,12 @@ export default function CampaignPage() {
   const [bcdFilterLifecycle, setBcdFilterLifecycle] = useState('all');
   const [bcdSortBy, setBcdSortBy] = useState<BcdSortField>('ask_amount');
   const [bcdSortOrder, setBcdSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  // Send state
+  const [sendingIds, setSendingIds] = useState<Set<number>>(new Set());
+  const [sendingAllA, setSendingAllA] = useState(false);
+  const [sendingPreEmail, setSendingPreEmail] = useState(false);
+  const [sendingEmail1, setSendingEmail1] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -241,6 +250,103 @@ export default function CampaignPage() {
     setBcdFilterLifecycle('all');
     setBcdSearch('');
   }, []);
+
+  // ── Send handlers ──────────────────────────────────────────────────
+
+  const sendCampaignEmails = useCallback(async (
+    contactIds: number[],
+    emailType: string,
+  ): Promise<{ total_sent: number; total_failed: number; total_skipped: number }> => {
+    const res = await fetch('/api/network-intel/campaign/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contact_ids: contactIds, email_type: emailType }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Send failed (${res.status})`);
+    }
+    return res.json();
+  }, []);
+
+  const handleSendOne = useCallback(async (contact: CampaignContact) => {
+    const email = resolveEmail(contact);
+    if (!email) return;
+    const name = `${contact.first_name} ${contact.last_name}`.trim();
+    if (!window.confirm(`Send to ${name} at ${email}?`)) return;
+
+    setSendingIds((prev) => new Set(prev).add(contact.id));
+    try {
+      await sendCampaignEmails([contact.id], 'personal_outreach');
+      await loadData();
+    } catch {
+      // loadData will show current state regardless
+    } finally {
+      setSendingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(contact.id);
+        return next;
+      });
+    }
+  }, [sendCampaignEmails, loadData]);
+
+  const handleSendAllA = useCallback(async () => {
+    const unsent = listAContacts.filter((c) => {
+      const status = getContactStatus(c);
+      return status === 'draft' && c.channel === 'email' && resolveEmail(c);
+    });
+    if (unsent.length === 0) return;
+    if (!window.confirm(`Send personal outreach to ${unsent.length} unsent List A contacts?`)) return;
+
+    setSendingAllA(true);
+    try {
+      await sendCampaignEmails(unsent.map((c) => c.id), 'personal_outreach');
+      await loadData();
+    } catch {
+      // loadData will show current state regardless
+    } finally {
+      setSendingAllA(false);
+    }
+  }, [listAContacts, sendCampaignEmails, loadData]);
+
+  const handleSendPreEmail = useCallback(async () => {
+    const eligible = bcdAllContacts.filter((c) => {
+      const status = getContactStatus(c);
+      const hasSent = c.send_status && c.send_status['pre_email_note'];
+      return !hasSent && status !== 'donated' && (c.lifecycle === 'prior_donor' || c.lifecycle === 'lapsed') && resolveEmail(c);
+    });
+    if (eligible.length === 0) return;
+    if (!window.confirm(`Send pre-email notes to ${eligible.length} prior donor/lapsed contacts?`)) return;
+
+    setSendingPreEmail(true);
+    try {
+      await sendCampaignEmails(eligible.map((c) => c.id), 'pre_email_note');
+      await loadData();
+    } catch {
+      // loadData will show current state regardless
+    } finally {
+      setSendingPreEmail(false);
+    }
+  }, [bcdAllContacts, sendCampaignEmails, loadData]);
+
+  const handleSendEmail1 = useCallback(async () => {
+    const eligible = bcdAllContacts.filter((c) => {
+      const hasSent = c.send_status && c.send_status['email_1'];
+      return !hasSent && resolveEmail(c);
+    });
+    if (eligible.length === 0) return;
+    if (!window.confirm(`Send Email 1 to ${eligible.length} contacts in Lists B-D?`)) return;
+
+    setSendingEmail1(true);
+    try {
+      await sendCampaignEmails(eligible.map((c) => c.id), 'email_1');
+      await loadData();
+    } catch {
+      // loadData will show current state regardless
+    } finally {
+      setSendingEmail1(false);
+    }
+  }, [bcdAllContacts, sendCampaignEmails, loadData]);
 
   function getBcdSortIcon(field: BcdSortField) {
     if (bcdSortBy !== field) return <ArrowUpDown className="w-3 h-3 ml-1 opacity-40" />;
@@ -491,8 +597,36 @@ export default function CampaignPage() {
           {/* ── List A Tab ── */}
           <TabsContent value="list-a">
             <div className="mt-2">
-              <div className="text-xs text-muted-foreground mb-3">
-                {listAContacts.length} personal outreach contacts — sorted by ask amount
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-xs text-muted-foreground">
+                  {listAContacts.length} personal outreach contacts — sorted by ask amount
+                </div>
+                {(() => {
+                  const unsentCount = listAContacts.filter((c) =>
+                    getContactStatus(c) === 'draft' && c.channel === 'email' && resolveEmail(c)
+                  ).length;
+                  if (unsentCount === 0) return null;
+                  return (
+                    <Button
+                      size="sm"
+                      onClick={handleSendAllA}
+                      disabled={sendingAllA || sendingIds.size > 0}
+                      className="gap-1.5"
+                    >
+                      {sendingAllA ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          Sending...
+                        </>
+                      ) : (
+                        <>
+                          <SendHorizonal className="w-3.5 h-3.5" />
+                          Send All Unsent ({unsentCount})
+                        </>
+                      )}
+                    </Button>
+                  );
+                })()}
               </div>
 
               {/* Table */}
@@ -506,14 +640,18 @@ export default function CampaignPage() {
                         <th className="text-left px-3 py-2 font-medium text-xs text-muted-foreground hidden sm:table-cell">Company</th>
                         <th className="text-right px-3 py-2 font-medium text-xs text-muted-foreground">Ask</th>
                         <th className="text-center px-3 py-2 font-medium text-xs text-muted-foreground hidden md:table-cell">Channel</th>
-                        <th className="text-left px-3 py-2 font-medium text-xs text-muted-foreground hidden lg:table-cell">Subject</th>
                         <th className="text-center px-3 py-2 font-medium text-xs text-muted-foreground w-20">Status</th>
+                        <th className="text-center px-3 py-2 font-medium text-xs text-muted-foreground w-16"></th>
                       </tr>
                     </thead>
                     <tbody>
                       {listAContacts.map((c, idx) => {
                         const status = getContactStatus(c);
                         const config = STATUS_CONFIG[status];
+                        const isEmail = c.channel === 'email';
+                        const hasEmail = !!resolveEmail(c);
+                        const isSending = sendingIds.has(c.id);
+                        const canSend = isEmail && hasEmail && status === 'draft' && !sendingAllA;
                         return (
                           <tr
                             key={c.id}
@@ -539,16 +677,31 @@ export default function CampaignPage() {
                                 {c.channel || 'email'}
                               </Badge>
                             </td>
-                            <td className="px-3 py-2.5 hidden lg:table-cell">
-                              <span className="text-xs text-muted-foreground line-clamp-1 max-w-[250px]">
-                                {c.subject || '—'}
-                              </span>
-                            </td>
                             <td className="px-3 py-2.5 text-center">
                               <div className="flex items-center justify-center gap-1.5">
                                 <div className={cn('w-2 h-2 rounded-full', config.dot)} />
                                 <span className="text-xs">{config.label}</span>
                               </div>
+                            </td>
+                            <td className="px-3 py-2.5 text-center">
+                              {canSend && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 w-7 p-0"
+                                  disabled={isSending}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSendOne(c);
+                                  }}
+                                >
+                                  {isSending ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  ) : (
+                                    <Send className="w-3.5 h-3.5" />
+                                  )}
+                                </Button>
+                              )}
                             </td>
                           </tr>
                         );
@@ -563,6 +716,47 @@ export default function CampaignPage() {
           {/* ── Lists B-D Tab ── */}
           <TabsContent value="lists-bcd">
             <div className="mt-2">
+              {/* Bulk send buttons */}
+              <div className="flex items-center gap-2 mb-3 flex-wrap">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleSendPreEmail}
+                  disabled={sendingPreEmail || sendingEmail1}
+                  className="gap-1.5"
+                >
+                  {sendingPreEmail ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="w-3.5 h-3.5" />
+                      Send Pre-Email Notes
+                    </>
+                  )}
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSendEmail1}
+                  disabled={sendingEmail1 || sendingPreEmail}
+                  className="gap-1.5"
+                >
+                  {sendingEmail1 ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <SendHorizonal className="w-3.5 h-3.5" />
+                      Send Email 1
+                    </>
+                  )}
+                </Button>
+              </div>
+
               {/* Search + count */}
               <div className="flex items-center gap-3 mb-2">
                 <div className="relative flex-1 max-w-sm">

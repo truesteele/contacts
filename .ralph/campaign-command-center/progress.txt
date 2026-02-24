@@ -114,3 +114,30 @@ Started: 2026-02-23
 - **textToHtml:** Copied from outreach/send/route.ts — Georgia font, paragraph formatting, unsubscribe link
 - **TypeScript:** passes clean (`npx tsc --noEmit`)
 - **Build:** passes clean (`npx next build`)
+
+### US-007 — Send buttons + status tracking in UI ✓
+- **Modified:** `app/tools/campaign/page.tsx`
+- **Pattern followed:** outreach-drawer.tsx (send button patterns, sendingIds Set, sendAll pattern)
+- **New imports:** Button, Send, SendHorizonal
+- **Send state:** `sendingIds` (Set<number> for per-row), `sendingAllA`, `sendingPreEmail`, `sendingEmail1` (booleans for bulk)
+- **Send handlers:**
+  - `sendCampaignEmails()` — shared helper that POSTs to `/api/network-intel/campaign/send` and returns results
+  - `handleSendOne()` — single List A contact, confirm dialog "Send to {name} at {email}?", per-row spinner
+  - `handleSendAllA()` — all unsent email-channel List A contacts, confirm dialog with count
+  - `handleSendPreEmail()` — prior_donor/lapsed B-D contacts without pre_email_note sent, confirm dialog
+  - `handleSendEmail1()` — all B-D contacts without email_1 sent, confirm dialog
+- **List A tab changes:**
+  - "Send All Unsent (N)" button in header bar — hidden when all are sent
+  - Added action column with per-row Send icon button (ghost variant, 7x7px hit area)
+  - Send button only shown for email channel contacts in draft status with valid email
+  - Per-row spinner while sending, disabled during bulk send
+  - `e.stopPropagation()` prevents row click (open detail sheet) when clicking send
+- **Lists B-D tab changes:**
+  - Two bulk send buttons above search bar: "Send Pre-Email Notes" (outline) and "Send Email 1" (primary)
+  - Buttons are mutually disabled while one is sending
+  - Spinners while sending, confirm dialogs before send
+- **Status indicators:** Already implemented in US-003/US-005 — gray dot (draft), blue dot (sent), yellow dot (responded), green dot (donated)
+- **After send:** all handlers call `loadData()` to refresh campaign data from API
+- **Confirm dialogs:** `window.confirm()` — no AlertDialog component needed
+- **TypeScript:** passes clean (`npx tsc --noEmit`)
+- **Build:** passes clean (`npx next build`) — page is 13.3 kB

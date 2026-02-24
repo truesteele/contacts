@@ -219,7 +219,7 @@ Create `app/api/network-intel/campaign/send/route.ts`
 - [ ] `export const runtime = 'edge';`
 
 ### US-007: Send buttons + status tracking in UI
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 Add send functionality to the campaign page.
 
