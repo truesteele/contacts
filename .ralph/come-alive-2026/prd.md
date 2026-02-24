@@ -294,17 +294,17 @@ Run the campaign copy writer on Lists B-D contacts and verify the output quality
 
 ### US-008: Create CAMPAIGN_EXECUTION_PLAN.md
 **Priority:** 8
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Create the master campaign execution document that ties everything together. Query Supabase for real data to populate all summary tables and counts.
 
 **Acceptance Criteria:**
-- [ ] Doc created at `docs/Outdoorithm/CAMPAIGN_EXECUTION_PLAN.md`
-- [ ] Includes pipeline status: contacts scaffolded (count), personal outreach written (count), campaign copy written (count)
-- [ ] Includes master contact summary table: count by campaign_list x persona x capacity_tier
-- [ ] Includes List A personal outreach checklist: each contact's name, channel, ask amount, one-line note about the message
-- [ ] Includes day-by-day execution timeline:
+- [x] Doc created at `docs/Outdoorithm/CAMPAIGN_EXECUTION_PLAN.md`
+- [x] Includes pipeline status: contacts scaffolded (count), personal outreach written (count), campaign copy written (count)
+- [x] Includes master contact summary table: count by campaign_list x persona x capacity_tier
+- [x] Includes List A personal outreach checklist: each contact's name, channel, ask amount, one-line note about the message
+- [x] Includes day-by-day execution timeline:
   - Pre-campaign: personal outreach to List A (specific dates)
   - Day 1 (Feb 26): Email 1 to Lists A-D
   - Days 2-5: Text follow-ups (openers who didn't act)
@@ -312,12 +312,12 @@ Create the master campaign execution document that ties everything together. Que
   - Days 10-14: Text milestone update to non-donors
   - Days 14-21: Email 3 to non-donors (Joshua Tree countdown)
   - Post-gift: Thank-you within 24 hours
-- [ ] Includes email 1/2/3 audience rules (who gets each email)
-- [ ] Includes text follow-up triggers and timing
-- [ ] Includes thank-you workflow: persona x flag → which template
-- [ ] Includes post-campaign measurement plan (from playbook)
-- [ ] All data is queried from Supabase `campaign_2026` column — no hardcoded numbers
-- [ ] Doc is self-contained: Justin can follow it day-by-day without referencing other docs
+- [x] Includes email 1/2/3 audience rules (who gets each email)
+- [x] Includes text follow-up triggers and timing
+- [x] Includes thank-you workflow: persona x flag → which template
+- [x] Includes post-campaign measurement plan (from playbook)
+- [x] All data is queried from Supabase `campaign_2026` column — no hardcoded numbers
+- [x] Doc is self-contained: Justin can follow it day-by-day without referencing other docs
 
 **Notes:**
 - Query the campaign_2026 column to get real counts and distributions

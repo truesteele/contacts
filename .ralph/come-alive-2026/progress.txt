@@ -208,3 +208,47 @@ Started: 2026-02-23
 - Impact language dollar amounts are correct ($500=1 family, $1K=2 families, $2.5K=quarter trip, $5K=half trip)
 - Thank-you channel assignment: believers get text (close relationship), IP and NP get email (correct per timing matrix)
 - 292 total B-D contacts with campaign copy (291 from full run + 1 from US-006 test)
+
+### Iteration 8 — US-008: Create CAMPAIGN_EXECUTION_PLAN.md (2026-02-23)
+**Status:** Complete
+**What was done:**
+- Created `docs/Outdoorithm/CAMPAIGN_EXECUTION_PLAN.md` — master campaign execution document
+- Queried Supabase for all real data: 317 contacts scaffolded, 25 personal outreach, 292 campaign copy
+- Pipeline status table with completion counts
+- Master contact summary: 5 cross-tabulation tables (list, persona, capacity, ask amount, lifecycle)
+- List A personal outreach checklist: all 25 contacts with name, company, channel, subject line, motivation, ask amount
+  - Leadership tier: 14 contacts at $10K (Chris Busselle, Terry Kramer, Brigitte Hoyer Gosselink, Rosita Najmi, Bryan Breckenridge, Patrick Dickinson, Mitch Kapor, Erin Teague, Freada Kapor Klein, Jon Huggett, Lo Toney, Sergio Garcia, Karibu Nyaggah, Tyler Scriven)
+  - Major tier: 11 contacts at $5K-$10K (Jason Trimiew at $10K, plus 10 at $5K)
+  - Channel: 24 email, 1 text (Hector Mujica)
+- Day-by-day execution timeline with specific dates from COME_ALIVE_2026_Campaign.md:
+  - Pre-campaign: Feb 13-25 (personal outreach + quiet phase)
+  - Week 1: Feb 26-Mar 4 (Email 1 + text follow-up openers)
+  - Week 2: Mar 5-13 (Email 2 + text milestone)
+  - Week 3: Mar 14-17 (Email 3 final push)
+  - Post-campaign: Mar 18-Apr 5 (thank-yous + Joshua Tree + post-trip)
+- Email audience rules: Email 1 to all 317, Email 2/3 to non-donors only, pre-email notes for 25 prior/lapsed
+- Text follow-up triggers: Days 2-5 opener, Days 10-14 milestone, post-gift thank-you
+- Thank-you workflow matrix: Persona × Motivation Flag → thank-you frame + channel (101 text, 191 email for B-D; 25 personalized for A)
+- Post-campaign measurement plan: during-campaign metrics + April post-mortem schedule
+- Gift range pyramid check with target donor counts per tier
+- Quick reference table: where to find everything in the codebase
+- All numbers queried from Supabase — no hardcoded data
+**Learnings:**
+- Campaign universe is 317 contacts, $1.387M in total ask potential (realistic yield ~$65K-$100K at 5-7% conversion)
+- List A alone has $200K ask potential — the quiet phase is where the campaign is won
+- Ask distribution: 38 at $10K, 135 at $5K, 113 at $2.5K, 24 at $1K, 2 at $250
+- Persona × motivation matrix: Believers split relationship (58) vs mission_alignment (73); Impact Pros almost all mission_alignment (143/151); Network Peers mostly mission_alignment (20/27)
+- Thank-you channel logic: Believers → text (close relationships), IP/NP → email (professional distance)
+- Pre-email notes: exactly 25 contacts (20 prior_donor + 8 lapsed across B-D = 25 with non-null notes after filtering)
+- The doc is fully self-contained — Justin can execute the campaign day-by-day without referencing other docs
+
+## ALL STORIES COMPLETE
+All 8 user stories are marked [x] in the PRD. The Come Alive 2026 campaign data pipeline is fully built:
+1. ✅ US-001: Database column + Anthropic SDK
+2. ✅ US-002: scaffold_campaign.py (GPT-5 mini structured output)
+3. ✅ US-003: Full scaffold run (317 contacts)
+4. ✅ US-004: write_personal_outreach.py (Claude Opus 4.6)
+5. ✅ US-005: Full outreach run (25 List A messages)
+6. ✅ US-006: write_campaign_copy.py (GPT-5 mini structured output)
+7. ✅ US-007: Full copy run (292 Lists B-D contacts)
+8. ✅ US-008: CAMPAIGN_EXECUTION_PLAN.md (master execution guide)
