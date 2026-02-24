@@ -15,6 +15,7 @@ import {
   Sparkles,
   Star,
   Megaphone,
+  Inbox,
 } from 'lucide-react';
 
 interface Stats {
@@ -85,6 +86,15 @@ const TOOLS = [
     icon: Megaphone,
     accent: 'from-orange-500/10 to-amber-500/5',
     iconColor: 'text-orange-600',
+  },
+  {
+    title: 'Email Triage',
+    description:
+      'AI-assisted email triage across all 5 Gmail accounts. Read, draft responses in your style, and send or save to drafts.',
+    href: '/tools/email-triage',
+    icon: Inbox,
+    accent: 'from-red-500/10 to-rose-500/5',
+    iconColor: 'text-red-600',
   },
   {
     title: 'Email Finder',
