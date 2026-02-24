@@ -83,7 +83,7 @@ function buildEmail1Body(
     ? `${personalizationSentence}\n\n`
     : '';
 
-  return `${opener}${personalization}Last fall, a mom from Alabama came on one of our camping trips. First time sleeping outdoors. She grew up afraid of the woods — couldn't sleep without a locked door.
+  return `${opener}${personalization}Last fall, a mom from Alabama came on one of our camping trips. First time sleeping outdoors. She grew up afraid of the woods. Couldn't sleep without a locked door.
 
 That night she fell asleep to the sound of the ocean. Called it the most restorative sleep she'd had in years. Her daughter spent the weekend running barefoot through camp. No fear. Just joy.
 
