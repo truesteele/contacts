@@ -364,16 +364,30 @@ export default function CampaignPage() {
     contactIds: number[],
     emailType: string,
   ): Promise<{ total_sent: number; total_failed: number; total_skipped: number }> => {
-    const res = await fetch('/api/network-intel/campaign/send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contact_ids: contactIds, email_type: emailType }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || `Send failed (${res.status})`);
+    // Batch to avoid edge runtime timeout (30s). 20 contacts × ~300ms ≈ 6s per batch.
+    const BATCH_SIZE = 20;
+    let total_sent = 0;
+    let total_failed = 0;
+    let total_skipped = 0;
+
+    for (let i = 0; i < contactIds.length; i += BATCH_SIZE) {
+      const batch = contactIds.slice(i, i + BATCH_SIZE);
+      const res = await fetch('/api/network-intel/campaign/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contact_ids: batch, email_type: emailType }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Send failed (${res.status})`);
+      }
+      const result = await res.json();
+      total_sent += result.total_sent || 0;
+      total_failed += result.total_failed || 0;
+      total_skipped += result.total_skipped || 0;
     }
-    return res.json();
+
+    return { total_sent, total_failed, total_skipped };
   }, []);
 
   const handleSendOne = useCallback(async (contact: CampaignContact) => {
