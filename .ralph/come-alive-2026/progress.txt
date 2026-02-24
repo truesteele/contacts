@@ -29,3 +29,32 @@ Started: 2026-02-23
 **Learnings:**
 - Use `apply_migration` (not `execute_sql`) for DDL operations per Supabase MCP guidance
 - anthropic 0.83.0 installed cleanly with no dependency conflicts
+
+### Iteration 2 — US-002: Create scaffold_campaign.py (2026-02-23)
+**Status:** Complete
+**What was done:**
+- Created `scripts/intelligence/scaffold_campaign.py` — full campaign scaffolding script
+- Pydantic schema `CampaignScaffold` with all 15 fields: persona, persona_confidence, persona_reasoning, campaign_list, capacity_tier, primary_ask_amount, motivation_flags, primary_motivation, lifecycle_stage, lead_story, story_reasoning, opener_insert, personalization_sentence, thank_you_variant, text_followup
+- Comprehensive system prompt (~4,500 tokens) embedding:
+  - Full persona decision tree (Believer → Impact Professional → Network Peer)
+  - Execution matrix: Persona × Lifecycle → opener inserts
+  - Ask anchor table: Persona × Capacity → dollar amounts
+  - Motivation flags with detection signals (6 flags)
+  - Story bank with matching rules (9 stories including "skip")
+  - Thank-you frame: Persona × Motivation → thank-you variants
+  - Follow-up timing matrix
+  - Justin's voice guide and bio context
+- Contact context builder reuses patterns from score_ask_readiness.py: ask_readiness, oc_engagement, communication_history, employment, education, shared_institutions, FEC, real estate, ai_tags, LinkedIn reactions
+- Contact selection: ready_now (addressable) + cultivate_first score>=60 (addressable) + Tier 1 inner circle names
+- Campaign list assignment logic: Tier 1 names → A, ready_now → B, cultivate_first >=76 → C, 60-75 → D
+- JSONB merge preserves existing keys (personal_outreach, campaign_copy)
+- `_strip_null_bytes()` for PostgreSQL JSONB compatibility
+- CLI args: --test, --batch, --workers, --force, --contact-id
+- ThreadPoolExecutor with 150 default workers, retry logic for rate limits and DB errors
+- Test run: 1 contact scaffolded successfully, data saved to Supabase correctly
+**Learnings:**
+- The Supabase env var for the service key is `SUPABASE_SERVICE_KEY` (used in score_ask_readiness.py), not `SUPABASE_KEY` as documented in CLAUDE.md
+- GPT-5 mini takes ~45s for a single scaffold call (heavier prompt than ask-readiness due to embedded strategy content)
+- The `openai.responses.parse()` with `text_format=CampaignScaffold` works perfectly with all enum types
+- Contact context is ~6K tokens per contact (ask_readiness summary + OC engagement + comms + employment + real estate + FEC)
+- System prompt is the critical piece — embedding the full execution matrices and story bank ensures GPT makes correct assignments

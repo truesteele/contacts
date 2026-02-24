@@ -109,25 +109,25 @@ Add the `campaign_2026` JSONB column to the contacts table and install the Anthr
 
 ### US-002: Create scaffold_campaign.py
 **Priority:** 2
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Create the campaign scaffolding script that uses GPT-5 mini structured output to assign personas, capacity tiers, motivation flags, lifecycle stages, stories, and copy building blocks to each campaign contact. Follow the exact pattern of `score_ask_readiness.py`.
 
 **Acceptance Criteria:**
-- [ ] Script created at `scripts/intelligence/scaffold_campaign.py`
-- [ ] Pydantic schema `CampaignScaffold` with all fields: persona (believer/impact_professional/network_peer), persona_confidence (0-100), persona_reasoning, campaign_list (A/B/C/D), capacity_tier (leadership/major/mid/base/community), primary_ask_amount (250/500/1000/2500/5000/10000), motivation_flags (list), primary_motivation, lifecycle_stage (new/prior_donor/lapsed), lead_story (valencia/carl/8_year_old/michelle_latting/joy/aftan/dorian/sally_disney/skip), story_reasoning, opener_insert, personalization_sentence, thank_you_variant, text_followup
-- [ ] System prompt includes: full persona decision tree from DONOR_SEGMENTATION.md, execution matrix (Persona x Lifecycle), motivation flags definitions, capacity tier mapping, story bank from COME_ALIVE_2026_Campaign.md, Justin's profile context
-- [ ] Contact context builder reuses patterns from `score_ask_readiness.py` `build_contact_context()`: ask_readiness fields, oc_engagement, communication_history, employment, education, ai_tags, real estate, FEC, comms closeness
-- [ ] Contact selection: ready_now (addressable) + cultivate_first score>=76 (addressable) + cultivate_first score 60-75 (addressable)
-- [ ] Uses `openai.responses.parse(model="gpt-5-mini", ...)` with `text_format=CampaignScaffold`
-- [ ] ThreadPoolExecutor with default 150 workers, configurable via `--workers`
-- [ ] Saves to `campaign_2026` JSONB column as `{"scaffold": {...}, "scaffolded_at": "..."}` — preserves existing `personal_outreach` and `campaign_copy` keys if present
-- [ ] Includes `_strip_null_bytes()` for PostgreSQL JSONB compatibility
-- [ ] CLI args: `--test` (1 contact), `--batch N`, `--workers N`, `--force` (re-scaffold already scaffolded), `--contact-id ID`
-- [ ] Pagination via `.range()` for >1000 rows
-- [ ] Error handling with retries for rate limits
-- [ ] Script runs without errors: `source .venv/bin/activate && python scripts/intelligence/scaffold_campaign.py --test`
+- [x] Script created at `scripts/intelligence/scaffold_campaign.py`
+- [x] Pydantic schema `CampaignScaffold` with all fields: persona (believer/impact_professional/network_peer), persona_confidence (0-100), persona_reasoning, campaign_list (A/B/C/D), capacity_tier (leadership/major/mid/base/community), primary_ask_amount (250/500/1000/2500/5000/10000), motivation_flags (list), primary_motivation, lifecycle_stage (new/prior_donor/lapsed), lead_story (valencia/carl/8_year_old/michelle_latting/joy/aftan/dorian/sally_disney/skip), story_reasoning, opener_insert, personalization_sentence, thank_you_variant, text_followup
+- [x] System prompt includes: full persona decision tree from DONOR_SEGMENTATION.md, execution matrix (Persona x Lifecycle), motivation flags definitions, capacity tier mapping, story bank from COME_ALIVE_2026_Campaign.md, Justin's profile context
+- [x] Contact context builder reuses patterns from `score_ask_readiness.py` `build_contact_context()`: ask_readiness fields, oc_engagement, communication_history, employment, education, ai_tags, real estate, FEC, comms closeness
+- [x] Contact selection: ready_now (addressable) + cultivate_first score>=76 (addressable) + cultivate_first score 60-75 (addressable)
+- [x] Uses `openai.responses.parse(model="gpt-5-mini", ...)` with `text_format=CampaignScaffold`
+- [x] ThreadPoolExecutor with default 150 workers, configurable via `--workers`
+- [x] Saves to `campaign_2026` JSONB column as `{"scaffold": {...}, "scaffolded_at": "..."}` — preserves existing `personal_outreach` and `campaign_copy` keys if present
+- [x] Includes `_strip_null_bytes()` for PostgreSQL JSONB compatibility
+- [x] CLI args: `--test` (1 contact), `--batch N`, `--workers N`, `--force` (re-scaffold already scaffolded), `--contact-id ID`
+- [x] Pagination via `.range()` for >1000 rows
+- [x] Error handling with retries for rate limits
+- [x] Script runs without errors: `source .venv/bin/activate && python scripts/intelligence/scaffold_campaign.py --test`
 
 **Notes:**
 - READ `docs/Outdoorithm/DONOR_SEGMENTATION.md` carefully for the persona decision tree, execution matrix tables, and motivation flag definitions — embed the FULL content in the system prompt
