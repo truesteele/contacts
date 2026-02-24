@@ -238,27 +238,27 @@ Run the personal outreach writer on List A contacts and verify the quality of ea
 
 ### US-006: Create write_campaign_copy.py (GPT-5 mini)
 **Priority:** 6
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Create the campaign copy variant writer for Lists B-D contacts (~175). Generates personalized text follow-ups, thank-you messages, and pre-email notes using GPT-5 mini structured output.
 
 **Acceptance Criteria:**
-- [ ] Script created at `scripts/intelligence/write_campaign_copy.py`
-- [ ] Pydantic schema `CampaignCopy` with fields: pre_email_note (Optional[str], for prior_donor/lapsed only), text_followup_opener (str, Days 2-5), text_followup_milestone (str, Days 10-14), thank_you_message (str), thank_you_channel (text/email), email_sequence (list[int])
-- [ ] System prompt includes:
+- [x] Script created at `scripts/intelligence/write_campaign_copy.py`
+- [x] Pydantic schema `CampaignCopy` with fields: pre_email_note (Optional[str], for prior_donor/lapsed only), text_followup_opener (str, Days 2-5), text_followup_milestone (str, Days 10-14), thank_you_message (str), thank_you_channel (text/email), email_sequence (list[int])
+- [x] System prompt includes:
   - Justin's voice patterns (same as outreach but adapted for shorter messages)
   - Thank-you frame matrix from DONOR_SEGMENTATION.md (Persona x Motivation Flag)
   - Follow-up timing from execution matrix
   - Identity-affirming language patterns from donor psychology
   - Text message conventions (shorter, more casual than email)
-- [ ] Per-contact context includes: scaffold data, communication_history summary, current title/company, receiver_frame, personalization_angle
-- [ ] Selects Lists B-D contacts: `WHERE campaign_2026->'scaffold'->>'campaign_list' IN ('B', 'C', 'D')`
-- [ ] Uses `openai.responses.parse(model="gpt-5-mini", ...)` with `text_format=CampaignCopy`
-- [ ] ThreadPoolExecutor with default 150 workers
-- [ ] Saves to `campaign_2026` JSONB as `{"campaign_copy": {...}, "copy_written_at": "..."}` — preserves existing scaffold and outreach data
-- [ ] CLI args: `--test`, `--batch N`, `--workers N`, `--force`, `--contact-id ID`
-- [ ] Script runs without errors: `source .venv/bin/activate && python scripts/intelligence/write_campaign_copy.py --test`
+- [x] Per-contact context includes: scaffold data, communication_history summary, current title/company, receiver_frame, personalization_angle
+- [x] Selects Lists B-D contacts: `WHERE campaign_2026->'scaffold'->>'campaign_list' IN ('B', 'C', 'D')`
+- [x] Uses `openai.responses.parse(model="gpt-5-mini", ...)` with `text_format=CampaignCopy`
+- [x] ThreadPoolExecutor with default 150 workers
+- [x] Saves to `campaign_2026` JSONB as `{"campaign_copy": {...}, "copy_written_at": "..."}` — preserves existing scaffold and outreach data
+- [x] CLI args: `--test`, `--batch N`, `--workers N`, `--force`, `--contact-id ID`
+- [x] Script runs without errors: `source .venv/bin/activate && python scripts/intelligence/write_campaign_copy.py --test`
 
 **Notes:**
 - Follow `score_ask_readiness.py` patterns for batch processing

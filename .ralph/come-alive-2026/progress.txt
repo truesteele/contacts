@@ -146,3 +146,34 @@ Started: 2026-02-23
 - Messages that reference specific shared history (recent texts, prior gifts, events) feel most authentic
 - The "advisory/founding partner" frame appears in ~80% of messages — Opus correctly identifies that List A contacts should be treated as partners, not just donors
 - One text channel selection (Hector) — Opus correctly reads SMS comms history to determine channel appropriateness
+
+### Iteration 6 — US-006: Create write_campaign_copy.py (2026-02-24)
+**Status:** Complete
+**What was done:**
+- Created `scripts/intelligence/write_campaign_copy.py` — campaign copy variant writer using GPT-5 mini
+- Pydantic schema `CampaignCopy` with 6 fields: pre_email_note (Optional), text_followup_opener, text_followup_milestone, thank_you_message, thank_you_channel, email_sequence
+- Comprehensive system prompt (~2,800 tokens) embedding:
+  - Justin's voice guide with BAD/GOOD examples
+  - All 3 persona descriptions with copy tone guidance
+  - Full thank-you frame matrix (Persona × Motivation Flag)
+  - Follow-up timing matrix (Persona → channel, days)
+  - Text follow-up templates (Days 2-5 opener, Days 10-14 milestone)
+  - Pre-email note templates for prior_donor and lapsed lifecycle stages
+  - Email sequence assignment rules
+  - Identity-affirming language patterns from donor psychology
+  - Story bank for enriching follow-ups
+  - Impact language ($500=one family, $1K=two families, etc.)
+- Per-contact context includes: scaffold data (persona, list, capacity, motivation, lifecycle, stories, openers), ask_readiness summary (score, tier, receiver_frame, personalization_angle), OC engagement, brief comms summary (with SMS history check for channel selection), employment summary
+- Selects Lists B-D contacts with scaffold data (filters on campaign_list IN B, C, D)
+- Uses `openai.responses.parse(model="gpt-5-mini", ...)` with `text_format=CampaignCopy`
+- ThreadPoolExecutor with 150 default workers, retry logic for rate limits and DB errors
+- JSONB merge preserves existing scaffold and personal_outreach keys
+- CLI args: --test, --batch, --workers, --force, --contact-id
+- Test run: 1 contact (Kay Fernandez Smith, List B, believer, lapsed) — correct pre-email note generated, all 6 fields populated, scaffold preserved
+**Learnings:**
+- SUPABASE_SERVICE_KEY pattern confirmed (same as previous iterations)
+- GPT-5 mini takes ~34s for single copy call (lighter prompt than scaffold but still includes full strategy context)
+- pre_email_note correctly null for "new" contacts, populated for prior_donor/lapsed
+- Contact context is lighter than scaffold (~1.5K tokens) since we only need scaffold data + brief comms, not full employment/FEC/real estate
+- The system prompt is smaller than scaffold's (~2.8K vs ~4.5K) since copy generation needs persona/voice guidance, not the full decision tree
+- Thank-you channel defaults to email for most B-D contacts; text only for those with SMS history and high familiarity
