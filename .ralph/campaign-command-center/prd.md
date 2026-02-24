@@ -150,7 +150,7 @@ Create `app/tools/campaign/page.tsx` and add to tools navigation.
 - [ ] Add `/tools/campaign` link to the page header navigation (look at how pipeline is linked — check if there's a nav component or just direct Links)
 
 ### US-004: Message detail sheet
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 Create `components/campaign/message-detail-sheet.tsx`
 

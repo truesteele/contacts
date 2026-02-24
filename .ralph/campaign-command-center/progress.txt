@@ -63,3 +63,21 @@ Started: 2026-02-23
 - **Helpers:** getContactStatus(), formatCurrency(), resolveEmail()
 - **TypeScript:** passes clean (`npx tsc --noEmit`)
 - **Build:** passes clean (`npx next build`) — page is 6.76 kB
+
+### US-004 — Message detail sheet ✓
+- **Created:** `components/campaign/message-detail-sheet.tsx`
+- **Modified:** `app/tools/campaign/page.tsx` — imported MessageDetailSheet, added useCallback loadData for refresh, rendered sheet
+- **Pattern followed:** pipeline/deal-detail-sheet.tsx (Sheet with editable fields, dirty tracking, save button), contact-detail-sheet.tsx (Sheet layout with header)
+- **Sheet features:**
+  - Fetches full contact data from `GET /api/network-intel/campaign/[id]` on open
+  - Scaffold summary badges: List, Persona, Ask Amount, Capacity, Lifecycle, Motivation, Lead Story
+  - **List A (personal_outreach):** Editable Subject Line (Input), Message Body (Textarea 8 rows), Follow-Up Text, Thank-You Message, Internal Notes (all Textarea 3 rows), Channel badge (read-only)
+  - **Lists B-D (campaign_copy):** Pre-Email Note (only for prior_donor/lapsed), Text Follow-Up Opener, Text Follow-Up Milestone, Thank-You Message (all Textarea), Thank-You Channel badge (read-only)
+  - Dirty tracking: compares current values against originals, Save button disabled when clean
+  - Save sends only changed fields via individual PATCH calls to `/api/network-intel/campaign/[id]`
+  - Save confirmation: button turns green with checkmark for 2 seconds, then resets
+  - After save, calls `onUpdated()` → parent re-fetches campaign data from API
+- **Integration:** Clicking any row in List A tab opens the sheet for that contact (wired via selectedContactId + sheetOpen state from US-003)
+- **Types:** Fully typed interfaces for Campaign2026, Scaffold, PersonalOutreach, CampaignCopy, ContactFull, MessageDetailSheetProps — no `any` in component props
+- **TypeScript:** passes clean (`npx tsc --noEmit`)
+- **Build:** passes clean (`npx next build`) — page is 10.1 kB

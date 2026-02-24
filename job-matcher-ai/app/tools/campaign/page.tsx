@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
+import { MessageDetailSheet } from '@/components/campaign/message-detail-sheet';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -103,22 +104,23 @@ export default function CampaignPage() {
   const [selectedContactId, setSelectedContactId] = useState<number | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const res = await fetch('/api/network-intel/campaign');
-        if (!res.ok) throw new Error('Failed to load campaign data');
-        const data = await res.json();
-        setContacts(data.contacts || []);
-        setStats(data.stats || null);
-      } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : 'Unknown error');
-      } finally {
-        setLoading(false);
-      }
+  const loadData = useCallback(async () => {
+    try {
+      const res = await fetch('/api/network-intel/campaign');
+      if (!res.ok) throw new Error('Failed to load campaign data');
+      const data = await res.json();
+      setContacts(data.contacts || []);
+      setStats(data.stats || null);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setLoading(false);
     }
-    load();
   }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   // List A contacts sorted by ask amount descending
   const listAContacts = useMemo(
@@ -453,6 +455,14 @@ export default function CampaignPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Message detail sheet */}
+      <MessageDetailSheet
+        contactId={selectedContactId}
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        onUpdated={loadData}
+      />
     </main>
   );
 }
