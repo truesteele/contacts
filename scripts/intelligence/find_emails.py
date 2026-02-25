@@ -271,6 +271,8 @@ def _clean_name_part(name: str) -> str:
     Returns a single lowercase token with no spaces (spaces collapsed out)."""
     if not name:
         return ""
+    # Strip leading honorifics/titles (Dr., Prof., Rev., etc.)
+    name = re.sub(r'^(Dr|Prof|Rev|Fr|Sr|Mr|Mrs|Ms|Miss)\.?\s+', '', name, flags=re.IGNORECASE).strip()
     # Strip suffixes
     name = NAME_SUFFIXES.sub('', name).strip()
     # Remove anything in parentheses
@@ -1256,11 +1258,12 @@ def run_pipeline(args):
     # Final summary
     elapsed = time.time() - start_time
     zb_credits = get_credits_used()
+    processed = sum(stats.values())
 
     print("\n" + "=" * 60)
     print("PIPELINE SUMMARY")
     print("=" * 60)
-    print(f"  Contacts processed:  {sum(stats.values())}/{total}")
+    print(f"  Contacts processed:  {processed}/{total}")
     print(f"  Emails found:        {stats['found']}")
     print(f"  Rejected (low conf): {stats['rejected']}")
     print(f"  No domain:           {stats['no_domain']}")
@@ -1273,6 +1276,44 @@ def run_pipeline(args):
         print(f"  Mode:                DRY-RUN (no DB writes)")
     else:
         print(f"  Mode:                LIVE ({stats['found']} saved to DB)")
+
+    # Cost estimation for full run (project from observed rates)
+    if processed > 0:
+        # Get total eligible contacts
+        cur2 = conn.cursor()
+        cur2.execute("""
+            SELECT COUNT(*) FROM contacts
+            WHERE (email IS NULL OR email = '')
+            AND first_name IS NOT NULL AND first_name != ''
+            AND last_name IS NOT NULL AND last_name != ''
+        """)
+        total_eligible = cur2.fetchone()[0]
+
+        zb_per_contact = zb_credits / processed
+        hit_rate = stats['found'] / processed * 100
+        sec_per_contact = elapsed / processed
+
+        est_zb_credits = int(zb_per_contact * total_eligible)
+        est_zb_cost = est_zb_credits * 0.008  # ~$0.008/credit at bulk pricing
+        est_llm_cost = stats['found'] / processed * total_eligible * 0.002  # ~$0.002 per LLM call
+        est_time_min = sec_per_contact * total_eligible / 60
+        est_emails_found = int(hit_rate / 100 * total_eligible)
+
+        try:
+            remaining_credits = check_zerobounce_credits()
+        except Exception:
+            remaining_credits = "?"
+
+        print(f"\n  --- FULL-RUN COST ESTIMATE ({total_eligible} eligible contacts) ---")
+        print(f"  Hit rate:            {hit_rate:.0f}% ({stats['found']}/{processed})")
+        print(f"  Est. emails found:   ~{est_emails_found}")
+        print(f"  ZB credits/contact:  {zb_per_contact:.1f}")
+        print(f"  ZB credits needed:   ~{est_zb_credits} (have {remaining_credits})")
+        print(f"  ZB cost estimate:    ~${est_zb_cost:.2f}")
+        print(f"  OpenAI cost est:     ~${est_llm_cost:.2f}")
+        print(f"  Total cost est:      ~${est_zb_cost + est_llm_cost:.2f}")
+        print(f"  Time estimate:       ~{est_time_min:.0f} min ({sec_per_contact:.1f}s/contact)")
+
     print("=" * 60)
 
     conn.close()

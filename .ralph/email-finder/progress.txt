@@ -190,3 +190,44 @@ Started: 2026-02-24
 - ZeroBounce: ~3.2 credits/contact × 894 = ~2,861 credits (need ~1,592 more beyond current 1,269)
 - OpenAI GPT-5 mini: ~$0.002/contact × 894 = ~$1.79
 - Time: ~3.2s/contact × 894 = ~48 minutes
+
+### Iteration 6: US-006 — Full Dry-Run Test + Cost Estimation
+**Date:** 2026-02-24
+**Status:** COMPLETE
+
+**50-contact dry-run results:**
+- 50/50 contacts processed, 0 errors, 0 crashes
+- 24 emails found (48% hit rate), 0 rejected, 26 no-verified
+- 207 ZeroBounce credits used (~4.14 credits/contact)
+- Total time: 1,015s (~20.3s/contact — sequential per contact)
+
+**Emails found breakdown:**
+- Valid (ZB confirmed mailbox): 8 emails (Datadog, Xero, Amazon, AlphaSense, Year Up x3, Hilton)
+- Catch-all (ZB can't confirm): 16 emails (Google x10, Guild Edu, NGA, Duke x2, K12, Meta)
+- Google dominated catch-all results (10/16) since many contacts are ex-Google
+- Confidence range: 75-95 (all above 70 threshold)
+
+**Common failure mode (26 no-verified):**
+- Mostly contacts at companies with non-obvious domains (e.g., startup with custom domain not in MX records)
+- Generic domain guessing (.com/.org/.io/.co) often fails for niche companies
+- Some contacts at companies whose emails simply don't exist (acquired/defunct)
+
+**Bug found and fixed:**
+- `_clean_name_part()` didn't strip "Dr." prefix — contact "Dr. Shadan" generated "dr.shadan.deleveaux@..."
+- Fixed: added honorific stripping regex (Dr., Prof., Rev., Fr., Sr., Mr., Mrs., Ms., Miss.)
+
+**Cost estimation added to pipeline summary:**
+- Auto-calculates from observed rates: ZB credits/contact, hit rate, time/contact
+- Fetches total eligible contacts from DB for projection
+- Prints full-run estimates: credits needed, ZB cost, OpenAI cost, time estimate
+
+**Full-run cost estimates (from 50-contact sample):**
+- Total eligible contacts: 894
+- ZB credits needed: ~3,701 (4.14/contact × 894) — have ~1,056 remaining
+- ZB cost: ~$29.61 at bulk pricing (~$0.008/credit)
+- OpenAI cost: ~$0.86
+- Total estimated cost: ~$30.47
+- Estimated emails found: ~429 (48% hit rate)
+- Estimated time: ~302 min (~5 hours sequential)
+
+**Key insight:** The 48% hit rate is dominated by catch-all results (67% of found emails). For a real production run, might want to lower confidence threshold for catch-all big-tech contacts or add domain-specific heuristics. The 52% miss rate is mostly domain discovery failure — contacts at small/unknown companies where domain guessing fails.

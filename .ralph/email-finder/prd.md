@@ -166,15 +166,15 @@ Wire everything together: fetch contacts from DB, run the full pipeline (domain 
 
 ### US-006: Full Dry-Run Test + Cost Estimation
 **Priority:** 6
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Run a dry-run test on 50 contacts to validate the pipeline works end-to-end, estimate costs for full run, and fix any bugs.
 
 **Acceptance Criteria:**
-- [ ] Run `python -u scripts/intelligence/find_emails.py --dry-run -n 50` successfully
-- [ ] All 50 contacts processed without crashes
-- [ ] Print cost estimate for full 894-contact run (ZeroBounce credits + OpenAI tokens)
-- [ ] Document results in progress.txt: hit rate, common failure modes, estimated total cost
-- [ ] Fix any bugs discovered during the test run
-- [ ] Script handles edge cases found during testing (missing company, hyphenated names, etc.)
+- [x] Run `python -u scripts/intelligence/find_emails.py --dry-run -n 50` successfully
+- [x] All 50 contacts processed without crashes
+- [x] Print cost estimate for full 894-contact run (ZeroBounce credits + OpenAI tokens)
+- [x] Document results in progress.txt: hit rate, common failure modes, estimated total cost
+- [x] Fix any bugs discovered during the test run
+- [x] Script handles edge cases found during testing (missing company, hyphenated names, etc.)
