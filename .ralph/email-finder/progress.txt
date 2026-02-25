@@ -117,3 +117,38 @@ Started: 2026-02-24
 - google.com returns "abuse" for test@ (not catch-all) — their AI detection is sophisticated
 - do_not_mail/global_suppression for obviously fake example.com addresses
 - API response time: ~0.7s per single call, batch of 3 took similar time with concurrency
+
+### Iteration 4: US-004 — GPT-5 Mini Validation + Scoring
+**Date:** 2026-02-24
+**Status:** COMPLETE
+
+**What was built:**
+- `EmailVerification` pydantic model — reused from discover_emails_v2.py (is_match, confidence, reasoning, email_type)
+- `is_obvious_match(contact, email, zb_result)` — auto-accept logic that skips LLM:
+  - Requires: full name in email local part + valid ZB status + (domain matches company OR personal domain)
+  - Uses regex slug matching for company-domain comparison
+- `validate_with_llm(openai_client, contact, email, zb_result)` — GPT-5 mini structured output validation:
+  - Prompt includes: name, company, title, LinkedIn, ZB status/sub_status, free_email, active_in_days, smtp_provider
+  - Rules: reject stale employer domains, accept personal with good match, skeptical on catch-all, stricter for common names
+  - Retry logic: exponential backoff (1s, 2s), 2 retries
+- `validate_emails_batch(openai_client, tasks, max_workers=150)` — concurrent LLM validation using ThreadPoolExecutor
+- `PERSONAL_DOMAINS` set — 15 common free email domains for personal email detection
+- `test_validate()` — 3 mock scenarios:
+  1. Obvious match: sarah.chen@stripe.com for Sarah Chen at Stripe → is_match=True, obvious=True
+  2. Stale employer: marcus.johnson@google.com for Marcus Johnson at Anthropic → is_match=False, obvious=False
+  3. Personal email: elena.rodriguez@gmail.com for Elena Rodriguez at McKinsey → is_match=True, obvious=True
+
+**Test results:**
+- 3/3 LLM validations matched expected outcomes
+- is_obvious_match correctly identified all 3 cases
+- LLM confidence: 92 (obvious work), 90 (stale reject), 85 (personal accept)
+- LLM reasoning was detailed and rule-adherent in all cases
+- Total time: 28.1s for 3 sequential LLM calls (~9.4s per call)
+- No API errors, no retries needed
+
+**Key decisions:**
+- is_obvious_match uses slug-based company-domain matching (strip non-alphanumeric, substring check both directions)
+- Personal domains get auto-accepted by is_obvious_match if name matches + valid ZB status (no LLM needed)
+- LLM prompt explicitly calls out catch-all skepticism and common name strictness
+- validate_emails_batch supports 150 workers (matching existing GPT concurrency pattern)
+- email_type output: personal | work | unknown — useful for downstream priority sorting

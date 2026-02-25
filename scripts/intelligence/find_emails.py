@@ -26,8 +26,20 @@ import psycopg2
 import psycopg2.extras
 import dns.resolver
 from dotenv import load_dotenv
+from openai import OpenAI
+from pydantic import BaseModel, Field
 
 load_dotenv()
+
+
+# ── Pydantic Schema ──────────────────────────────────────────────────
+
+class EmailVerification(BaseModel):
+    is_match: bool = Field(description="Is this email likely the contact's actual email?")
+    confidence: int = Field(ge=0, le=100, description="0-100 confidence score")
+    reasoning: str = Field(description="Brief explanation")
+    email_type: str = Field(description="personal | work | unknown")
+
 
 # ── Config ────────────────────────────────────────────────────────────
 
@@ -527,6 +539,155 @@ def get_credits_used() -> int:
     return _credits_used
 
 
+# ── GPT-5 Mini Validation ────────────────────────────────────────────
+
+PERSONAL_DOMAINS = {
+    "gmail.com", "yahoo.com", "hotmail.com", "outlook.com", "icloud.com",
+    "me.com", "aol.com", "comcast.net", "protonmail.com", "live.com",
+    "msn.com", "att.net", "verizon.net", "sbcglobal.net", "mac.com",
+}
+
+
+def is_obvious_match(contact: dict, email: str, zb_result: dict) -> bool:
+    """
+    Check if this is an obvious match that can skip LLM validation.
+    Criteria: full name appears in email local part AND domain matches current company.
+    """
+    first = (contact.get("first_name") or "").lower().strip()
+    last = (contact.get("last_name") or "").lower().strip()
+    if not first or not last:
+        return False
+
+    local = email.split("@")[0].lower() if "@" in email else ""
+    domain = email.split("@")[1].lower() if "@" in email else ""
+
+    # Name must be in the local part
+    has_first = first in local
+    has_last = last in local
+    if not (has_first and has_last):
+        return False
+
+    # Status must be valid (not catch-all)
+    status = zb_result.get("status", "")
+    if status != "valid":
+        return False
+
+    # Domain must match current company OR be a personal domain
+    company = (contact.get("company") or contact.get("enrich_current_company") or "").lower()
+    if domain in PERSONAL_DOMAINS:
+        return True
+
+    # Check if company name appears in domain
+    if company:
+        company_slug = re.sub(r'[^a-z0-9]', '', company)
+        domain_slug = re.sub(r'[^a-z0-9]', '', domain.split('.')[0])
+        if company_slug and domain_slug and (
+            company_slug in domain_slug or domain_slug in company_slug
+        ):
+            return True
+
+    return False
+
+
+def validate_with_llm(
+    openai_client: OpenAI,
+    contact: dict,
+    email: str,
+    zb_result: dict,
+    max_retries: int = 2,
+) -> EmailVerification | None:
+    """
+    Use GPT-5 mini to validate a candidate email for a contact.
+    Returns EmailVerification or None on error.
+    """
+    first = contact.get("first_name") or ""
+    last = contact.get("last_name") or ""
+    name = f"{first} {last}".strip()
+    company = contact.get("company") or contact.get("enrich_current_company") or "unknown"
+    title = contact.get("enrich_current_title") or contact.get("position") or "unknown"
+    linkedin = contact.get("linkedin_url") or "none"
+
+    domain = email.split("@")[1] if "@" in email else ""
+    status = zb_result.get("status", "unknown")
+    sub_status = zb_result.get("sub_status", "")
+    free_email = zb_result.get("free_email", False)
+    active_in_days = zb_result.get("active_in_days")
+    smtp_provider = zb_result.get("smtp_provider", "")
+
+    prompt = (
+        f"Determine if this email address belongs to this person and is usable.\n\n"
+        f"PERSON:\n"
+        f"  Name: {name}\n"
+        f"  Current company: {company}\n"
+        f"  Title: {title}\n"
+        f"  LinkedIn: {linkedin}\n\n"
+        f"CANDIDATE EMAIL: {email}\n"
+        f"  ZeroBounce status: {status}\n"
+        f"  Sub-status: {sub_status or 'none'}\n"
+        f"  Free email: {free_email}\n"
+        f"  Active in days: {active_in_days if active_in_days is not None else 'unknown'}\n"
+        f"  SMTP provider: {smtp_provider or 'unknown'}\n"
+        f"  Domain: {domain}\n\n"
+        f"RULES:\n"
+        f"- ACCEPT valid personal emails (gmail, yahoo, etc.) if name matches the local part well\n"
+        f"- ACCEPT valid corporate emails if the domain matches their CURRENT company\n"
+        f"- REJECT corporate emails where the domain is for a DIFFERENT company than their current one\n"
+        f"  (they likely left that job and the email is stale)\n"
+        f"- For catch-all domains (Google, Amazon, Meta, etc.), be SKEPTICAL — catch-all means\n"
+        f"  the server accepts all addresses, so ZeroBounce can't confirm the mailbox exists.\n"
+        f"  Only accept if the name is distinctive or the permutation pattern is very standard.\n"
+        f"- For common first names (John, Michael, David, James, Robert, Maria, Jennifer, Sarah),\n"
+        f"  require STRONGER evidence (full name in email, matching company domain)\n"
+        f"- If status is 'invalid', REJECT regardless\n"
+        f"- Set confidence based on overall evidence strength (0-100)\n"
+        f"- Set email_type to 'personal' for free email domains, 'work' for corporate, 'unknown' if unclear"
+    )
+
+    for attempt in range(max_retries + 1):
+        try:
+            resp = openai_client.responses.parse(
+                model="gpt-5-mini",
+                instructions="You verify email matches. Be accurate and concise.",
+                input=prompt,
+                text_format=EmailVerification,
+            )
+            return resp.output_parsed
+        except Exception as e:
+            if attempt < max_retries:
+                time.sleep(2 ** attempt)
+                continue
+            print(f"    LLM error for {email}: {e}")
+            return None
+
+
+def validate_emails_batch(
+    openai_client: OpenAI,
+    tasks: list[tuple[dict, str, dict]],
+    max_workers: int = 150,
+) -> list[tuple[dict, str, dict, EmailVerification | None]]:
+    """
+    Validate multiple (contact, email, zb_result) tuples concurrently with LLM.
+    Returns list of (contact, email, zb_result, verification).
+    """
+    results = []
+
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        future_to_task = {
+            pool.submit(validate_with_llm, openai_client, c, e, z): (c, e, z)
+            for c, e, z in tasks
+        }
+        for future in as_completed(future_to_task):
+            contact, email_addr, zb = future_to_task[future]
+            try:
+                verification = future.result()
+            except Exception as exc:
+                print(f"    Unexpected LLM error: {exc}")
+                verification = None
+            results.append((contact, email_addr, zb, verification))
+
+    return results
+
+
 # ── Test CLI ──────────────────────────────────────────────────────────
 
 def test_domains():
@@ -706,6 +867,112 @@ def test_verify():
     print(f"\n  Total credits used: {get_credits_used()}")
 
 
+def test_validate():
+    """Test GPT-5 mini validation on 3 mock scenarios (uses OpenAI API, no ZeroBounce)."""
+    print("\n" + "=" * 60)
+    print("TEST: GPT-5 Mini Email Validation")
+    print("=" * 60)
+
+    api_key = os.environ.get("OPENAI_APIKEY", "")
+    if not api_key:
+        print("  ERROR: OPENAI_APIKEY not set in environment")
+        return
+
+    client = OpenAI(api_key=api_key)
+    print("  OpenAI: connected\n")
+
+    # 3 mock scenarios with expected outcomes
+    scenarios = [
+        {
+            "label": "Obvious match — name in email + domain matches company",
+            "contact": {
+                "first_name": "Sarah",
+                "last_name": "Chen",
+                "company": "Stripe",
+                "enrich_current_company": "Stripe",
+                "enrich_current_title": "Senior Engineer",
+                "linkedin_url": "https://linkedin.com/in/sarahchen",
+            },
+            "email": "sarah.chen@stripe.com",
+            "zb_result": {
+                "status": "valid", "sub_status": "", "free_email": False,
+                "active_in_days": 30, "smtp_provider": "google", "mx_record": "stripe-com.mail.protection.outlook.com",
+            },
+            "expect_match": True,
+            "expect_obvious": True,
+        },
+        {
+            "label": "Stale employer — person left Google, email is @google.com",
+            "contact": {
+                "first_name": "Marcus",
+                "last_name": "Johnson",
+                "company": "Anthropic",
+                "enrich_current_company": "Anthropic",
+                "enrich_current_title": "Product Manager",
+                "linkedin_url": "https://linkedin.com/in/marcusjohnson",
+            },
+            "email": "marcus.johnson@google.com",
+            "zb_result": {
+                "status": "catch-all", "sub_status": "", "free_email": False,
+                "active_in_days": None, "smtp_provider": "google", "mx_record": "aspmx.l.google.com",
+            },
+            "expect_match": False,
+            "expect_obvious": False,
+        },
+        {
+            "label": "Personal email — valid gmail with good name match",
+            "contact": {
+                "first_name": "Elena",
+                "last_name": "Rodriguez",
+                "company": "McKinsey & Company",
+                "enrich_current_company": "McKinsey & Company",
+                "enrich_current_title": "Associate Partner",
+                "linkedin_url": "https://linkedin.com/in/elenarodriguez",
+            },
+            "email": "elena.rodriguez@gmail.com",
+            "zb_result": {
+                "status": "valid", "sub_status": "", "free_email": True,
+                "active_in_days": 15, "smtp_provider": "google", "mx_record": "gmail-smtp-in.l.google.com",
+            },
+            "expect_match": True,
+            "expect_obvious": True,
+        },
+    ]
+
+    start = time.time()
+    passed = 0
+
+    for i, s in enumerate(scenarios, 1):
+        print(f"  Scenario {i}: {s['label']}")
+        print(f"    Contact: {s['contact']['first_name']} {s['contact']['last_name']} @ {s['contact']['company']}")
+        print(f"    Email:   {s['email']}")
+        print(f"    ZB:      status={s['zb_result']['status']}, free={s['zb_result']['free_email']}")
+
+        # Test is_obvious_match
+        obvious = is_obvious_match(s["contact"], s["email"], s["zb_result"])
+        obvious_ok = obvious == s["expect_obvious"]
+        print(f"    Obvious: {obvious} (expected {s['expect_obvious']}) {'OK' if obvious_ok else 'MISMATCH'}")
+
+        # Test LLM validation (skip if obvious match in real pipeline, but test it anyway)
+        verification = validate_with_llm(client, s["contact"], s["email"], s["zb_result"])
+        if verification:
+            match_ok = verification.is_match == s["expect_match"]
+            print(f"    LLM:     is_match={verification.is_match} (expected {s['expect_match']}) "
+                  f"{'OK' if match_ok else 'MISMATCH'}")
+            print(f"    Conf:    {verification.confidence}")
+            print(f"    Type:    {verification.email_type}")
+            print(f"    Reason:  {verification.reasoning}")
+            if match_ok:
+                passed += 1
+        else:
+            print(f"    LLM:     ERROR - no response")
+        print()
+
+    elapsed = time.time() - start
+    print(f"  Results: {passed}/{len(scenarios)} LLM validations matched expected outcome")
+    print(f"  Time: {elapsed:.1f}s")
+
+
 # ── Main ──────────────────────────────────────────────────────────────
 
 def main():
@@ -739,7 +1006,7 @@ def main():
         test_verify()
         return
     if args.test_validate:
-        print("--test-validate not yet implemented (US-004)")
+        test_validate()
         return
 
     # Main pipeline placeholder

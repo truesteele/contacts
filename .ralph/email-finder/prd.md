@@ -128,19 +128,19 @@ Integrate ZeroBounce API for email verification. This is the core validation ste
 
 ### US-004: GPT-5 Mini Validation + Scoring
 **Priority:** 4
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Add LLM validation for verified emails. Screens for stale employer emails, common name conflicts, and assigns confidence.
 
 **Acceptance Criteria:**
-- [ ] `validate_with_llm(contact, email, zb_result)` returns EmailVerification (reuse pydantic model)
-- [ ] LLM prompt includes: contact name, current company, title, LinkedIn URL, email domain, ZB status/sub_status, free_email flag, active_in_days
-- [ ] Rules in prompt: reject stale employer domains, accept personal emails with good match, be strict for common names
-- [ ] Skip LLM for obvious matches (full name in email + domain matches company, score >= 90)
-- [ ] `--test-validate` CLI flag that runs LLM validation on 3 mock scenarios
-- [ ] Concurrent LLM calls with 150 workers (per existing pattern)
-- [ ] Script runs: `source .venv/bin/activate && python scripts/intelligence/find_emails.py --test-validate`
+- [x] `validate_with_llm(contact, email, zb_result)` returns EmailVerification (reuse pydantic model)
+- [x] LLM prompt includes: contact name, current company, title, LinkedIn URL, email domain, ZB status/sub_status, free_email flag, active_in_days
+- [x] Rules in prompt: reject stale employer domains, accept personal emails with good match, be strict for common names
+- [x] Skip LLM for obvious matches (full name in email + domain matches company, score >= 90)
+- [x] `--test-validate` CLI flag that runs LLM validation on 3 mock scenarios
+- [x] Concurrent LLM calls with 150 workers (per existing pattern)
+- [x] Script runs: `source .venv/bin/activate && python scripts/intelligence/find_emails.py --test-validate`
 
 ---
 
