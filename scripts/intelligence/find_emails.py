@@ -1009,8 +1009,273 @@ def main():
         test_validate()
         return
 
-    # Main pipeline placeholder
-    print("Main pipeline not yet implemented (US-005)")
+    # Main pipeline
+    run_pipeline(args)
+
+
+# ── Pipeline ─────────────────────────────────────────────────────────
+
+def fetch_contacts(conn, limit=None):
+    """Fetch contacts missing email, ordered by ai_proximity_score DESC."""
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cur.execute("""
+        SELECT id, first_name, last_name, company, enrich_current_company,
+               enrich_current_title, position, linkedin_url,
+               ai_proximity_score, ai_proximity_tier
+        FROM contacts
+        WHERE (email IS NULL OR email = '')
+        AND first_name IS NOT NULL AND first_name != ''
+        AND last_name IS NOT NULL AND last_name != ''
+        ORDER BY COALESCE(ai_proximity_score, 0) DESC
+    """)
+    contacts = cur.fetchall()
+    if limit:
+        contacts = contacts[:limit]
+    return contacts
+
+
+def process_contact(contact, openai_client, zb_workers, min_confidence, dry_run):
+    """
+    Run the full pipeline for a single contact:
+    domain discovery → permutations → ZeroBounce verify → pick best → LLM validate.
+
+    Returns dict with keys: status, email, confidence, reasoning, credits_before
+    Status is one of: found, no_domain, no_perms, no_verified, rejected, error
+    """
+    cid = contact["id"]
+    first = contact["first_name"] or ""
+    last = contact["last_name"] or ""
+    company = contact["company"] or contact["enrich_current_company"] or ""
+
+    # Step 1: Domain discovery
+    domains = company_to_domains(company)
+    if not domains:
+        return {"status": "no_domain", "email": None, "confidence": 0, "reasoning": "No domain found"}
+
+    # Step 2: Generate permutations for all domains
+    all_perms = []
+    for domain in domains:
+        perms = generate_permutations(first, last, domain)
+        all_perms.extend(perms)
+
+    if not all_perms:
+        return {"status": "no_perms", "email": None, "confidence": 0, "reasoning": "No permutations generated"}
+
+    # Step 3: Smart ZeroBounce verification — stop early on valid, skip bad domains
+    # For catch-all domains, only test top 3 permutations
+    results = {}
+    tested_domains = set()
+    bad_domains = set()  # domains where first test was invalid
+
+    for perm_email in all_perms:
+        domain = perm_email.split("@")[1]
+
+        # Skip if we already found a valid result
+        if any(r.get("status") == "valid" for r in results.values()):
+            break
+
+        # Skip bad domains (first perm was invalid → likely wrong domain)
+        if domain in bad_domains:
+            continue
+
+        # For catch-all domains, limit to 3 permutations per domain
+        domain_results = [r for addr, r in results.items() if addr.split("@")[1] == domain]
+        if domain in CATCH_ALL_DOMAINS and len(domain_results) >= 3:
+            continue
+
+        result = verify_email(perm_email)
+        if not result:
+            continue
+
+        results[perm_email] = result
+
+        # If first test on this domain is invalid and domain not in known list, mark it bad
+        if domain not in tested_domains:
+            tested_domains.add(domain)
+            if result["status"] == "invalid" and domain not in CATCH_ALL_DOMAINS:
+                bad_domains.add(domain)
+
+    if not results:
+        return {"status": "no_verified", "email": None, "confidence": 0, "reasoning": "All verifications failed"}
+
+    # Step 4: Pick best result
+    best = pick_best_result(results)
+    if not best:
+        return {"status": "no_verified", "email": None, "confidence": 0, "reasoning": "No valid or catch-all results"}
+
+    best_email, best_zb = best
+
+    # Step 5: LLM validation (skip if obvious match)
+    if is_obvious_match(dict(contact), best_email, best_zb):
+        return {
+            "status": "found",
+            "email": best_email,
+            "confidence": 95,
+            "reasoning": "Obvious match: name in email + domain matches company",
+            "zb_status": best_zb["status"],
+        }
+
+    verification = validate_with_llm(openai_client, dict(contact), best_email, best_zb)
+    if not verification:
+        return {"status": "error", "email": None, "confidence": 0, "reasoning": "LLM validation error"}
+
+    if verification.is_match and verification.confidence >= min_confidence:
+        return {
+            "status": "found",
+            "email": best_email,
+            "confidence": verification.confidence,
+            "reasoning": verification.reasoning,
+            "zb_status": best_zb["status"],
+            "email_type": verification.email_type,
+        }
+    else:
+        return {
+            "status": "rejected",
+            "email": best_email,
+            "confidence": verification.confidence,
+            "reasoning": verification.reasoning,
+        }
+
+
+def run_pipeline(args):
+    """Main pipeline: fetch contacts → process each → save results."""
+    import signal
+
+    # Track whether user hit Ctrl+C
+    interrupted = False
+
+    def _handle_interrupt(sig, frame):
+        nonlocal interrupted
+        interrupted = True
+        print("\n\n  Ctrl+C detected — finishing current contact, then stopping...")
+
+    signal.signal(signal.SIGINT, _handle_interrupt)
+
+    print("\n" + "=" * 60)
+    print("EMAIL FINDER PIPELINE")
+    print("=" * 60)
+
+    # Check ZeroBounce credits
+    try:
+        credits = check_zerobounce_credits()
+        print(f"  ZeroBounce credits: {credits}")
+    except Exception as e:
+        print(f"  ERROR checking ZeroBounce credits: {e}")
+        return
+
+    if credits < 10:
+        print(f"  ERROR: Only {credits} credits remaining. Need at least 10.")
+        return
+
+    # Connect
+    conn = get_db_conn()
+    openai_client = OpenAI(api_key=os.environ["OPENAI_APIKEY"])
+    print(f"  Database: connected")
+    print(f"  OpenAI: connected")
+
+    # Fetch contacts
+    contacts = fetch_contacts(conn, limit=args.limit)
+    total = len(contacts)
+    print(f"  Contacts to process: {total}")
+    print(f"  Mode: {'DRY-RUN' if args.dry_run else 'LIVE (will save to DB)'}")
+    print(f"  Min confidence: {args.min_confidence}")
+    print(f"  ZeroBounce workers: {args.workers}")
+    print("=" * 60 + "\n")
+
+    if total == 0:
+        print("  No contacts to process.")
+        conn.close()
+        return
+
+    # Stats
+    stats = {
+        "found": 0,
+        "no_domain": 0,
+        "no_perms": 0,
+        "no_verified": 0,
+        "rejected": 0,
+        "error": 0,
+    }
+    found_emails = []
+    start_time = time.time()
+    cur = conn.cursor()
+
+    for i, contact in enumerate(contacts):
+        if interrupted:
+            print(f"\n  Stopping early at contact {i}/{total} due to interrupt.")
+            break
+
+        cid = contact["id"]
+        first = contact["first_name"] or ""
+        last = contact["last_name"] or ""
+        name = f"{first} {last}".strip()
+        company = contact["company"] or contact["enrich_current_company"] or ""
+        prox = contact["ai_proximity_score"] or "?"
+
+        result = process_contact(contact, openai_client, args.workers, args.min_confidence, args.dry_run)
+        status = result["status"]
+        stats[status] = stats.get(status, 0) + 1
+
+        if status == "found":
+            email_addr = result["email"]
+            conf = result["confidence"]
+            reason = result["reasoning"][:60]
+            zb_status = result.get("zb_status", "?")
+            marker = "[DRY-RUN] " if args.dry_run else ""
+
+            print(f"  {marker}[{cid}] {name:30s} | {company:25s} | {email_addr} "
+                  f"(conf={conf}, zb={zb_status})")
+
+            found_emails.append({"id": cid, "email": email_addr, "confidence": conf})
+
+            if not args.dry_run:
+                cur.execute(
+                    "UPDATE contacts SET email = %s WHERE id = %s AND (email IS NULL OR email = '')",
+                    (email_addr, cid)
+                )
+                conn.commit()
+
+        elif status == "rejected":
+            email_addr = result.get("email", "?")
+            reason = result["reasoning"][:80]
+            print(f"  SKIP [{cid}] {name:30s} | {email_addr} — {reason}")
+
+        # Progress reporting every 25 contacts
+        if (i + 1) % 25 == 0 or i + 1 == total:
+            elapsed = time.time() - start_time
+            rate = (i + 1) / elapsed if elapsed > 0 else 0
+            remaining = (total - i - 1) / rate if rate > 0 else 0
+            zb_credits = get_credits_used()
+
+            print(f"\n  --- Progress: {i + 1}/{total} "
+                  f"({stats['found']} found, {stats['rejected']} rejected, "
+                  f"{stats['no_domain']} no-domain, {stats['no_verified']} no-verified) "
+                  f"| ZB credits: {zb_credits} | "
+                  f"{elapsed:.0f}s elapsed, ~{remaining:.0f}s ETA ---\n")
+
+    # Final summary
+    elapsed = time.time() - start_time
+    zb_credits = get_credits_used()
+
+    print("\n" + "=" * 60)
+    print("PIPELINE SUMMARY")
+    print("=" * 60)
+    print(f"  Contacts processed:  {sum(stats.values())}/{total}")
+    print(f"  Emails found:        {stats['found']}")
+    print(f"  Rejected (low conf): {stats['rejected']}")
+    print(f"  No domain:           {stats['no_domain']}")
+    print(f"  No verified:         {stats['no_verified']}")
+    print(f"  No permutations:     {stats['no_perms']}")
+    print(f"  Errors:              {stats['error']}")
+    print(f"  ZeroBounce credits:  {zb_credits} used")
+    print(f"  Time elapsed:        {elapsed:.1f}s")
+    if args.dry_run:
+        print(f"  Mode:                DRY-RUN (no DB writes)")
+    else:
+        print(f"  Mode:                LIVE ({stats['found']} saved to DB)")
+    print("=" * 60)
+
+    conn.close()
 
 
 if __name__ == "__main__":

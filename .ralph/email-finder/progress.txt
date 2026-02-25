@@ -152,3 +152,41 @@ Started: 2026-02-24
 - LLM prompt explicitly calls out catch-all skepticism and common name strictness
 - validate_emails_batch supports 150 workers (matching existing GPT concurrency pattern)
 - email_type output: personal | work | unknown — useful for downstream priority sorting
+
+### Iteration 5: US-005 — Main Pipeline + DB Integration
+**Date:** 2026-02-24
+**Status:** COMPLETE
+
+**What was built:**
+- `fetch_contacts(conn, limit)` — fetches contacts missing email, ordered by ai_proximity_score DESC
+- `process_contact(contact, openai_client, zb_workers, min_confidence, dry_run)` — full pipeline per contact:
+  1. Domain discovery → 2. Permutation generation → 3. Smart ZeroBounce verify → 4. Pick best → 5. LLM validate
+- `run_pipeline(args)` — orchestrates full run with progress reporting, Ctrl+C handling, final summary
+- Smart verification optimization:
+  - Stops testing permutations once a `valid` result is found
+  - Marks domains as "bad" if first permutation returns `invalid` (skip remaining perms for that domain)
+  - Limits catch-all domains (Google, etc.) to 3 permutations max
+- Graceful interrupt: SIGINT handler sets flag, pipeline finishes current contact then stops
+- Progress reporting every 25 contacts (found, rejected, no-domain, ZB credits, ETA)
+- Final summary: total processed, found, rejected, no-domain, no-verified, credits used, elapsed time
+
+**Test results (--dry-run -n 5):**
+- 5 contacts processed, 4 emails found, 1 no-verified
+- Nancy McDermott @ Guild Education → nancy.mcdermott@guildeducation.com (catch-all, conf=75)
+- Aaron Schutzengel @ Datadog → aaron.schutzengel@datadoghq.com (valid, conf=95)
+- Sawna Patel @ Google → sawna.patel@google.com (catch-all, conf=90)
+- Rena Davis @ Xero → rena.davis@xero.com (valid, conf=95)
+- 16 ZeroBounce credits used for 5 contacts (~3.2 credits/contact average)
+- Total time: 15.8s (mostly ZeroBounce latency, sequential per contact)
+
+**Key decisions:**
+- Sequential processing per contact (not batch) to enable early-stop on valid results and save ZB credits
+- Each contact runs its permutations through ZeroBounce one at a time, stopping at first `valid`
+- Bad domain detection: if first perm on unknown domain is `invalid`, skip all remaining perms for that domain
+- `is_obvious_match` skips LLM entirely for clear matches (saves ~$0.001/contact + 3s latency)
+- SIGINT handler via `signal` module — sets flag, current contact finishes, then clean shutdown
+
+**Cost estimate for full 894-contact run:**
+- ZeroBounce: ~3.2 credits/contact × 894 = ~2,861 credits (need ~1,592 more beyond current 1,269)
+- OpenAI GPT-5 mini: ~$0.002/contact × 894 = ~$1.79
+- Time: ~3.2s/contact × 894 = ~48 minutes

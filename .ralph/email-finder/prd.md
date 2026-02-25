@@ -146,21 +146,21 @@ Add LLM validation for verified emails. Screens for stale employer emails, commo
 
 ### US-005: Main Pipeline + DB Integration
 **Priority:** 5
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Wire everything together: fetch contacts from DB, run the full pipeline (domain -> permutations -> verify -> validate -> save), with progress tracking.
 
 **Acceptance Criteria:**
-- [ ] Fetch 894 contacts missing email, ordered by ai_proximity_score DESC
-- [ ] For each contact: discover domains -> generate permutations -> verify all with ZeroBounce -> pick best verified -> LLM validate -> save
-- [ ] "Best verified" selection logic: prefer valid over catch-all, prefer recent activity (active_in_days), prefer name.domain match
-- [ ] Save to contacts.email field (only if currently NULL/empty)
-- [ ] CLI args: `--dry-run`, `--limit N`, `--min-confidence 70`, `--workers 50`
-- [ ] Progress reporting every 25 contacts (found, skipped, no-domain, cost)
-- [ ] Final summary with total found, cost, time elapsed
-- [ ] Handle interrupts gracefully (Ctrl+C saves progress)
-- [ ] Script runs end-to-end: `source .venv/bin/activate && python -u scripts/intelligence/find_emails.py --dry-run -n 5`
+- [x] Fetch 894 contacts missing email, ordered by ai_proximity_score DESC
+- [x] For each contact: discover domains -> generate permutations -> verify all with ZeroBounce -> pick best verified -> LLM validate -> save
+- [x] "Best verified" selection logic: prefer valid over catch-all, prefer recent activity (active_in_days), prefer name.domain match
+- [x] Save to contacts.email field (only if currently NULL/empty)
+- [x] CLI args: `--dry-run`, `--limit N`, `--min-confidence 70`, `--workers 50`
+- [x] Progress reporting every 25 contacts (found, skipped, no-domain, cost)
+- [x] Final summary with total found, cost, time elapsed
+- [x] Handle interrupts gracefully (Ctrl+C saves progress)
+- [x] Script runs end-to-end: `source .venv/bin/activate && python -u scripts/intelligence/find_emails.py --dry-run -n 5`
 
 ---
 
