@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { getGmailClient } from '@/lib/gmail-client';
 
 export const runtime = 'nodejs';
+export const maxDuration = 60;
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,

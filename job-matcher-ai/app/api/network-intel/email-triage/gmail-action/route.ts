@@ -112,8 +112,11 @@ export async function POST(req: Request) {
           inReplyTo = origMsgId;
           references = origRefs ? `${origRefs} ${origMsgId}` : origMsgId;
         }
-      } catch {
-        // Continue without threading headers
+      } catch (e) {
+        console.error(
+          `[Email Triage Gmail Action] Failed to fetch threading headers for ${message_id}:`,
+          e instanceof Error ? e.message : e
+        );
       }
     }
 

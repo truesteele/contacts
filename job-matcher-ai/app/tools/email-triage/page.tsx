@@ -58,6 +58,7 @@ interface EmailState {
   draftBody: string;
   draftSubject: string;
   fullMessage: FullMessage | null;
+  fetchError?: string;
 }
 
 const ACCOUNT_STYLES: Record<string, { label: string; bg: string; text: string }> = {
@@ -111,6 +112,8 @@ export default function EmailTriagePage() {
   const [accountsScanned, setAccountsScanned] = useState(0);
   const [confirmSend, setConfirmSend] = useState(false);
   const [activeTab, setActiveTab] = useState<FilterTab>('action');
+  const [classifyError, setClassifyError] = useState<string | null>(null);
+  const [scanWarnings, setScanWarnings] = useState<string[]>([]);
   const classifyTriggered = useRef(false);
 
   const selectedMessage = messages.find((m) => m.id === selectedId);
@@ -134,6 +137,7 @@ export default function EmailTriagePage() {
       if (unclassified.length === 0) return;
 
       setClassifying(true);
+      setClassifyError(null);
       try {
         const res = await fetch('/api/network-intel/email-triage/classify', {
           method: 'POST',
@@ -168,8 +172,10 @@ export default function EmailTriagePage() {
             return m;
           })
         );
-      } catch (e: any) {
-        console.error('Classification error:', e.message);
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : 'Classification failed';
+        console.error('Classification error:', msg);
+        setClassifyError(msg);
       } finally {
         setClassifying(false);
       }
@@ -208,6 +214,18 @@ export default function EmailTriagePage() {
       setMessages(data.messages);
       setAccountsScanned(data.accounts_scanned);
 
+      // Surface scan warnings
+      const warnings: string[] = [];
+      if (data.accounts_failed?.length > 0) {
+        for (const f of data.accounts_failed) {
+          warnings.push(`${f.account}: ${f.error}`);
+        }
+      }
+      if (data.fetch_failures > 0) {
+        warnings.push(`${data.fetch_failures} individual message(s) failed to load`);
+      }
+      setScanWarnings(warnings);
+
       // Initialize states for new messages
       const states: Record<string, EmailState> = {};
       for (const msg of data.messages) {
@@ -221,8 +239,8 @@ export default function EmailTriagePage() {
       setEmailStates(states);
       setSelectedId(null);
       setActiveTab('action');
-    } catch (e: any) {
-      setScanError(e.message);
+    } catch (e: unknown) {
+      setScanError(e instanceof Error ? e.message : 'Scan failed');
     } finally {
       setScanning(false);
     }
@@ -236,7 +254,7 @@ export default function EmailTriagePage() {
       setConfirmSend(false);
 
       const state = emailStates[msg.id];
-      if (state && !state.fullMessage) {
+      if (state && !state.fullMessage && !state.fetchError) {
         try {
           const res = await fetch('/api/network-intel/email-triage/message', {
             method: 'POST',
@@ -246,9 +264,15 @@ export default function EmailTriagePage() {
           const data = await res.json();
           if (res.ok) {
             updateEmailState(msg.id, { fullMessage: data });
+          } else {
+            updateEmailState(msg.id, {
+              fetchError: data.error || 'Failed to load message',
+            });
           }
-        } catch {
-          // Silently fail — snippet still visible
+        } catch (e: unknown) {
+          updateEmailState(msg.id, {
+            fetchError: `Network error: ${e instanceof Error ? e.message : 'unknown'}`,
+          });
         }
       }
     },
@@ -284,9 +308,9 @@ export default function EmailTriagePage() {
         status: 'draft_ready',
         draftBody: data.draft_body,
       });
-    } catch (e: any) {
+    } catch (e: unknown) {
       updateEmailState(selectedId, { status: 'pending' });
-      alert(`Draft failed: ${e.message}`);
+      alert(`Draft failed: ${e instanceof Error ? e.message : 'unknown error'}`);
     }
   }, [selectedId, selectedMessage, emailStates, updateEmailState]);
 
@@ -324,9 +348,9 @@ export default function EmailTriagePage() {
           status: action === 'send' ? 'sent' : 'saved',
         });
         setConfirmSend(false);
-      } catch (e: any) {
+      } catch (e: unknown) {
         updateEmailState(selectedId, { status: 'draft_ready' });
-        alert(`${action === 'send' ? 'Send' : 'Save'} failed: ${e.message}`);
+        alert(`${action === 'send' ? 'Send' : 'Save'} failed: ${e instanceof Error ? e.message : 'unknown error'}`);
       }
     },
     [selectedId, selectedMessage, emailStates, updateEmailState]
@@ -337,12 +361,18 @@ export default function EmailTriagePage() {
   const handleMarkDone = useCallback(() => {
     if (!selectedId) return;
     updateEmailState(selectedId, { status: 'done' });
-    const remaining = filteredMessages.filter(
-      (m) => m.id !== selectedId && emailStates[m.id]?.status !== 'done'
+    // Recompute filtered list inside callback to avoid stale closure
+    const notDoneNow = messages.filter(
+      (m) => emailStates[m.id]?.status !== 'done' && m.id !== selectedId
     );
-    setSelectedId(remaining.length > 0 ? remaining[0].id : null);
+    const filtered = notDoneNow.filter((m) => {
+      if (activeTab === 'all') return true;
+      if (activeTab === 'action') return m.category === 'action' || m.category === 'unclassified';
+      return m.category === activeTab;
+    });
+    setSelectedId(filtered.length > 0 ? filtered[0].id : null);
     setConfirmSend(false);
-  }, [selectedId, messages, emailStates, updateEmailState]);
+  }, [selectedId, messages, emailStates, activeTab, updateEmailState]);
 
   // ── Reclassify a single email ───────────────────────────────────────
 
@@ -402,6 +432,19 @@ export default function EmailTriagePage() {
                 Classifying...
               </span>
             )}
+            {classifyError && (
+              <button
+                onClick={() => {
+                  setClassifyError(null);
+                  classifyTriggered.current = false;
+                  runClassification(messages);
+                }}
+                className="flex items-center gap-1.5 text-sm text-red-600 hover:underline"
+              >
+                <AlertCircle className="h-3.5 w-3.5" />
+                Classification failed — click to retry
+              </button>
+            )}
             <Button onClick={handleScan} disabled={scanning} variant="outline">
               {scanning ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -416,6 +459,16 @@ export default function EmailTriagePage() {
           <div className="mt-2 flex items-center gap-2 text-sm text-red-600">
             <AlertCircle className="h-4 w-4" />
             {scanError}
+          </div>
+        )}
+        {scanWarnings.length > 0 && (
+          <div className="mt-2 text-sm text-amber-600">
+            {scanWarnings.map((w, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <AlertCircle className="h-3.5 w-3.5 flex-none" />
+                {w}
+              </div>
+            ))}
           </div>
         )}
 
@@ -635,6 +688,16 @@ export default function EmailTriagePage() {
                   <pre className="text-sm whitespace-pre-wrap font-sans leading-relaxed">
                     {selectedState.fullMessage.body}
                   </pre>
+                ) : selectedState?.fetchError ? (
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground italic">
+                      {selectedMessage.snippet}
+                    </p>
+                    <p className="text-xs text-red-500 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {selectedState.fetchError}
+                    </p>
+                  </div>
                 ) : (
                   <div className="space-y-2">
                     <p className="text-sm text-muted-foreground italic">

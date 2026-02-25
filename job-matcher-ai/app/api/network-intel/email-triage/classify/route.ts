@@ -85,6 +85,73 @@ Return JSON with this exact structure:
   ]
 }`;
 
+const VALID_CATEGORIES = new Set(['action', 'fyi', 'skip']);
+const BATCH_SIZE = 40;
+
+async function classifyBatch(
+  openai: OpenAI,
+  batch: EmailInput[]
+): Promise<Classification[]> {
+  const emailList = batch
+    .map(
+      (e, i) =>
+        `[${i + 1}] id=${e.id} | from=${e.fromName} <${e.from}> | account=${e.account}\n    subject: ${e.subject}\n    snippet: ${e.snippet.slice(0, 200)}`
+    )
+    .join('\n\n');
+
+  const response = await openai.chat.completions.create({
+    model: 'gpt-5-mini',
+    max_completion_tokens: 4000,
+    response_format: { type: 'json_object' },
+    messages: [
+      { role: 'system', content: SYSTEM_PROMPT },
+      {
+        role: 'user',
+        content: `Classify these ${batch.length} emails:\n\n${emailList}`,
+      },
+    ],
+  });
+
+  const content = response.choices[0].message.content;
+  if (!content) return [];
+
+  let parsed: { classifications?: unknown };
+  try {
+    parsed = JSON.parse(content);
+  } catch (e) {
+    console.error(
+      '[Email Triage Classify] Invalid JSON from GPT:',
+      content.slice(0, 500)
+    );
+    return [];
+  }
+
+  if (!Array.isArray(parsed.classifications)) {
+    console.error(
+      '[Email Triage Classify] Missing classifications array, got keys:',
+      Object.keys(parsed)
+    );
+    return [];
+  }
+
+  // Validate each classification
+  const valid = parsed.classifications.filter(
+    (c: any): c is Classification =>
+      c &&
+      typeof c.id === 'string' &&
+      VALID_CATEGORIES.has(c.category) &&
+      typeof c.reason === 'string'
+  );
+
+  if (valid.length < parsed.classifications.length) {
+    console.warn(
+      `[Email Triage Classify] ${parsed.classifications.length - valid.length} malformed entries dropped`
+    );
+  }
+
+  return valid;
+}
+
 export async function POST(req: Request) {
   try {
     const { emails } = (await req.json()) as { emails: EmailInput[] };
@@ -96,45 +163,25 @@ export async function POST(req: Request) {
       );
     }
 
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_APIKEY! });
-
-    // Build the email list for the prompt
-    const emailList = emails
-      .map(
-        (e, i) =>
-          `[${i + 1}] id=${e.id} | from=${e.fromName} <${e.from}> | account=${e.account}\n    subject: ${e.subject}\n    snippet: ${e.snippet.slice(0, 200)}`
-      )
-      .join('\n\n');
-
-    const response = await openai.chat.completions.create({
-      model: 'gpt-5-mini',
-      max_completion_tokens: 4000,
-      response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        {
-          role: 'user',
-          content: `Classify these ${emails.length} emails:\n\n${emailList}`,
-        },
-      ],
-    });
-
-    const content = response.choices[0].message.content;
-    if (!content) {
+    const apiKey = process.env.OPENAI_APIKEY;
+    if (!apiKey) {
       return NextResponse.json(
-        { error: 'Empty response from classifier' },
+        { error: 'OPENAI_APIKEY environment variable is not configured' },
         { status: 500 }
       );
     }
+    const openai = new OpenAI({ apiKey });
 
-    const result = JSON.parse(content) as {
-      classifications: Classification[];
-    };
+    // Chunk into batches to avoid exceeding context/token limits
+    const allClassifications: Classification[] = [];
+    for (let i = 0; i < emails.length; i += BATCH_SIZE) {
+      const batch = emails.slice(i, i + BATCH_SIZE);
+      const results = await classifyBatch(openai, batch);
+      allClassifications.push(...results);
+    }
 
     return NextResponse.json({
-      classifications: result.classifications || [],
-      model: response.model,
-      usage: response.usage,
+      classifications: allClassifications,
     });
   } catch (error: unknown) {
     const message =

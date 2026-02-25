@@ -3,6 +3,7 @@ import { getGmailClients } from '@/lib/gmail-client';
 
 // Node.js runtime — needs fs for OAuth creds
 export const runtime = 'nodejs';
+export const maxDuration = 60;
 
 export type EmailCategory = 'action' | 'fyi' | 'skip' | 'unclassified';
 
@@ -137,6 +138,8 @@ export async function POST(req: Request) {
     }
 
     const allMessages: EmailMessage[] = [];
+    const accountErrors: Array<{ account: string; error: string }> = [];
+    let fetchFailures = 0;
 
     // Search all accounts in parallel
     await Promise.all(
@@ -155,10 +158,11 @@ export async function POST(req: Request) {
           // Fetch metadata for each message
           const msgs = await Promise.all(
             messageRefs.map(async (ref) => {
+              if (!ref.id) return null;
               try {
                 const msg = await client.users.messages.get({
                   userId: 'me',
-                  id: ref.id!,
+                  id: ref.id,
                   format: 'metadata',
                   metadataHeaders: ['From', 'To', 'Subject', 'Date'],
                 });
@@ -171,8 +175,8 @@ export async function POST(req: Request) {
                 const { name: fromName, email: fromEmail } = parseFromHeader(fromRaw);
 
                 return {
-                  id: msg.data.id!,
-                  threadId: msg.data.threadId!,
+                  id: msg.data.id || ref.id,
+                  threadId: msg.data.threadId || '',
                   account,
                   from: fromEmail || fromRaw,
                   fromName: fromName || fromEmail || fromRaw,
@@ -185,7 +189,12 @@ export async function POST(req: Request) {
                   category: 'unclassified' as EmailCategory,
                   categoryReason: '',
                 } as EmailMessage;
-              } catch {
+              } catch (e) {
+                fetchFailures++;
+                console.error(
+                  `[Email Triage Scan] Failed to fetch message ${ref.id} for ${account}:`,
+                  e instanceof Error ? e.message : e
+                );
                 return null;
               }
             })
@@ -195,7 +204,9 @@ export async function POST(req: Request) {
             if (m) allMessages.push(m);
           }
         } catch (e) {
-          console.error(`Error scanning ${account}:`, e);
+          const msg = e instanceof Error ? e.message : String(e);
+          console.error(`[Email Triage Scan] Error scanning ${account}:`, msg);
+          accountErrors.push({ account, error: msg });
         }
       })
     );
@@ -213,6 +224,8 @@ export async function POST(req: Request) {
       total: classified.length,
       rule_filtered: ruleFiltered,
       accounts_scanned: services.length,
+      accounts_failed: accountErrors,
+      fetch_failures: fetchFailures,
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to scan emails';

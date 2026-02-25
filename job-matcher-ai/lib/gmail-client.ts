@@ -48,7 +48,15 @@ function loadCredentials(): Record<string, AccountCredentials> {
   // Production: parse from env var
   const envCreds = process.env.GOOGLE_OAUTH_CREDENTIALS;
   if (envCreds) {
-    return JSON.parse(envCreds);
+    try {
+      return JSON.parse(envCreds);
+    } catch (e) {
+      console.error(
+        '[Gmail Client] GOOGLE_OAUTH_CREDENTIALS env var contains invalid JSON:',
+        e instanceof Error ? e.message : e
+      );
+      return {};
+    }
   }
 
   // Local dev: read from credential files on disk
