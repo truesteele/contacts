@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -12,11 +12,17 @@ import {
   Save,
   Check,
   X,
-  ChevronLeft,
   Loader2,
   Clock,
   AlertCircle,
+  Filter,
+  Eye,
+  EyeOff,
+  Zap,
 } from 'lucide-react';
+
+type EmailCategory = 'action' | 'fyi' | 'skip' | 'unclassified';
+type FilterTab = 'action' | 'fyi' | 'skip' | 'all';
 
 interface EmailMessage {
   id: string;
@@ -30,6 +36,8 @@ interface EmailMessage {
   date: string;
   timestamp: number;
   labels: string[];
+  category: EmailCategory;
+  categoryReason: string;
 }
 
 interface FullMessage {
@@ -58,6 +66,13 @@ const ACCOUNT_STYLES: Record<string, { label: string; bg: string; text: string }
   'justin@outdoorithm.com': { label: 'Outdoorithm', bg: 'bg-green-100', text: 'text-green-700' },
   'justin@outdoorithmcollective.org': { label: 'OC', bg: 'bg-orange-100', text: 'text-orange-700' },
   'justin@kindora.co': { label: 'Kindora', bg: 'bg-purple-100', text: 'text-purple-700' },
+};
+
+const CATEGORY_STYLES: Record<EmailCategory, { label: string; bg: string; text: string; icon: string }> = {
+  action: { label: 'Action', bg: 'bg-red-50', text: 'text-red-700', icon: '!' },
+  fyi: { label: 'FYI', bg: 'bg-sky-50', text: 'text-sky-700', icon: 'i' },
+  skip: { label: 'Skip', bg: 'bg-gray-100', text: 'text-gray-500', icon: '~' },
+  unclassified: { label: '...', bg: 'bg-yellow-50', text: 'text-yellow-700', icon: '?' },
 };
 
 function formatDate(dateStr: string): string {
@@ -91,9 +106,12 @@ export default function EmailTriagePage() {
   const [emailStates, setEmailStates] = useState<Record<string, EmailState>>({});
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
+  const [classifying, setClassifying] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
   const [accountsScanned, setAccountsScanned] = useState(0);
   const [confirmSend, setConfirmSend] = useState(false);
+  const [activeTab, setActiveTab] = useState<FilterTab>('action');
+  const classifyTriggered = useRef(false);
 
   const selectedMessage = messages.find((m) => m.id === selectedId);
   const selectedState = selectedId ? emailStates[selectedId] : undefined;
@@ -108,9 +126,76 @@ export default function EmailTriagePage() {
     []
   );
 
+  // ── AI Classification ──────────────────────────────────────────────
+
+  const runClassification = useCallback(
+    async (msgs: EmailMessage[]) => {
+      const unclassified = msgs.filter((m) => m.category === 'unclassified');
+      if (unclassified.length === 0) return;
+
+      setClassifying(true);
+      try {
+        const res = await fetch('/api/network-intel/email-triage/classify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            emails: unclassified.map((m) => ({
+              id: m.id,
+              from: m.from,
+              fromName: m.fromName,
+              subject: m.subject,
+              snippet: m.snippet,
+              account: m.account,
+            })),
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Classification failed');
+
+        const classifications = data.classifications as Array<{
+          id: string;
+          category: EmailCategory;
+          reason: string;
+        }>;
+
+        // Update messages with AI classifications
+        setMessages((prev) =>
+          prev.map((m) => {
+            const cls = classifications.find((c) => c.id === m.id);
+            if (cls && m.category === 'unclassified') {
+              return { ...m, category: cls.category, categoryReason: cls.reason };
+            }
+            return m;
+          })
+        );
+      } catch (e: any) {
+        console.error('Classification error:', e.message);
+      } finally {
+        setClassifying(false);
+      }
+    },
+    []
+  );
+
+  // Auto-trigger classification after scan
+  useEffect(() => {
+    if (
+      messages.length > 0 &&
+      !classifying &&
+      !classifyTriggered.current &&
+      messages.some((m) => m.category === 'unclassified')
+    ) {
+      classifyTriggered.current = true;
+      runClassification(messages);
+    }
+  }, [messages, classifying, runClassification]);
+
+  // ── Scan ────────────────────────────────────────────────────────────
+
   const handleScan = useCallback(async () => {
     setScanning(true);
     setScanError(null);
+    classifyTriggered.current = false;
     try {
       const res = await fetch('/api/network-intel/email-triage/scan', {
         method: 'POST',
@@ -135,6 +220,7 @@ export default function EmailTriagePage() {
       }
       setEmailStates(states);
       setSelectedId(null);
+      setActiveTab('action');
     } catch (e: any) {
       setScanError(e.message);
     } finally {
@@ -142,12 +228,13 @@ export default function EmailTriagePage() {
     }
   }, []);
 
+  // ── Message Selection ───────────────────────────────────────────────
+
   const handleSelect = useCallback(
     async (msg: EmailMessage) => {
       setSelectedId(msg.id);
       setConfirmSend(false);
 
-      // Fetch full message if not loaded
       const state = emailStates[msg.id];
       if (state && !state.fullMessage) {
         try {
@@ -167,6 +254,8 @@ export default function EmailTriagePage() {
     },
     [emailStates, updateEmailState]
   );
+
+  // ── Draft Response ──────────────────────────────────────────────────
 
   const handleDraftResponse = useCallback(async () => {
     if (!selectedId || !selectedMessage) return;
@@ -201,6 +290,8 @@ export default function EmailTriagePage() {
     }
   }, [selectedId, selectedMessage, emailStates, updateEmailState]);
 
+  // ── Gmail Actions ───────────────────────────────────────────────────
+
   const handleGmailAction = useCallback(
     async (action: 'draft' | 'send') => {
       if (!selectedId || !selectedMessage) return;
@@ -210,9 +301,7 @@ export default function EmailTriagePage() {
 
       const replyTo = parseFromEmail(selectedMessage.from);
 
-      updateEmailState(selectedId, {
-        status: action === 'send' ? 'sending' : 'sending',
-      });
+      updateEmailState(selectedId, { status: 'sending' });
 
       try {
         const res = await fetch('/api/network-intel/email-triage/gmail-action', {
@@ -243,23 +332,52 @@ export default function EmailTriagePage() {
     [selectedId, selectedMessage, emailStates, updateEmailState]
   );
 
+  // ── Mark Done ───────────────────────────────────────────────────────
+
   const handleMarkDone = useCallback(() => {
     if (!selectedId) return;
     updateEmailState(selectedId, { status: 'done' });
-    // Move to next unfinished email
-    const remaining = messages.filter(
+    const remaining = filteredMessages.filter(
       (m) => m.id !== selectedId && emailStates[m.id]?.status !== 'done'
     );
     setSelectedId(remaining.length > 0 ? remaining[0].id : null);
     setConfirmSend(false);
   }, [selectedId, messages, emailStates, updateEmailState]);
 
-  const visibleMessages = messages.filter(
-    (m) => emailStates[m.id]?.status !== 'done'
+  // ── Reclassify a single email ───────────────────────────────────────
+
+  const handleReclassify = useCallback(
+    (id: string, newCategory: EmailCategory) => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === id
+            ? { ...m, category: newCategory, categoryReason: 'Manually reclassified' }
+            : m
+        )
+      );
+    },
+    []
   );
-  const doneCount = messages.filter(
-    (m) => emailStates[m.id]?.status === 'done'
-  ).length;
+
+  // ── Computed values ─────────────────────────────────────────────────
+
+  const notDone = messages.filter((m) => emailStates[m.id]?.status !== 'done');
+  const counts = {
+    action: notDone.filter((m) => m.category === 'action').length,
+    fyi: notDone.filter((m) => m.category === 'fyi').length,
+    skip: notDone.filter((m) => m.category === 'skip').length,
+    unclassified: notDone.filter((m) => m.category === 'unclassified').length,
+    all: notDone.length,
+  };
+  const doneCount = messages.filter((m) => emailStates[m.id]?.status === 'done').length;
+
+  const filteredMessages = notDone.filter((m) => {
+    if (activeTab === 'all') return true;
+    if (activeTab === 'action') return m.category === 'action' || m.category === 'unclassified';
+    return m.category === activeTab;
+  });
+
+  // ── Render ──────────────────────────────────────────────────────────
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
@@ -271,25 +389,66 @@ export default function EmailTriagePage() {
             <h1 className="text-xl font-semibold">Email Triage</h1>
             {messages.length > 0 && (
               <span className="text-sm text-muted-foreground">
-                {visibleMessages.length} emails
+                {messages.length} emails
                 {doneCount > 0 && ` (${doneCount} done)`}
                 {accountsScanned > 0 && ` across ${accountsScanned} accounts`}
               </span>
             )}
           </div>
-          <Button onClick={handleScan} disabled={scanning} variant="outline">
-            {scanning ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4 mr-2" />
+          <div className="flex items-center gap-2">
+            {classifying && (
+              <span className="flex items-center gap-1.5 text-sm text-amber-600">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Classifying...
+              </span>
             )}
-            {scanning ? 'Scanning...' : messages.length > 0 ? 'Rescan' : 'Scan Inbox'}
-          </Button>
+            <Button onClick={handleScan} disabled={scanning} variant="outline">
+              {scanning ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              {scanning ? 'Scanning...' : messages.length > 0 ? 'Rescan' : 'Scan Inbox'}
+            </Button>
+          </div>
         </div>
         {scanError && (
           <div className="mt-2 flex items-center gap-2 text-sm text-red-600">
             <AlertCircle className="h-4 w-4" />
             {scanError}
+          </div>
+        )}
+
+        {/* Filter tabs */}
+        {messages.length > 0 && (
+          <div className="flex items-center gap-1 mt-3">
+            <Filter className="h-3.5 w-3.5 text-muted-foreground mr-1" />
+            {(
+              [
+                { key: 'action' as FilterTab, label: 'Action', count: counts.action + counts.unclassified },
+                { key: 'fyi' as FilterTab, label: 'FYI', count: counts.fyi },
+                { key: 'skip' as FilterTab, label: 'Skipped', count: counts.skip },
+                { key: 'all' as FilterTab, label: 'All', count: counts.all },
+              ] as const
+            ).map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => {
+                  setActiveTab(tab.key);
+                  setSelectedId(null);
+                }}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                  activeTab === tab.key
+                    ? 'bg-gray-900 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {tab.label}
+                {tab.count > 0 && (
+                  <span className="ml-1.5 opacity-75">{tab.count}</span>
+                )}
+              </button>
+            ))}
           </div>
         )}
       </div>
@@ -301,7 +460,10 @@ export default function EmailTriagePage() {
           {messages.length === 0 && !scanning && (
             <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8 text-center">
               <Inbox className="h-12 w-12 mb-4 opacity-30" />
-              <p className="text-sm">Click &ldquo;Scan Inbox&rdquo; to search all 5 Gmail accounts for unread emails from the last 21 days.</p>
+              <p className="text-sm">
+                Click &ldquo;Scan Inbox&rdquo; to search all 5 Gmail accounts for unread
+                emails from the last 21 days.
+              </p>
             </div>
           )}
           {scanning && messages.length === 0 && (
@@ -310,14 +472,22 @@ export default function EmailTriagePage() {
               <p className="text-sm">Scanning all accounts...</p>
             </div>
           )}
-          {visibleMessages.map((msg) => {
+          {filteredMessages.length === 0 && messages.length > 0 && !scanning && (
+            <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8 text-center">
+              <Check className="h-12 w-12 mb-4 opacity-30" />
+              <p className="text-sm">No emails in this category.</p>
+            </div>
+          )}
+          {filteredMessages.map((msg) => {
             const state = emailStates[msg.id];
             const acct = ACCOUNT_STYLES[msg.account] || {
               label: msg.account.split('@')[1],
               bg: 'bg-gray-100',
               text: 'text-gray-700',
             };
+            const cat = CATEGORY_STYLES[msg.category];
             const isSelected = msg.id === selectedId;
+            const isSkip = msg.category === 'skip';
 
             return (
               <div
@@ -325,13 +495,13 @@ export default function EmailTriagePage() {
                 onClick={() => handleSelect(msg)}
                 className={`cursor-pointer border-b px-4 py-3 transition-colors hover:bg-gray-50 ${
                   isSelected ? 'bg-blue-50 border-l-2 border-l-blue-500' : ''
-                }`}
+                } ${isSkip ? 'opacity-50' : ''}`}
               >
                 <div className="flex items-center justify-between mb-1">
-                  <span className="font-medium text-sm truncate max-w-[200px]">
+                  <span className={`font-medium text-sm truncate max-w-[180px] ${isSkip ? 'line-through' : ''}`}>
                     {msg.fromName}
                   </span>
-                  <div className="flex items-center gap-2 flex-none">
+                  <div className="flex items-center gap-1.5 flex-none">
                     {state?.status === 'sent' && (
                       <Check className="h-3.5 w-3.5 text-green-600" />
                     )}
@@ -341,6 +511,12 @@ export default function EmailTriagePage() {
                     {state?.status === 'draft_ready' && (
                       <Sparkles className="h-3.5 w-3.5 text-amber-500" />
                     )}
+                    <Badge
+                      variant="secondary"
+                      className={`text-[9px] px-1 py-0 ${cat.bg} ${cat.text} border-0 font-bold`}
+                    >
+                      {cat.label}
+                    </Badge>
                     <span className="text-xs text-muted-foreground">
                       {formatDate(msg.date)}
                     </span>
@@ -353,11 +529,15 @@ export default function EmailTriagePage() {
                   >
                     {acct.label}
                   </Badge>
-                  <span className="text-sm font-medium truncate">{msg.subject}</span>
+                  <span className={`text-sm font-medium truncate ${isSkip ? 'text-gray-400' : ''}`}>
+                    {msg.subject}
+                  </span>
                 </div>
-                <p className="text-xs text-muted-foreground line-clamp-1">
-                  {msg.snippet}
-                </p>
+                {msg.categoryReason && (
+                  <p className="text-[10px] text-muted-foreground italic truncate">
+                    {msg.categoryReason}
+                  </p>
+                )}
               </div>
             );
           })}
@@ -374,18 +554,53 @@ export default function EmailTriagePage() {
               {/* Email header */}
               <div className="mb-6">
                 <div className="flex items-start justify-between mb-2">
-                  <h2 className="text-lg font-semibold leading-tight">
-                    {selectedMessage.subject}
-                  </h2>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleMarkDone}
-                    className="flex-none text-muted-foreground"
-                  >
-                    <X className="h-4 w-4 mr-1" />
-                    Done
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-semibold leading-tight">
+                      {selectedMessage.subject}
+                    </h2>
+                    <Badge
+                      variant="secondary"
+                      className={`text-[10px] px-1.5 py-0 ${CATEGORY_STYLES[selectedMessage.category].bg} ${CATEGORY_STYLES[selectedMessage.category].text} border-0 flex-none`}
+                    >
+                      {CATEGORY_STYLES[selectedMessage.category].label}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-1 flex-none">
+                    {/* Reclassify buttons */}
+                    {selectedMessage.category !== 'action' && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleReclassify(selectedMessage.id, 'action')}
+                        className="text-red-600 text-xs h-7 px-2"
+                        title="Mark as Action"
+                      >
+                        <Zap className="h-3 w-3 mr-1" />
+                        Action
+                      </Button>
+                    )}
+                    {selectedMessage.category !== 'skip' && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleReclassify(selectedMessage.id, 'skip')}
+                        className="text-gray-400 text-xs h-7 px-2"
+                        title="Mark as Skip"
+                      >
+                        <EyeOff className="h-3 w-3 mr-1" />
+                        Skip
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleMarkDone}
+                      className="flex-none text-muted-foreground"
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Done
+                    </Button>
+                  </div>
                 </div>
                 <div className="text-sm text-muted-foreground space-y-0.5">
                   <p>
@@ -395,7 +610,8 @@ export default function EmailTriagePage() {
                     &lt;{parseFromEmail(selectedMessage.from)}&gt;
                   </p>
                   <p>
-                    To: {selectedMessage.to.length > 60
+                    To:{' '}
+                    {selectedMessage.to.length > 60
                       ? selectedMessage.to.slice(0, 60) + '...'
                       : selectedMessage.to}
                   </p>
@@ -403,6 +619,11 @@ export default function EmailTriagePage() {
                     <Clock className="h-3 w-3" />
                     {selectedMessage.date}
                   </p>
+                  {selectedMessage.categoryReason && (
+                    <p className="text-xs italic">
+                      Classification: {selectedMessage.categoryReason}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -546,7 +767,6 @@ export default function EmailTriagePage() {
                     </div>
                   )}
 
-                  {/* Status indicator */}
                   {selectedState?.status === 'sent' && (
                     <span className="text-sm text-green-600 flex items-center gap-1">
                       <Check className="h-4 w-4" /> Sent
