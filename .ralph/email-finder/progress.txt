@@ -1,0 +1,42 @@
+# Ralph Progress Log
+Loop: email-finder
+Started: 2026-02-24
+---
+
+## Codebase Patterns
+- DB connection: psycopg2 with `get_db_conn()`, DictCursor for row access
+- CLI: argparse with --dry-run, --limit, test flags
+- OpenAI: `responses.parse()` with pydantic models, `gpt-5-mini`, 150 workers
+- Env vars: SUPABASE_DB_PASSWORD, OPENAI_APIKEY, ZEROBOUNCE_API_KEY
+- Progress: print every N contacts with elapsed/ETA
+- Reference script: `discover_emails_v2.py` has EmailVerification pydantic model
+
+---
+
+## Iteration Log
+
+### Iteration 1: US-001 — Domain Discovery Module
+**Date:** 2026-02-24
+**Status:** COMPLETE
+
+**What was built:**
+- Created `scripts/intelligence/find_emails.py` with full CLI structure
+- `company_to_domains()` function with 3-tier lookup:
+  1. Hardcoded map (80+ known companies incl. big tech, consulting, finance, universities)
+  2. Prefix matching for subsidiaries (e.g., "Duke University - The Fuqua School of Business" → duke.edu)
+  3. Generic fallback: strip suffixes, generate slug.com/.org/.io/.co variants
+- DNS MX record check with caching (`check_mx()`) — 3s timeout, results cached in `_mx_cache`
+- `--test-domains` CLI flag tests 10 sample contacts from DB
+
+**Test results:**
+- 10/10 contacts got domains (100% hit rate)
+- Known companies resolved instantly (Google, Year Up, Datadog, Xero, TikTok)
+- Generic fallback worked: "Next Step Living, Inc" → nextstepliving.com, nextstepliving.org
+- Edge cases passed: empty strings, None, long names with descriptions, suffixes
+- MX check took 0.4s for 14 unique domains (fast with caching)
+
+**Key decisions:**
+- 80+ entries in KNOWN_COMPANY_DOMAINS (much more than the 20+ minimum)
+- MX cache avoids re-querying same domains across contacts
+- Installed `dnspython` into .venv
+- Placeholder stubs for --test-perms, --test-verify, --test-validate (future stories)
