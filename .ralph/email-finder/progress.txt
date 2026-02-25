@@ -76,3 +76,44 @@ Started: 2026-02-24
 - Spaces in multi-word names are collapsed (not hyphenated) — "de la Cruz" → "delacruz" — because most email systems don't allow spaces
 - Apostrophes stripped entirely — "O'Brien" → "obrien" — consistent with most corporate patterns
 - Hyphenated names produce extra variants (marie.dupont, mariedupont) to catch both conventions
+
+### Iteration 3: US-003 — ZeroBounce Integration
+**Date:** 2026-02-24
+**Status:** COMPLETE
+
+**What was built:**
+- `verify_email(email_addr)` — single email verification via ZeroBounce API with retry logic
+- `verify_emails_batch(emails, max_workers)` — concurrent verification using ThreadPoolExecutor
+- `pick_best_result(results)` — selects best email from batch results (valid > catch-all, scored by activity recency)
+- `check_zerobounce_credits()` — credit balance check before runs
+- `_activity_score(result)` — ranks results by active_in_days for recency
+- `get_credits_used()` — session-level credit tracking (unknown results are free)
+- `test_verify()` — tests 3 individual emails + batch verification + pick_best_result
+- CATCH_ALL_DOMAINS set for known catch-all companies (Google, Amazon, Meta, etc.)
+- TRANSIENT_SUBSTATUSES set for retry-eligible sub-statuses
+
+**Retry logic:**
+- Exponential backoff: 2s, 4s for transient errors (greylisted, mail_server_temporary_error, etc.)
+- 429 rate limit: wait 65s (1-min block + 5s buffer)
+- Request timeout: 30s per call, retried up to 2 times
+- max_retries=2 by default (3 total attempts)
+
+**Test results (3 individual + 3 batch = 6 credits used):**
+- `justinrsteele@gmail.com`: status=valid, free_email=True, smtp_provider=google
+- `definitelynotarealemailaddress99999@gmail.com`: status=invalid, sub_status=mailbox_not_found
+- `test@google.com`: status=abuse (ZeroBounce AI flagged as abuse address, not catch-all)
+- Batch verification: 3 emails concurrently, pick_best_result correctly chose the valid email
+- Credits: started at 1274, used 6 (3 single + 3 batch = 6; unknown results would be free but all were non-unknown)
+- Total time: 2.3s for 3 sequential + batch of 3
+
+**Key decisions:**
+- `requests` library used (already in venv, simpler than aiohttp for ThreadPoolExecutor pattern)
+- max_workers=50 default for ZeroBounce (conservative, well under 80K/10sec limit)
+- Credit tracking via module-level `_credits_used` counter, incremented only for non-unknown results
+- pick_best_result prefers valid > catch-all, uses active_in_days for tiebreaking
+
+**Key findings:**
+- ZeroBounce active_in_days returns None for many results (gmail valid, gmail invalid, google.com abuse all returned None)
+- google.com returns "abuse" for test@ (not catch-all) — their AI detection is sophisticated
+- do_not_mail/global_suppression for obviously fake example.com addresses
+- API response time: ~0.7s per single call, batch of 3 took similar time with concurrency

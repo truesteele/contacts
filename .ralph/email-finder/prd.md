@@ -108,21 +108,21 @@ Build the permutation generator that creates candidate email addresses from name
 
 ### US-003: ZeroBounce Integration
 **Priority:** 3
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Integrate ZeroBounce API for email verification. This is the core validation step. ZeroBounce returns rich data including status, sub_status, free_email flag, active_in_days, and smtp_provider.
 
 **Acceptance Criteria:**
-- [ ] `verify_email(email_addr)` calls ZeroBounce API and returns full response (status, sub_status, free_email, active_in_days, etc.)
-- [ ] Concurrent verification with `ThreadPoolExecutor(max_workers=50)` (conservative, well under 80K/10sec limit)
-- [ ] Retry logic for transient errors (status=unknown, sub_status=greylisted/mail_server_temporary_error) with exponential backoff
-- [ ] Credit balance check before starting (`GET /v2/getcredits` endpoint)
-- [ ] `--test-verify` CLI flag that verifies 3 known emails (one valid, one invalid, one catch-all) using real API key (100 free monthly credits)
-- [ ] Graceful handling of API errors, rate limits (1-min block if exceeded)
-- [ ] Cost tracking (count credits used, note: unknown results are free)
-- [ ] Script runs without errors: `source .venv/bin/activate && python scripts/intelligence/find_emails.py --test-verify`
-- [ ] Install any new dependencies (dnspython if not present) into .venv
+- [x] `verify_email(email_addr)` calls ZeroBounce API and returns full response (status, sub_status, free_email, active_in_days, etc.)
+- [x] Concurrent verification with `ThreadPoolExecutor(max_workers=50)` (conservative, well under 80K/10sec limit)
+- [x] Retry logic for transient errors (status=unknown, sub_status=greylisted/mail_server_temporary_error) with exponential backoff
+- [x] Credit balance check before starting (`GET /v2/getcredits` endpoint)
+- [x] `--test-verify` CLI flag that verifies 3 known emails (one valid, one invalid, one catch-all) using real API key (100 free monthly credits)
+- [x] Graceful handling of API errors, rate limits (1-min block if exceeded)
+- [x] Cost tracking (count credits used, note: unknown results are free)
+- [x] Script runs without errors: `source .venv/bin/activate && python scripts/intelligence/find_emails.py --test-verify`
+- [x] Install any new dependencies (dnspython if not present) into .venv
 
 ---
 
