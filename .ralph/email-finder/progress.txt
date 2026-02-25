@@ -40,3 +40,39 @@ Started: 2026-02-24
 - MX cache avoids re-querying same domains across contacts
 - Installed `dnspython` into .venv
 - Placeholder stubs for --test-perms, --test-verify, --test-validate (future stories)
+
+### Iteration 2: US-002 — Email Permutation Generator
+**Date:** 2026-02-24
+**Status:** COMPLETE
+
+**What was built:**
+- `generate_permutations(first, last, domain)` — returns 8-12 candidate emails per contact
+- `_clean_name_part()` — strips suffixes (Jr, III, PhD, etc.), apostrophes, quotes, parentheticals, collapses spaces
+- `_split_hyphenated()` — handles hyphenated names with 3 variants (full, joined, first-part)
+- `NAME_SUFFIXES` regex — comprehensive pattern for Jr, III, PhD, MD, MBA, etc.
+- `test_perms()` — tests 5 real DB contacts + 5 synthetic edge cases
+
+**Permutation patterns (in priority order):**
+1. first.last, firstlast, first_last (most common corporate)
+2. flast, first.l, firstl (initial-based)
+3. f.last, last.first, lastf (reverse patterns)
+4. first (founders / small companies)
+5. Hyphenated variants: short-first.last, short-firstlast (if applicable)
+
+**Edge cases handled:**
+- Hyphenated first: "Marie-Ange" → marieange, marie variants (12 perms)
+- Suffixes: "Smith III" → "smith" (III stripped cleanly)
+- Multi-word last: "de la Cruz" → "delacruz" (spaces collapsed)
+- Apostrophes: "O'Brien" → "obrien"
+- Single initial: "A." → "a" (8 perms, fewer patterns possible)
+- Nicknames: "Jen" used as-is (no expansion needed)
+
+**Test results:**
+- 5/5 DB contacts: 10 permutations each (standard names)
+- Edge cases: 8-12 permutations depending on name complexity
+- All emails have valid format (no spaces, no special chars in local part)
+
+**Key decisions:**
+- Spaces in multi-word names are collapsed (not hyphenated) — "de la Cruz" → "delacruz" — because most email systems don't allow spaces
+- Apostrophes stripped entirely — "O'Brien" → "obrien" — consistent with most corporate patterns
+- Hyphenated names produce extra variants (marie.dupont, mariedupont) to catch both conventions

@@ -242,6 +242,115 @@ def company_to_domains(company_name: str) -> list[str]:
     return valid
 
 
+# ── Email Permutation Generator ──────────────────────────────────────
+
+# Name suffixes to strip
+NAME_SUFFIXES = re.compile(
+    r'\b(Jr\.?|Sr\.?|III|II|IV|V|PhD|Ph\.D\.?|MD|M\.D\.?|Esq\.?|CPA|MBA|'
+    r'MPH|MPA|EdD|Ed\.D\.?|DDS|JD|J\.D\.?|RN|PE|CFA|CFP|LCSW)\b\.?,?\s*',
+    re.IGNORECASE
+)
+
+
+def _clean_name_part(name: str) -> str:
+    """Clean and normalize a single name part (first or last).
+    Returns a single lowercase token with no spaces (spaces collapsed out)."""
+    if not name:
+        return ""
+    # Strip suffixes
+    name = NAME_SUFFIXES.sub('', name).strip()
+    # Remove anything in parentheses
+    name = re.sub(r'\(.*?\)', '', name).strip()
+    # Remove quotes and apostrophes
+    name = name.replace('"', '').replace("'", "").strip()
+    # Remove trailing commas/periods
+    name = name.rstrip('.,')
+    # Lowercase
+    name = name.lower().strip()
+    # Collapse spaces (multi-word names like "de la Cruz" -> "delacruz")
+    name = name.replace(' ', '')
+    return name
+
+
+def _split_hyphenated(name: str) -> list[str]:
+    """
+    For a hyphenated name like 'Marie-Ange', return variants:
+    ['marie-ange', 'marieange', 'marie']
+    For non-hyphenated, return [name].
+    """
+    if '-' not in name:
+        return [name]
+    parts = name.split('-')
+    return [
+        name,              # marie-ange
+        ''.join(parts),    # marieange
+        parts[0],          # marie (first part only)
+    ]
+
+
+def generate_permutations(first_name: str, last_name: str, domain: str) -> list[str]:
+    """
+    Generate 8-12 candidate email addresses from name + domain.
+    Handles hyphenated names, suffixes, and edge cases.
+    Returns deduplicated list ordered by corporate likelihood.
+    """
+    first = _clean_name_part(first_name)
+    last = _clean_name_part(last_name)
+
+    if not first or not last or not domain:
+        return []
+
+    # Get variants for hyphenated names
+    first_variants = _split_hyphenated(first)
+    last_variants = _split_hyphenated(last)
+
+    # Use primary variants for all patterns
+    f = first_variants[0]  # full first (may include hyphen)
+    l = last_variants[0]   # full last (may include hyphen)
+
+    # Safe versions with no hyphens for patterns that don't use them
+    f_joined = first_variants[1] if len(first_variants) > 1 else f.replace('-', '')
+    l_joined = last_variants[1] if len(last_variants) > 1 else l.replace('-', '')
+
+    # Short first (for hyphenated: first part; else full)
+    f_short = first_variants[2] if len(first_variants) > 2 else f_joined
+
+    candidates = []
+    seen = set()
+
+    def _add(local: str):
+        # Remove any remaining hyphens in local part that aren't intentional
+        addr = f"{local}@{domain}"
+        if addr not in seen and local:
+            seen.add(addr)
+            candidates.append(addr)
+
+    # Most common corporate patterns (priority order)
+    _add(f"{f_joined}.{l_joined}")      # first.last
+    _add(f"{f_joined}{l_joined}")        # firstlast
+    _add(f"{f_joined}_{l_joined}")       # first_last
+    _add(f"{f_joined[0]}{l_joined}")     # flast
+    _add(f"{f_joined}.{l_joined[0]}")    # first.l
+    _add(f"{f_joined}{l_joined[0]}")     # firstl
+    _add(f"{f_joined[0]}.{l_joined}")    # f.last
+    _add(f"{l_joined}.{f_joined}")       # last.first
+    _add(f"{l_joined}{f_joined[0]}")     # lastf
+    _add(f"{f_joined}")                  # first (founders/small cos)
+
+    # If hyphenated first name, also add short-first variants
+    if f_short != f_joined:
+        _add(f"{f_short}.{l_joined}")    # marie.dupont (short first)
+        _add(f"{f_short}{l_joined}")     # mariedupont
+        _add(f"{f_short[0]}{l_joined}")  # mdupont (if different initial)
+
+    # If hyphenated last name, add joined variant
+    if l_joined != l.replace('-', ''):
+        _add(f"{f_joined}.{l_joined}")
+        _add(f"{f_joined}{l_joined}")
+
+    return candidates
+
+
 # ── Test CLI ──────────────────────────────────────────────────────────
 
 def test_domains():
@@ -288,6 +397,60 @@ def test_domains():
     conn.close()
 
 
+def test_perms():
+    """Test permutation generation on 5 sample contacts from the database."""
+    print("\n" + "=" * 60)
+    print("TEST: Email Permutation Generator")
+    print("=" * 60)
+
+    conn = get_db_conn()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+    cur.execute("""
+        SELECT id, first_name, last_name, company, enrich_current_company
+        FROM contacts
+        WHERE (email IS NULL OR email = '')
+        AND first_name IS NOT NULL AND first_name != ''
+        AND last_name IS NOT NULL AND last_name != ''
+        ORDER BY COALESCE(ai_proximity_score, 0) DESC
+        LIMIT 5
+    """)
+    contacts = cur.fetchall()
+    conn.close()
+
+    print(f"  Testing {len(contacts)} contacts from DB\n")
+
+    for c in contacts:
+        company = c['company'] or c['enrich_current_company'] or ''
+        name = f"{c['first_name']} {c['last_name']}"
+        domains = company_to_domains(company)
+        domain = domains[0] if domains else "example.com"
+
+        perms = generate_permutations(c['first_name'], c['last_name'], domain)
+        print(f"  [{c['id']}] {name} @ {domain}")
+        for p in perms:
+            print(f"    {p}")
+        print(f"    ({len(perms)} permutations)\n")
+
+    # Also test edge cases
+    print("  --- Edge Cases ---\n")
+
+    edge_cases = [
+        ("Marie-Ange", "Dupont", "company.com", "Hyphenated first name"),
+        ("Robert", "Smith III", "bigcorp.com", "Name with suffix"),
+        ("Jean-Pierre", "de la Cruz", "startup.io", "Hyphenated + multi-word last"),
+        ("Jen", "O'Brien", "firm.com", "Apostrophe in last name"),
+        ("A.", "Johnson Jr.", "co.com", "Single initial + suffix"),
+    ]
+
+    for first, last, domain, label in edge_cases:
+        perms = generate_permutations(first, last, domain)
+        print(f"  {label}: {first} {last} @ {domain}")
+        for p in perms:
+            print(f"    {p}")
+        print(f"    ({len(perms)} permutations)\n")
+
+
 # ── Main ──────────────────────────────────────────────────────────────
 
 def main():
@@ -314,9 +477,8 @@ def main():
         test_domains()
         return
 
-    # Placeholder for future test modes
     if args.test_perms:
-        print("--test-perms not yet implemented (US-002)")
+        test_perms()
         return
     if args.test_verify:
         print("--test-verify not yet implemented (US-003)")

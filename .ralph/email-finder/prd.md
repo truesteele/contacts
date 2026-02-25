@@ -91,18 +91,18 @@ Build the domain discovery module that converts company names to email domains. 
 
 ### US-002: Email Permutation Generator
 **Priority:** 2
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Build the permutation generator that creates candidate email addresses from name + domain.
 
 **Acceptance Criteria:**
-- [ ] `generate_permutations(first, last, domain)` returns 8-12 email candidates
-- [ ] Handles hyphenated names (Marie-Ange -> marieange, marie-ange, marie)
-- [ ] Handles names with suffixes (III, Jr, etc.) - strips them
-- [ ] Handles nicknames / short names (Jen vs Jennifer) - uses what's given
-- [ ] Add `--test-perms` CLI flag that generates permutations for 5 sample contacts
-- [ ] Script runs without errors: `source .venv/bin/activate && python scripts/intelligence/find_emails.py --test-perms`
+- [x] `generate_permutations(first, last, domain)` returns 8-12 email candidates
+- [x] Handles hyphenated names (Marie-Ange -> marieange, marie-ange, marie)
+- [x] Handles names with suffixes (III, Jr, etc.) - strips them
+- [x] Handles nicknames / short names (Jen vs Jennifer) - uses what's given
+- [x] Add `--test-perms` CLI flag that generates permutations for 5 sample contacts
+- [x] Script runs without errors: `source .venv/bin/activate && python scripts/intelligence/find_emails.py --test-perms`
 
 ---
 
