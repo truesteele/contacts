@@ -37,6 +37,10 @@ function encodeBase64Url(str: string): string {
     .replace(/=+$/, '');
 }
 
+function sanitizeHeaderValue(value: string): string {
+  return value.replace(/[\r\n]+/g, ' ').trim();
+}
+
 // Map account to the from address Justin uses
 const FROM_ADDRESSES: Record<string, string> = {
   'justinrsteele@gmail.com': 'Justin Steele <justinrsteele@gmail.com>',
@@ -89,6 +93,15 @@ export async function POST(req: Request) {
       );
     }
 
+    const sanitizedTo = sanitizeHeaderValue(to);
+    const sanitizedSubject = sanitizeHeaderValue(subject);
+    if (!sanitizedTo || !sanitizedSubject) {
+      return NextResponse.json(
+        { error: 'to and subject must not contain only whitespace' },
+        { status: 400 }
+      );
+    }
+
     // If replying, fetch the original message's Message-ID for threading
     let inReplyTo: string | undefined;
     let references: string | undefined;
@@ -120,11 +133,11 @@ export async function POST(req: Request) {
       }
     }
 
-    const fromAddress = FROM_ADDRESSES[account] || account;
+    const fromAddress = sanitizeHeaderValue(FROM_ADDRESSES[account] || account);
     const raw = buildRfc2822Message({
       from: fromAddress,
-      to,
-      subject,
+      to: sanitizedTo,
+      subject: sanitizedSubject,
       body: replyBody,
       inReplyTo,
       references,
