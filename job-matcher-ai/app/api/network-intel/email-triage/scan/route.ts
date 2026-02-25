@@ -4,7 +4,9 @@ import { getGmailClients } from '@/lib/gmail-client';
 // Node.js runtime — needs fs for OAuth creds
 export const runtime = 'nodejs';
 
-interface EmailMessage {
+export type EmailCategory = 'action' | 'fyi' | 'skip' | 'unclassified';
+
+export interface EmailMessage {
   id: string;
   threadId: string;
   account: string;
@@ -16,6 +18,8 @@ interface EmailMessage {
   date: string;
   timestamp: number;
   labels: string[];
+  category: EmailCategory;
+  categoryReason: string;
 }
 
 function parseFromHeader(from: string): { name: string; email: string } {
@@ -25,6 +29,99 @@ function parseFromHeader(from: string): { name: string; email: string } {
   }
   return { name: '', email: from.trim() };
 }
+
+// ── Rule-based pre-filtering ──────────────────────────────────────────
+
+interface FilterRule {
+  from?: RegExp;
+  subject?: RegExp;
+  category: 'skip' | 'fyi';
+  reason: string;
+}
+
+const FILTER_RULES: FilterRule[] = [
+  // ── SKIP rules ──
+  {
+    from: /^info@kindora\.co$/i,
+    subject: /New User Signup/i,
+    category: 'skip',
+    reason: 'Kindora system notification',
+  },
+  {
+    from: /notifications@vercel\.com/i,
+    category: 'skip',
+    reason: 'Vercel deploy notification',
+  },
+  {
+    subject: /^Accepted:/i,
+    category: 'skip',
+    reason: 'Calendar acceptance',
+  },
+  {
+    from: /billing@.*openai\.com/i,
+    category: 'skip',
+    reason: 'Billing notification',
+  },
+  {
+    from: /noreply@tickets\./i,
+    category: 'skip',
+    reason: 'Ticket confirmation',
+  },
+  {
+    from: /no-?reply@.*amazonses\.com/i,
+    subject: /New User Signup/i,
+    category: 'skip',
+    reason: 'System notification via SES',
+  },
+
+  // ── FYI rules ──
+  {
+    // Google Calendar invitations (contain date/time patterns)
+    subject: /^Invitation:.*\d{4}/i,
+    category: 'fyi',
+    reason: 'Calendar invitation',
+  },
+  {
+    from: /@bishopodowd\.org$/i,
+    category: 'fyi',
+    reason: 'School notification',
+  },
+  {
+    from: /@oaklandmontessori\.com$/i,
+    category: 'fyi',
+    reason: 'School notification',
+  },
+  {
+    from: /^info@outdoorithm\.com$/i,
+    subject: /available again/i,
+    category: 'fyi',
+    reason: 'Campsite availability alert',
+  },
+  {
+    from: /noreply@/i,
+    subject: /Confirmed/i,
+    category: 'fyi',
+    reason: 'Confirmation receipt',
+  },
+];
+
+function applyRuleFilters(msg: EmailMessage): EmailMessage {
+  const fromLower = msg.from.toLowerCase();
+  const subjectLower = msg.subject.toLowerCase();
+
+  for (const rule of FILTER_RULES) {
+    const fromMatch = !rule.from || rule.from.test(fromLower);
+    const subjectMatch = !rule.subject || rule.subject.test(subjectLower);
+
+    if (fromMatch && subjectMatch) {
+      return { ...msg, category: rule.category, categoryReason: rule.reason };
+    }
+  }
+
+  return msg; // stays 'unclassified'
+}
+
+// ── Route handler ─────────────────────────────────────────────────────
 
 export async function POST(req: Request) {
   try {
@@ -85,6 +182,8 @@ export async function POST(req: Request) {
                   date: getHeader('Date'),
                   timestamp: Number(msg.data.internalDate) || 0,
                   labels: msg.data.labelIds || [],
+                  category: 'unclassified' as EmailCategory,
+                  categoryReason: '',
                 } as EmailMessage;
               } catch {
                 return null;
@@ -101,12 +200,18 @@ export async function POST(req: Request) {
       })
     );
 
+    // Apply rule-based filters
+    const classified = allMessages.map(applyRuleFilters);
+
     // Sort by timestamp descending (newest first)
-    allMessages.sort((a, b) => b.timestamp - a.timestamp);
+    classified.sort((a, b) => b.timestamp - a.timestamp);
+
+    const ruleFiltered = classified.filter((m) => m.category !== 'unclassified').length;
 
     return NextResponse.json({
-      messages: allMessages,
-      total: allMessages.length,
+      messages: classified,
+      total: classified.length,
+      rule_filtered: ruleFiltered,
       accounts_scanned: services.length,
     });
   } catch (error: unknown) {
