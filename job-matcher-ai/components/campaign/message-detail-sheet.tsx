@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -14,6 +14,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Building2,
   DollarSign,
   Loader2,
@@ -23,6 +30,7 @@ import {
   BookOpen,
   Target,
   Heart,
+  AlertTriangle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -69,6 +77,7 @@ interface Campaign2026 {
   send_status?: Record<string, { sent_at: string; resend_id: string }>;
   donation?: { amount: number; donated_at: string; source: string } | null;
   responded_at?: string | null;
+  sidelined?: { reason: string; sidelined_at: string; original_list: string } | null;
 }
 
 interface ContactFull {
@@ -112,6 +121,22 @@ const LIFECYCLE_LABELS: Record<string, string> = {
   lapsed: 'Lapsed',
 };
 
+const LIST_OPTIONS = [
+  { value: 'A', label: 'List A' },
+  { value: 'B', label: 'List B' },
+  { value: 'C', label: 'List C' },
+  { value: 'D', label: 'List D' },
+  { value: 'sidelined', label: 'Sidelined' },
+];
+
+// ── Auto-resize helper ────────────────────────────────────────────────
+
+function autoResize(el: HTMLTextAreaElement | null) {
+  if (!el) return;
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
 // ── Component ──────────────────────────────────────────────────────────
 
 export function MessageDetailSheet({
@@ -126,6 +151,10 @@ export function MessageDetailSheet({
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [dirty, setDirty] = useState(false);
+
+  // List / sideline state
+  const [selectedList, setSelectedList] = useState('');
+  const [sidelineReason, setSidelineReason] = useState('');
 
   // List A editable fields
   const [subjectLine, setSubjectLine] = useState('');
@@ -143,6 +172,9 @@ export function MessageDetailSheet({
   // Track original values for dirty checking per field
   const [originals, setOriginals] = useState<Record<string, string>>({});
 
+  // Ref for auto-resize after data loads
+  const contentRef = useRef<HTMLDivElement>(null);
+
   const fetchContact = useCallback(async (id: number) => {
     setLoading(true);
     setError('');
@@ -156,6 +188,11 @@ export function MessageDetailSheet({
       const campaign = c.campaign_2026;
       const po = campaign?.personal_outreach;
       const cc = campaign?.campaign_copy;
+      const scaf = campaign?.scaffold;
+
+      // Populate list / sideline
+      setSelectedList(scaf?.campaign_list || '');
+      setSidelineReason(campaign?.sidelined?.reason || '');
 
       // Populate List A fields
       setSubjectLine(po?.subject_line || '');
@@ -172,6 +209,8 @@ export function MessageDetailSheet({
 
       // Store originals for dirty checking
       setOriginals({
+        campaign_list: scaf?.campaign_list || '',
+        sideline_reason: campaign?.sidelined?.reason || '',
         subject_line: po?.subject_line || '',
         message_body: po?.message_body || '',
         follow_up_text: po?.follow_up_text || '',
@@ -191,6 +230,18 @@ export function MessageDetailSheet({
     }
   }, []);
 
+  // Auto-resize all textareas after data loads
+  useEffect(() => {
+    if (!loading && contact && contentRef.current) {
+      // Small delay to let React render the values into the textareas
+      const timer = setTimeout(() => {
+        const textareas = contentRef.current?.querySelectorAll('textarea');
+        textareas?.forEach((ta) => autoResize(ta));
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, contact]);
+
   useEffect(() => {
     if (open && contactId) {
       fetchContact(contactId);
@@ -207,19 +258,61 @@ export function MessageDetailSheet({
     setSaved(false);
   }, []);
 
-  const isListA = contact?.campaign_2026?.scaffold?.campaign_list === 'A';
+  const currentList = selectedList;
+  const isListA = currentList === 'A';
+  const isSidelined = currentList === 'sidelined';
   const scaffold = contact?.campaign_2026?.scaffold;
   const lifecycle = scaffold?.lifecycle_stage;
 
   const handleSave = async () => {
     if (!contact) return;
+
+    // Validate sideline reason
+    if (isSidelined && !sidelineReason.trim()) {
+      return; // Reason required
+    }
+
     setSaving(true);
 
     try {
-      // Build list of changed fields to PATCH
-      const patches: Array<{ section: string; field: string; value: string }> = [];
+      // Build list of patches to send
+      const patches: Array<{ section: string; field?: string; value: unknown }> = [];
 
-      if (isListA) {
+      // Handle list change
+      const listChanged = selectedList !== originals.campaign_list;
+      if (listChanged) {
+        // Update scaffold.campaign_list
+        patches.push({ section: 'scaffold', field: 'campaign_list', value: selectedList });
+
+        if (isSidelined) {
+          // Moving TO sidelined: store reason + original list
+          patches.push({
+            section: 'sidelined',
+            value: {
+              reason: sidelineReason.trim(),
+              sidelined_at: new Date().toISOString(),
+              original_list: originals.campaign_list,
+            },
+          });
+        } else if (originals.campaign_list === 'sidelined') {
+          // Moving FROM sidelined: clear sideline data
+          patches.push({ section: 'sidelined', value: null });
+        }
+      } else if (isSidelined && sidelineReason !== originals.sideline_reason) {
+        // Reason changed but list didn't
+        patches.push({
+          section: 'sidelined',
+          value: {
+            reason: sidelineReason.trim(),
+            sidelined_at: contact.campaign_2026?.sidelined?.sidelined_at || new Date().toISOString(),
+            original_list: contact.campaign_2026?.sidelined?.original_list || originals.campaign_list,
+          },
+        });
+      }
+
+      // Handle content field changes (use original list to determine which fields to check)
+      const origListIsA = originals.campaign_list === 'A';
+      if (origListIsA) {
         if (subjectLine !== originals.subject_line)
           patches.push({ section: 'personal_outreach', field: 'subject_line', value: subjectLine });
         if (messageBody !== originals.message_body)
@@ -253,6 +346,8 @@ export function MessageDetailSheet({
 
       // Update originals to match current values
       setOriginals({
+        campaign_list: selectedList,
+        sideline_reason: sidelineReason,
         subject_line: subjectLine,
         message_body: messageBody,
         follow_up_text: followUpText,
@@ -279,6 +374,9 @@ export function MessageDetailSheet({
   const resolvedEmail = contact
     ? contact.personal_email || contact.email || contact.work_email || null
     : null;
+
+  // Show content fields based on original list (not selected list, so fields don't disappear mid-edit)
+  const showListAFields = originals.campaign_list === 'A';
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -322,13 +420,29 @@ export function MessageDetailSheet({
               </SheetDescription>
             </SheetHeader>
 
-            <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden">
+            <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden" ref={contentRef}>
               <div className="px-6 pb-6 space-y-5 min-w-0 max-w-full">
-                {/* Scaffold summary */}
-                <div className="flex flex-wrap gap-1.5">
-                  <Badge variant="outline" className="text-[10px]">
-                    List {scaffold?.campaign_list || '?'}
-                  </Badge>
+                {/* Scaffold summary with list selector */}
+                <div className="flex flex-wrap gap-1.5 items-center">
+                  <Select
+                    value={selectedList}
+                    onValueChange={(val) => {
+                      setSelectedList(val);
+                      if (val !== 'sidelined') setSidelineReason('');
+                      markDirty();
+                    }}
+                  >
+                    <SelectTrigger className="h-6 w-[110px] text-[10px] font-medium border rounded-full px-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LIST_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <Badge variant="outline" className="text-[10px]">
                     {PERSONA_LABELS[scaffold?.persona || ''] || scaffold?.persona || '—'}
                   </Badge>
@@ -343,6 +457,26 @@ export function MessageDetailSheet({
                     {LIFECYCLE_LABELS[scaffold?.lifecycle_stage || ''] || scaffold?.lifecycle_stage || '—'}
                   </Badge>
                 </div>
+
+                {/* Sideline reason (when sidelined is selected) */}
+                {isSidelined && (
+                  <div className="rounded-md border border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20 dark:border-yellow-800 p-3 space-y-2">
+                    <div className="flex items-center gap-1.5 text-xs font-medium text-yellow-800 dark:text-yellow-200">
+                      <AlertTriangle className="w-3.5 h-3.5" />
+                      Sidelined from campaign
+                    </div>
+                    <Textarea
+                      value={sidelineReason}
+                      onChange={(e) => {
+                        setSidelineReason(e.target.value);
+                        markDirty();
+                        autoResize(e.target);
+                      }}
+                      placeholder="Reason for sidelining (required)..."
+                      className="text-sm min-h-[40px] bg-white dark:bg-background"
+                    />
+                  </div>
+                )}
 
                 {/* Motivation + Story */}
                 <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
@@ -363,7 +497,7 @@ export function MessageDetailSheet({
                 <Separator />
 
                 {/* ── List A: Personal Outreach Fields ── */}
-                {isListA ? (
+                {showListAFields ? (
                   <div className="space-y-4">
                     <div className="flex items-center gap-2">
                       <User className="w-4 h-4 text-orange-600" />
@@ -394,9 +528,9 @@ export function MessageDetailSheet({
                         onChange={(e) => {
                           setMessageBody(e.target.value);
                           markDirty();
+                          autoResize(e.target);
                         }}
-                        className="min-h-[200px] text-sm"
-                        rows={8}
+                        className="min-h-[120px] text-sm resize-none overflow-hidden"
                       />
                     </div>
 
@@ -407,9 +541,9 @@ export function MessageDetailSheet({
                         onChange={(e) => {
                           setFollowUpText(e.target.value);
                           markDirty();
+                          autoResize(e.target);
                         }}
-                        className="text-sm"
-                        rows={3}
+                        className="min-h-[60px] text-sm resize-none overflow-hidden"
                       />
                     </div>
 
@@ -420,9 +554,9 @@ export function MessageDetailSheet({
                         onChange={(e) => {
                           setThankYouMessage(e.target.value);
                           markDirty();
+                          autoResize(e.target);
                         }}
-                        className="text-sm"
-                        rows={3}
+                        className="min-h-[60px] text-sm resize-none overflow-hidden"
                       />
                     </div>
 
@@ -433,9 +567,9 @@ export function MessageDetailSheet({
                         onChange={(e) => {
                           setInternalNotes(e.target.value);
                           markDirty();
+                          autoResize(e.target);
                         }}
-                        className="text-sm"
-                        rows={3}
+                        className="min-h-[60px] text-sm resize-none overflow-hidden"
                         placeholder="Private notes about this contact..."
                       />
                     </div>
@@ -461,9 +595,9 @@ export function MessageDetailSheet({
                           onChange={(e) => {
                             setPreEmailNote(e.target.value);
                             markDirty();
+                            autoResize(e.target);
                           }}
-                          className="text-sm"
-                          rows={3}
+                          className="min-h-[60px] text-sm resize-none overflow-hidden"
                           placeholder="Personal note before the campaign email..."
                         />
                       </div>
@@ -476,9 +610,9 @@ export function MessageDetailSheet({
                         onChange={(e) => {
                           setTextFollowupOpener(e.target.value);
                           markDirty();
+                          autoResize(e.target);
                         }}
-                        className="text-sm"
-                        rows={2}
+                        className="min-h-[60px] text-sm resize-none overflow-hidden"
                       />
                     </div>
 
@@ -489,9 +623,9 @@ export function MessageDetailSheet({
                         onChange={(e) => {
                           setTextFollowupMilestone(e.target.value);
                           markDirty();
+                          autoResize(e.target);
                         }}
-                        className="text-sm"
-                        rows={2}
+                        className="min-h-[60px] text-sm resize-none overflow-hidden"
                       />
                     </div>
 
@@ -502,9 +636,9 @@ export function MessageDetailSheet({
                         onChange={(e) => {
                           setBcdThankYou(e.target.value);
                           markDirty();
+                          autoResize(e.target);
                         }}
-                        className="text-sm"
-                        rows={3}
+                        className="min-h-[60px] text-sm resize-none overflow-hidden"
                       />
                     </div>
                   </div>
@@ -514,7 +648,7 @@ export function MessageDetailSheet({
                 <div className="flex justify-end pt-2">
                   <Button
                     onClick={handleSave}
-                    disabled={saving || !dirty}
+                    disabled={saving || !dirty || (isSidelined && !sidelineReason.trim())}
                     className={cn(
                       'gap-1.5',
                       saved && 'bg-green-600 hover:bg-green-700'

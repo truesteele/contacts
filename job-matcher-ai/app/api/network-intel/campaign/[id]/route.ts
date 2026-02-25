@@ -63,6 +63,9 @@ export async function PATCH(
     } else if (section === 'responded_at') {
       // Record response: { "section": "responded_at", "value": "2026-02-25" }
       campaign.responded_at = value;
+    } else if (section === 'sidelined') {
+      // Sideline or restore: { "section": "sidelined", "value": { reason, sidelined_at, original_list } } or null
+      campaign.sidelined = value;
     } else if (section === 'send_status') {
       // Update send status: { "section": "send_status", "field": "personal_outreach", "value": { sent_at, resend_id } }
       campaign.send_status = { ...(campaign.send_status || {}), [field]: value };

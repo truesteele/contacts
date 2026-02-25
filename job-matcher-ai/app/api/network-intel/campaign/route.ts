@@ -35,6 +35,7 @@ export async function GET() {
       const copy = camp.campaign_copy;
       const sendStatus = camp.send_status;
       const donation = camp.donation;
+      const sidelined = camp.sidelined;
 
       return {
         id: c.id,
@@ -63,6 +64,10 @@ export async function GET() {
         send_status: sendStatus && Object.keys(sendStatus).length > 0 ? sendStatus : null,
         donation: donation || null,
         responded_at: camp.responded_at || null,
+        // Sidelined fields
+        sidelined_reason: sidelined?.reason || null,
+        sidelined_at: sidelined?.sidelined_at || null,
+        original_list: sidelined?.original_list || null,
       };
     });
 
@@ -73,6 +78,7 @@ export async function GET() {
         B: flattened.filter((c) => c.list === 'B').length,
         C: flattened.filter((c) => c.list === 'C').length,
         D: flattened.filter((c) => c.list === 'D').length,
+        sidelined: flattened.filter((c) => c.list === 'sidelined').length,
       },
       by_persona: {
         believer: flattened.filter((c) => c.persona === 'believer').length,

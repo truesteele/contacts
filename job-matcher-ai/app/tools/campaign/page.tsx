@@ -7,6 +7,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import {
   Select,
@@ -38,6 +44,9 @@ import {
   Clock,
   Plus,
   Check,
+  AlertTriangle,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -64,6 +73,9 @@ interface CampaignContact {
   send_status: Record<string, { sent_at: string; resend_id: string }> | null;
   donation: { amount: number; donated_at: string; source: string } | null;
   responded_at: string | null;
+  sidelined_reason: string | null;
+  sidelined_at: string | null;
+  original_list: string | null;
 }
 
 interface CampaignStats {
@@ -280,9 +292,16 @@ export default function CampaignPage() {
 
   // Lists B-D contacts with filtering and sorting
   const bcdAllContacts = useMemo(
-    () => contacts.filter((c) => c.list && c.list !== 'A'),
+    () => contacts.filter((c) => c.list && c.list !== 'A' && c.list !== 'sidelined'),
     [contacts]
   );
+
+  const sidelinedContacts = useMemo(
+    () => contacts.filter((c) => c.list === 'sidelined'),
+    [contacts]
+  );
+
+  const [sidelinedExpanded, setSidelinedExpanded] = useState(false);
 
   const bcdFiltered = useMemo(() => {
     let result = bcdAllContacts;
@@ -800,11 +819,58 @@ export default function CampaignPage() {
                   </div>
                 </Card>
               </div>
+
+              {/* Sidelined contacts */}
+              {sidelinedContacts.length > 0 && (
+                <Card className="p-4">
+                  <button
+                    onClick={() => setSidelinedExpanded((v) => !v)}
+                    className="flex items-center gap-2 w-full text-left"
+                  >
+                    {sidelinedExpanded ? (
+                      <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+                    ) : (
+                      <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+                    )}
+                    <AlertTriangle className="w-3.5 h-3.5 text-yellow-600" />
+                    <span className="text-xs font-medium text-muted-foreground">
+                      Sidelined ({sidelinedContacts.length})
+                    </span>
+                  </button>
+                  {sidelinedExpanded && (
+                    <div className="mt-3 space-y-1.5">
+                      {sidelinedContacts.map((c) => (
+                        <div
+                          key={c.id}
+                          className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-muted/30 cursor-pointer transition-colors text-sm"
+                          onClick={() => {
+                            setSelectedContactId(c.id);
+                            setSheetOpen(true);
+                          }}
+                        >
+                          <span className="font-medium">
+                            {c.first_name} {c.last_name}
+                          </span>
+                          {c.original_list && (
+                            <Badge variant="outline" className="text-[10px] font-mono">
+                              was {c.original_list}
+                            </Badge>
+                          )}
+                          <span className="text-xs text-muted-foreground truncate flex-1">
+                            {c.sidelined_reason || ''}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+              )}
             </div>
           </TabsContent>
 
           {/* ── List A Tab ── */}
           <TabsContent value="list-a">
+            <TooltipProvider delayDuration={300}>
             <div className="mt-2">
               <div className="flex items-center justify-between mb-3">
                 <div className="text-xs text-muted-foreground">
@@ -894,41 +960,50 @@ export default function CampaignPage() {
                             </td>
                             <td className="px-3 py-2.5 text-center">
                               {canSend && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-7 w-7 p-0"
-                                  disabled={isSending}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleSendOne(c);
-                                  }}
-                                >
-                                  {isSending ? (
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                  ) : (
-                                    <Send className="w-3.5 h-3.5" />
-                                  )}
-                                </Button>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-7 w-7 p-0"
+                                      disabled={isSending}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleSendOne(c);
+                                      }}
+                                    >
+                                      {isSending ? (
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                      ) : (
+                                        <Send className="w-3.5 h-3.5" />
+                                      )}
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Send email now</TooltipContent>
+                                </Tooltip>
                               )}
                               {status === 'sent' && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-7 w-7 p-0 text-yellow-600 hover:text-yellow-700"
-                                  disabled={respondingIds.has(c.id)}
-                                  title="Mark responded"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleMarkResponded(c);
-                                  }}
-                                >
-                                  {respondingIds.has(c.id) ? (
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                  ) : (
-                                    <MessageSquare className="w-3.5 h-3.5" />
-                                  )}
-                                </Button>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-7 w-7 p-0 text-yellow-600 hover:text-yellow-700"
+                                      disabled={respondingIds.has(c.id)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleMarkResponded(c);
+                                      }}
+                                    >
+                                      {respondingIds.has(c.id) ? (
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                      ) : (
+                                        <MessageSquare className="w-3.5 h-3.5" />
+                                      )}
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Mark as responded</TooltipContent>
+                                </Tooltip>
                               )}
                             </td>
                           </tr>
@@ -939,10 +1014,12 @@ export default function CampaignPage() {
                 </div>
               </div>
             </div>
+            </TooltipProvider>
           </TabsContent>
 
           {/* ── Lists B-D Tab ── */}
           <TabsContent value="lists-bcd">
+            <TooltipProvider delayDuration={300}>
             <div className="mt-2">
               {/* Bulk send buttons */}
               <div className="flex items-center gap-2 mb-3 flex-wrap">
@@ -1160,23 +1237,27 @@ export default function CampaignPage() {
                             </td>
                             <td className="px-3 py-2.5 text-center">
                               {status === 'sent' && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-7 w-7 p-0 text-yellow-600 hover:text-yellow-700"
-                                  disabled={respondingIds.has(c.id)}
-                                  title="Mark responded"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleMarkResponded(c);
-                                  }}
-                                >
-                                  {respondingIds.has(c.id) ? (
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                  ) : (
-                                    <MessageSquare className="w-3.5 h-3.5" />
-                                  )}
-                                </Button>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-7 w-7 p-0 text-yellow-600 hover:text-yellow-700"
+                                      disabled={respondingIds.has(c.id)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleMarkResponded(c);
+                                      }}
+                                    >
+                                      {respondingIds.has(c.id) ? (
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                      ) : (
+                                        <MessageSquare className="w-3.5 h-3.5" />
+                                      )}
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Mark as responded</TooltipContent>
+                                </Tooltip>
                               )}
                             </td>
                           </tr>
@@ -1194,6 +1275,7 @@ export default function CampaignPage() {
                 </ScrollArea>
               </Card>
             </div>
+            </TooltipProvider>
           </TabsContent>
 
           {/* ── Activity Tab ── */}
