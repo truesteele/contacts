@@ -20,11 +20,16 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  ArrowDownLeft,
+  ArrowUpRight,
   Building2,
   Calendar,
+  CalendarDays,
   Clock,
   DollarSign,
   ExternalLink,
+  Mail,
+  Phone,
   Save,
   User,
 } from 'lucide-react';
@@ -33,6 +38,21 @@ import { type Deal } from './deal-card';
 interface StageConfig {
   name: string;
   color: string;
+}
+
+interface DealActivity {
+  id: number;
+  deal_id: string;
+  contact_id: number | null;
+  activity_type: string;
+  source_table: string;
+  source_id: number;
+  activity_date: string;
+  subject: string | null;
+  summary: string | null;
+  account_email: string | null;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
 }
 
 interface DealDetailSheetProps {
@@ -82,6 +102,33 @@ export function DealDetailSheet({
   const [lostReason, setLostReason] = useState('');
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [activities, setActivities] = useState<DealActivity[]>([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(false);
+
+  // Fetch activities when deal opens
+  useEffect(() => {
+    if (!deal || !open) {
+      setActivities([]);
+      return;
+    }
+
+    let cancelled = false;
+    setActivitiesLoading(true);
+
+    fetch(`/api/network-intel/pipeline/deals/${deal.id}/activities?limit=50`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled) setActivities(data.activities || []);
+      })
+      .catch(() => {
+        if (!cancelled) setActivities([]);
+      })
+      .finally(() => {
+        if (!cancelled) setActivitiesLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [deal, open]);
 
   // Populate form when deal changes
   useEffect(() => {
@@ -346,6 +393,85 @@ export function DealDetailSheet({
                 />
               </div>
             )}
+
+            {/* Activity Timeline */}
+            <Separator />
+            <div>
+              <label className="text-sm font-medium mb-2 block">
+                Activity ({activities.length})
+              </label>
+              {activitiesLoading ? (
+                <p className="text-xs text-muted-foreground">Loading...</p>
+              ) : activities.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  No activity yet. Activities sync daily from email, calendar, and calls.
+                </p>
+              ) : (
+                <div className="space-y-0">
+                  {activities.map((a) => {
+                    const isEmail = a.activity_type.startsWith('email');
+                    const isMeeting = a.activity_type === 'meeting';
+                    const isCall = a.activity_type === 'call';
+                    const isSent = a.activity_type === 'email_sent';
+                    const isReceived = a.activity_type === 'email_received';
+
+                    const iconColor = isEmail
+                      ? isSent
+                        ? 'text-blue-500'
+                        : isReceived
+                          ? 'text-green-500'
+                          : 'text-blue-400'
+                      : isMeeting
+                        ? 'text-purple-500'
+                        : 'text-gray-400';
+
+                    const Icon = isEmail
+                      ? Mail
+                      : isMeeting
+                        ? CalendarDays
+                        : Phone;
+
+                    const DirectionIcon = isSent
+                      ? ArrowUpRight
+                      : isReceived
+                        ? ArrowDownLeft
+                        : null;
+
+                    return (
+                      <div
+                        key={a.id}
+                        className="flex items-start gap-2.5 py-2 border-l-2 border-muted pl-3 ml-1.5"
+                      >
+                        <div className={`mt-0.5 shrink-0 ${iconColor}`}>
+                          <Icon className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-medium truncate">
+                              {a.subject || '(no subject)'}
+                            </span>
+                            {DirectionIcon && (
+                              <DirectionIcon className={`w-3 h-3 shrink-0 ${iconColor}`} />
+                            )}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground mt-0.5">
+                            {formatTimestamp(a.activity_date)}
+                            {a.account_email && (
+                              <span> via {a.account_email.split('@')[0]}</span>
+                            )}
+                            {isCall && a.metadata && typeof a.metadata === 'object' && (
+                              <span>
+                                {' '}{String((a.metadata as Record<string, unknown>).duration_minutes ?? '')}m
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
 
             {/* Save button */}
             <div className="flex justify-end pt-2">
