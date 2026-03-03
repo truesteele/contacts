@@ -31,6 +31,7 @@ import {
   Target,
   Heart,
   AlertTriangle,
+  Info,
   Sparkles,
   SendHorizontal,
 } from 'lucide-react';
@@ -130,11 +131,11 @@ const LIFECYCLE_LABELS: Record<string, string> = {
 };
 
 const LIST_OPTIONS = [
-  { value: 'A', label: 'List A' },
-  { value: 'B', label: 'List B' },
-  { value: 'C', label: 'List C' },
-  { value: 'D', label: 'List D' },
-  { value: 'sidelined', label: 'Sidelined' },
+  { value: 'A', label: 'List A', description: 'Inner circle — personal Opus-written outreach' },
+  { value: 'B', label: 'List B', description: 'Ready now — primary email campaign' },
+  { value: 'C', label: 'List C', description: 'Cultivate first — secondary email' },
+  { value: 'D', label: 'List D', description: 'Extended network — broadest email' },
+  { value: 'sidelined', label: 'Sidelined', description: 'Removed from campaign' },
 ];
 
 const MAX_CHAT_TURNS = 12;
@@ -162,6 +163,7 @@ export function MessageDetailSheet({
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [generatingOutreach, setGeneratingOutreach] = useState(false);
 
   // List / sideline state
   const [selectedList, setSelectedList] = useState('');
@@ -517,6 +519,31 @@ export function MessageDetailSheet({
         if (!res.ok) throw new Error('Failed to save changes');
       }
 
+      // Auto-generate outreach when moving TO List A (and no existing outreach)
+      const movingToA = listChanged && selectedList === 'A' && originals.campaign_list !== 'A';
+      const hasExistingOutreach = !!contact.campaign_2026?.personal_outreach?.message_body;
+      if (movingToA && !hasExistingOutreach) {
+        setGeneratingOutreach(true);
+        setSaving(false); // Let the generating state take over
+        try {
+          const genRes = await fetch(`/api/network-intel/campaign/${contact.id}/generate-outreach`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+          });
+          if (genRes.ok) {
+            // Re-fetch contact to populate List A fields
+            await fetchContact(contact.id);
+          } else {
+            const errData = await genRes.json().catch(() => ({ error: 'Generation failed' }));
+            console.error('Outreach generation failed:', errData);
+          }
+        } catch (genErr) {
+          console.error('Outreach generation error:', genErr);
+        } finally {
+          setGeneratingOutreach(false);
+        }
+      }
+
       // Update originals to match current values
       setOriginals({
         campaign_list: selectedList,
@@ -611,7 +638,10 @@ export function MessageDetailSheet({
                     <SelectContent>
                       {LIST_OPTIONS.map((opt) => (
                         <SelectItem key={opt.value} value={opt.value} className="text-xs">
-                          {opt.label}
+                          <div>
+                            <span className="font-medium">{opt.label}</span>
+                            <span className="ml-1.5 text-muted-foreground">{opt.description}</span>
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -648,6 +678,26 @@ export function MessageDetailSheet({
                       placeholder="Reason for sidelining (required)..."
                       className="text-sm min-h-[40px] bg-white dark:bg-background"
                     />
+                  </div>
+                )}
+
+                {/* Move-to-A banner */}
+                {selectedList === 'A' && originals.campaign_list !== 'A' && !generatingOutreach && (
+                  <div className="rounded-md border border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800 p-3">
+                    <div className="flex items-center gap-1.5 text-xs font-medium text-blue-800 dark:text-blue-200">
+                      <Info className="w-3.5 h-3.5 shrink-0" />
+                      Saving will generate a personal outreach message using Claude Opus (~15s)
+                    </div>
+                  </div>
+                )}
+
+                {/* Generating outreach loading state */}
+                {generatingOutreach && (
+                  <div className="rounded-md border border-violet-200 bg-violet-50 dark:bg-violet-950/20 dark:border-violet-800 p-3">
+                    <div className="flex items-center gap-2 text-xs font-medium text-violet-800 dark:text-violet-200">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+                      Generating personal outreach with Claude Opus...
+                    </div>
                   </div>
                 )}
 
@@ -901,20 +951,20 @@ export function MessageDetailSheet({
                 <div className="flex justify-end pt-2">
                   <Button
                     onClick={handleSave}
-                    disabled={saving || !dirty || (isSidelined && !sidelineReason.trim())}
+                    disabled={saving || generatingOutreach || !dirty || (isSidelined && !sidelineReason.trim())}
                     className={cn(
                       'gap-1.5',
                       saved && 'bg-green-600 hover:bg-green-700'
                     )}
                   >
-                    {saving ? (
+                    {saving || generatingOutreach ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     ) : saved ? (
                       <Check className="w-3.5 h-3.5" />
                     ) : (
                       <Save className="w-3.5 h-3.5" />
                     )}
-                    {saving ? 'Saving...' : saved ? 'Saved' : 'Save'}
+                    {saving ? 'Saving...' : generatingOutreach ? 'Generating...' : saved ? 'Saved' : 'Save'}
                   </Button>
                 </div>
               </div>
