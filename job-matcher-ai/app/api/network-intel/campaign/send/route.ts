@@ -89,15 +89,15 @@ That night she fell asleep to the sound of the ocean. Called it the most restora
 
 This keeps happening. Families show up cautious and leave different. Real rest. Real food cooked together. Kids free. Strangers becoming family around a fire in 48 hours.
 
-Sally and I have 10 trips planned this season through Outdoorithm Collective — Joshua Tree, Pinnacles, Yosemite, Lassen, and more. Each one brings 10-12 families into nature. Each costs about $10K to run.
+Sally and I have 8 trips planned this season through Outdoorithm Collective. Joshua Tree, Pinnacles, Yosemite, Lassen, and more. Each one brings 10-12 families into nature. Each costs about $10K to run. Plus $40K in gear so every family shows up equipped.
 
-We've raised $40K from grants and early supporters. A friend is matching the first $20K in donations dollar-for-dollar. $60K to go to fund every trip.
+$120K for the full season. We've raised $45K from grants and early supporters. A friend is matching the first $20K in donations dollar-for-dollar. $75K to go.
 
-$1,000 puts two families at the campfire. $2,500 covers a quarter of a trip. $5,000 sponsors half.
+$1,000 puts a family at the campfire. $2,500 covers a quarter of a trip. $5,000 sponsors half.
 
 If you want in: outdoorithmcollective.org/donate
 
-Or just reply — happy to tell you more.
+Or just reply. Happy to tell you more.
 
 Justin`;
 }
@@ -221,7 +221,7 @@ export async function POST(req: Request) {
         const firstName = c.first_name || 'Friend';
         const openerInsert = scaffold.opener_insert || null;
         const personalizationSentence = scaffold.personalization_sentence || null;
-        subject = '10 trips this year';
+        subject = '8 trips this year';
         messageBody = buildEmail1Body(firstName, openerInsert, personalizationSentence);
       }
 

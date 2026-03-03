@@ -31,6 +31,8 @@ import {
   Target,
   Heart,
   AlertTriangle,
+  Sparkles,
+  SendHorizontal,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -99,6 +101,12 @@ interface MessageDetailSheetProps {
   onUpdated: () => void;
 }
 
+type ChatMessage = {
+  role: 'user' | 'assistant';
+  instruction: string;
+  explanation?: string;
+};
+
 // ── Label maps ─────────────────────────────────────────────────────────
 
 const PERSONA_LABELS: Record<string, string> = {
@@ -128,6 +136,9 @@ const LIST_OPTIONS = [
   { value: 'D', label: 'List D' },
   { value: 'sidelined', label: 'Sidelined' },
 ];
+
+const MAX_CHAT_TURNS = 12;
+const MAX_CHAT_INPUT_CHARS = 1000;
 
 // ── Auto-resize helper ────────────────────────────────────────────────
 
@@ -171,6 +182,15 @@ export function MessageDetailSheet({
 
   // Track original values for dirty checking per field
   const [originals, setOriginals] = useState<Record<string, string>>({});
+
+  // AI chat state
+  const [chatInput, setChatInput] = useState('');
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+  const [chatLoading, setChatLoading] = useState(false);
+  const chatInputRef = useRef<HTMLInputElement>(null);
+  const chatThreadRef = useRef<HTMLDivElement>(null);
+  const activeChatAbortRef = useRef<AbortController | null>(null);
+  const activeContactIdRef = useRef<number | null>(contactId);
 
   // Ref for auto-resize after data loads
   const contentRef = useRef<HTMLDivElement>(null);
@@ -253,10 +273,163 @@ export function MessageDetailSheet({
     }
   }, [open, contactId, fetchContact]);
 
+  useEffect(() => {
+    activeContactIdRef.current = contactId;
+  }, [contactId]);
+
+  // Clear chat when contact changes
+  useEffect(() => {
+    activeChatAbortRef.current?.abort();
+    activeChatAbortRef.current = null;
+    setChatLoading(false);
+    setChatHistory([]);
+    setChatInput('');
+  }, [contactId]);
+
+  useEffect(() => {
+    return () => {
+      activeChatAbortRef.current?.abort();
+      activeChatAbortRef.current = null;
+    };
+  }, []);
+
   const markDirty = useCallback(() => {
     setDirty(true);
     setSaved(false);
   }, []);
+
+  const handleChatSubmit = async () => {
+    if (!contact || !chatInput.trim() || chatLoading) return;
+
+    const instruction = chatInput.trim();
+    const priorHistory = chatHistory.slice(-MAX_CHAT_TURNS);
+    const requestContactId = contact.id;
+    const userMessage: ChatMessage = { role: 'user', instruction };
+    let abortController: AbortController | null = null;
+
+    setChatInput('');
+    setChatLoading(true);
+
+    // Add user message to chat history
+    setChatHistory((prev) => [...prev, userMessage].slice(-(MAX_CHAT_TURNS * 2)));
+    setTimeout(() => chatThreadRef.current?.scrollTo({ top: chatThreadRef.current.scrollHeight, behavior: 'smooth' }), 0);
+
+    try {
+      // Build API history (for multi-turn context)
+      const apiHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+      for (const h of priorHistory) {
+        if (h.role === 'user') {
+          apiHistory.push({ role: 'user', content: h.instruction });
+        } else {
+          apiHistory.push({ role: 'assistant', content: h.explanation || '' });
+        }
+      }
+
+      abortController = new AbortController();
+      activeChatAbortRef.current = abortController;
+
+      const res = await fetch(`/api/network-intel/campaign/${contact.id}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: abortController.signal,
+        body: JSON.stringify({
+          message: instruction,
+          history: apiHistory,
+          current_subject: subjectLine,
+          current_body: messageBody,
+        }),
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        let errorMessage = 'AI edit failed';
+
+        if (errorText) {
+          try {
+            const errorJson = JSON.parse(errorText) as { error?: string };
+            if (typeof errorJson.error === 'string' && errorJson.error.trim()) {
+              errorMessage = errorJson.error;
+            }
+          } catch {
+            errorMessage = errorText;
+          }
+        }
+
+        throw new Error(errorMessage);
+      }
+
+      const raw = await res.text();
+      let data: unknown;
+      try {
+        data = JSON.parse(raw);
+      } catch {
+        throw new Error('AI returned invalid JSON');
+      }
+
+      // Drop stale responses when switching contacts mid-request
+      if (activeContactIdRef.current !== requestContactId) return;
+
+      // Update the form fields with AI response
+      const subjectLineUpdate =
+        typeof (data as { subject_line?: unknown }).subject_line === 'string'
+          ? (data as { subject_line: string }).subject_line
+          : null;
+      const messageBodyUpdate =
+        typeof (data as { message_body?: unknown }).message_body === 'string'
+          ? (data as { message_body: string }).message_body
+          : null;
+
+      if (!subjectLineUpdate && !messageBodyUpdate) {
+        throw new Error('AI response missing updated content');
+      }
+
+      if (subjectLineUpdate !== null) {
+        setSubjectLine(subjectLineUpdate);
+      }
+      if (messageBodyUpdate !== null) {
+        setMessageBody(messageBodyUpdate);
+      }
+      markDirty();
+
+      // Add AI response to chat history
+      const explanation =
+        typeof (data as { explanation?: unknown }).explanation === 'string' &&
+        (data as { explanation: string }).explanation.trim()
+          ? (data as { explanation: string }).explanation.trim()
+          : 'Updated the draft.';
+      const assistantMessage: ChatMessage = {
+        role: 'assistant',
+        instruction: explanation,
+        explanation,
+      };
+
+      setChatHistory((prev) => [...prev, assistantMessage].slice(-(MAX_CHAT_TURNS * 2)));
+      setTimeout(() => chatThreadRef.current?.scrollTo({ top: chatThreadRef.current.scrollHeight, behavior: 'smooth' }), 0);
+
+      // Trigger auto-resize on textareas after update
+      setTimeout(() => {
+        const textareas = contentRef.current?.querySelectorAll('textarea');
+        textareas?.forEach((ta) => autoResize(ta));
+      }, 50);
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        return;
+      }
+
+      console.error('Chat edit failed:', err);
+      const errorMessage: ChatMessage = {
+        role: 'assistant',
+        instruction: `Error: ${err instanceof Error ? err.message : 'Unknown error'}`,
+      };
+      setChatHistory((prev) => [...prev, errorMessage].slice(-(MAX_CHAT_TURNS * 2)));
+    } finally {
+      if (abortController && activeChatAbortRef.current === abortController) {
+        activeChatAbortRef.current = null;
+      }
+      setChatLoading(false);
+      chatInputRef.current?.focus();
+    }
+  };
 
   const currentList = selectedList;
   const isListA = currentList === 'A';
@@ -642,6 +815,86 @@ export function MessageDetailSheet({
                       />
                     </div>
                   </div>
+                )}
+
+                {/* AI Edit Chat (List A only) */}
+                {showListAFields && (
+                  <>
+                    <Separator />
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-violet-500" />
+                        <span className="text-sm font-medium">Edit with AI</span>
+                        {chatHistory.length > 0 && (
+                          <button
+                            onClick={() => {
+                              activeChatAbortRef.current?.abort();
+                              activeChatAbortRef.current = null;
+                              setChatLoading(false);
+                              setChatHistory([]);
+                            }}
+                            className="ml-auto text-[10px] text-muted-foreground hover:text-foreground"
+                          >
+                            Clear
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Chat thread */}
+                      {chatHistory.length > 0 && (
+                        <div ref={chatThreadRef} className="max-h-[200px] overflow-y-auto space-y-1.5 rounded-md border bg-muted/20 p-2">
+                          {chatHistory.map((h, i) => (
+                            <div key={i} className={cn(
+                              'text-xs px-2 py-1 rounded',
+                              h.role === 'user'
+                                ? 'bg-violet-100 dark:bg-violet-950/30 text-violet-800 dark:text-violet-200 ml-4'
+                                : 'bg-muted text-muted-foreground mr-4'
+                            )}>
+                              {h.instruction}
+                            </div>
+                          ))}
+                          {chatLoading && (
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground px-2 py-1">
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                              Editing...
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Chat input */}
+                      <div className="flex gap-2">
+                        <Input
+                          ref={chatInputRef}
+                          value={chatInput}
+                          onChange={(e) => setChatInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              handleChatSubmit();
+                            }
+                          }}
+                          placeholder="e.g. make the opener more personal..."
+                          className="text-sm"
+                          disabled={chatLoading}
+                          maxLength={MAX_CHAT_INPUT_CHARS}
+                        />
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={handleChatSubmit}
+                          disabled={chatLoading || !chatInput.trim()}
+                          className="shrink-0"
+                        >
+                          {chatLoading ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <SendHorizontal className="w-4 h-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </>
                 )}
 
                 {/* Save button */}
