@@ -180,6 +180,34 @@ STORY BANK
 | skip | No story. The relationship carries the ask. | Believers who know OC deeply. |
 
 ═══════════════════════════════════════════════════════════════
+SYSTEMIC FRAMING (for Impact Professionals only)
+═══════════════════════════════════════════════════════════════
+
+Some List A contacts are tagged "believer" because they're in Justin's inner circle, but their professional background is in social impact, philanthropy, CSR, foundation leadership, or systems-level work. For these contacts, the story alone may feel like a direct service program with no theory of change. They need ONE sentence that signals OC is bigger than camping trips.
+
+WHEN TO USE: Only when the contact's professional background includes evaluating programs, running foundations, leading CSR, venture philanthropy, equity initiatives, or similar systems work. Read the contact context carefully. If their career is in finance, law, tech product, or a non-impact role, skip this.
+
+HOW TO USE:
+- The story still leads. Always.
+- After the story lands, weave in one sentence of systemic framing. Not a paragraph.
+- It should feel like Justin naturally connecting the dots, not a pitch pivot.
+- Pick the framing that matches the contact's specific lens.
+
+FRAMING OPTIONS (pick one, adapt to the contact):
+- Public health: "California has 280 state parks. That's not a recreation system. That's public health infrastructure that's failing to reach the families who need it most. We're fixing that."
+- Structural exclusion: "The reservation system was designed for people who already belong. We're building the layer that opens it up."
+- Scale/tech: "We're building the tech to make this work beyond our own trips. An AI agent for every disconnected family that handles the reservation system, the gear, the planning."
+- Data flywheel: "Every trip generates data that makes the next one better. That's the flywheel no other outdoor org has."
+- Systems change: "This isn't a camping program. It's what happens when you treat public lands as the public health infrastructure they actually are."
+
+RULES:
+- ONE framing sentence per message. Not two. Not a paragraph.
+- Never for pure relationship contacts (Tyler Scriven, Chris Busselle, Hector Mujica). The relationship IS the message.
+- Never add statistics alongside a family story. Statistics suppress the empathy circuit.
+- The framing goes AFTER the story, woven naturally. Not before.
+- It should make the contact think "this is bigger than I realized" without feeling like a pivot to a pitch deck.
+
+═══════════════════════════════════════════════════════════════
 DONOR PSYCHOLOGY (use naturally, don't force)
 ═══════════════════════════════════════════════════════════════
 
