@@ -160,6 +160,7 @@ export function MessageDetailSheet({
   const [contact, setContact] = useState<ContactFull | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [saveError, setSaveError] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [dirty, setDirty] = useState(false);
@@ -200,6 +201,7 @@ export function MessageDetailSheet({
   const fetchContact = useCallback(async (id: number) => {
     setLoading(true);
     setError('');
+    setSaveError('');
     try {
       const res = await fetch(`/api/network-intel/campaign/${id}`);
       if (!res.ok) throw new Error('Failed to fetch contact');
@@ -272,6 +274,7 @@ export function MessageDetailSheet({
       setContact(null);
       setDirty(false);
       setSaved(false);
+      setSaveError('');
     }
   }, [open, contactId, fetchContact]);
 
@@ -298,6 +301,7 @@ export function MessageDetailSheet({
   const markDirty = useCallback(() => {
     setDirty(true);
     setSaved(false);
+    setSaveError('');
   }, []);
 
   const handleChatSubmit = async () => {
@@ -444,10 +448,13 @@ export function MessageDetailSheet({
 
     // Validate sideline reason
     if (isSidelined && !sidelineReason.trim()) {
+      setSaveError('Reason is required when sidelining a contact.');
       return; // Reason required
     }
 
+    setSaveError('');
     setSaving(true);
+    setSaved(false);
 
     try {
       // Build list of patches to send
@@ -522,6 +529,7 @@ export function MessageDetailSheet({
       // Auto-generate outreach when moving TO List A (and no existing outreach)
       const movingToA = listChanged && selectedList === 'A' && originals.campaign_list !== 'A';
       const hasExistingOutreach = !!contact.campaign_2026?.personal_outreach?.message_body;
+      let refreshedFromServer = false;
       if (movingToA && !hasExistingOutreach) {
         setGeneratingOutreach(true);
         setSaving(false); // Let the generating state take over
@@ -530,42 +538,45 @@ export function MessageDetailSheet({
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
           });
-          if (genRes.ok) {
-            // Re-fetch contact to populate List A fields
-            await fetchContact(contact.id);
-          } else {
-            const errData = await genRes.json().catch(() => ({ error: 'Generation failed' }));
-            console.error('Outreach generation failed:', errData);
+          if (!genRes.ok) {
+            const errData = await genRes.json().catch(() => null) as { error?: string } | null;
+            throw new Error(
+              errData?.error?.trim() || `Failed to generate outreach (${genRes.status})`
+            );
           }
-        } catch (genErr) {
-          console.error('Outreach generation error:', genErr);
+          // Re-fetch contact to populate List A fields
+          await fetchContact(contact.id);
+          refreshedFromServer = true;
         } finally {
           setGeneratingOutreach(false);
         }
       }
 
       // Update originals to match current values
-      setOriginals({
-        campaign_list: selectedList,
-        sideline_reason: sidelineReason,
-        subject_line: subjectLine,
-        message_body: messageBody,
-        follow_up_text: followUpText,
-        thank_you_message: thankYouMessage,
-        internal_notes: internalNotes,
-        pre_email_note: preEmailNote,
-        text_followup_opener: textFollowupOpener,
-        text_followup_milestone: textFollowupMilestone,
-        bcd_thank_you: bcdThankYou,
-      });
-      setDirty(false);
+      if (!refreshedFromServer) {
+        setOriginals({
+          campaign_list: selectedList,
+          sideline_reason: sidelineReason,
+          subject_line: subjectLine,
+          message_body: messageBody,
+          follow_up_text: followUpText,
+          thank_you_message: thankYouMessage,
+          internal_notes: internalNotes,
+          pre_email_note: preEmailNote,
+          text_followup_opener: textFollowupOpener,
+          text_followup_milestone: textFollowupMilestone,
+          bcd_thank_you: bcdThankYou,
+        });
+        setDirty(false);
+      }
       setSaved(true);
       onUpdated();
 
       // Clear saved indicator after a moment
       setTimeout(() => setSaved(false), 2000);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Failed to save:', err);
+      setSaveError(err instanceof Error ? err.message : 'Failed to save changes');
     } finally {
       setSaving(false);
     }
@@ -697,6 +708,15 @@ export function MessageDetailSheet({
                     <div className="flex items-center gap-2 text-xs font-medium text-violet-800 dark:text-violet-200">
                       <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
                       Generating personal outreach with Claude Opus...
+                    </div>
+                  </div>
+                )}
+
+                {saveError && (
+                  <div className="rounded-md border border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800 p-3">
+                    <div className="flex items-center gap-1.5 text-xs font-medium text-red-800 dark:text-red-200">
+                      <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                      {saveError}
                     </div>
                   </div>
                 )}

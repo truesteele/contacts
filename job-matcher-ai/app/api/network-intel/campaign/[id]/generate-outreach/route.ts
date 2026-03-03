@@ -8,6 +8,9 @@ export const runtime = 'edge';
 const CACHE_HEADERS = { 'Cache-Control': 'no-store' };
 const OUTREACH_MODEL = 'claude-opus-4-6';
 const AI_TIMEOUT_MS = 90_000;
+const MAX_SUBJECT_CHARS = 180;
+const MAX_EMAIL_WORDS = 200;
+const MAX_TEXT_WORDS = 100;
 
 const MAX_CONTACT_FIELD_CHARS = 800;
 const MAX_JSON_FIELD_CHARS = 1_600;
@@ -25,7 +28,7 @@ function getAnthropicClient(): Anthropic {
 
 // Response validation
 const OutreachResponseSchema = z.object({
-  subject_line: z.string().trim().max(180),
+  subject_line: z.string().trim().max(MAX_SUBJECT_CHARS),
   message_body: z.string().trim().min(1).max(5_000),
   channel: z.enum(['email', 'text']).default('email'),
   follow_up_text: z.string().trim().max(1_000).default(''),
@@ -371,8 +374,10 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const contactId = parseInt(id, 10);
-    if (isNaN(contactId)) return jsonError(400, 'Invalid contact ID');
+    const contactId = Number(id);
+    if (!Number.isInteger(contactId) || contactId <= 0) {
+      return jsonError(400, 'Invalid contact ID');
+    }
 
     // Fetch contact
     const { data: contact, error: dbError } = await supabase
@@ -381,7 +386,11 @@ export async function POST(
       .eq('id', contactId)
       .single();
 
-    if (dbError || !contact) {
+    if (dbError) {
+      console.error('[Generate Outreach] Contact fetch failed:', dbError);
+      return jsonError(500, 'Failed to load contact context');
+    }
+    if (!contact) {
       return jsonError(404, 'Contact not found');
     }
 
@@ -434,35 +443,42 @@ Remember: output ONLY valid JSON with the 6 fields. No markdown, no explanation.
     // Parse JSON
     const jsonStr = extractJsonObject(rawText);
     if (!jsonStr) {
-      return jsonError(500, 'Could not extract JSON from AI response');
+      return jsonError(502, 'Could not extract JSON from AI response');
     }
 
     let parsed: unknown;
     try {
       parsed = JSON.parse(jsonStr);
     } catch {
-      return jsonError(500, 'AI returned invalid JSON');
+      return jsonError(502, 'AI returned invalid JSON');
     }
 
     // Validate with Zod
     const result = OutreachResponseSchema.safeParse(parsed);
     if (!result.success) {
-      return jsonError(500, `Invalid AI response: ${result.error.issues[0]?.message || 'validation failed'}`);
+      return jsonError(502, `Invalid AI response: ${result.error.issues[0]?.message || 'validation failed'}`);
     }
 
     const outreach = result.data;
+    if (outreach.channel === 'email' && !outreach.subject_line.trim()) {
+      return jsonError(502, 'Generated email is missing a subject line');
+    }
 
     // Post-generation guardrails
     const wordCount = countWords(outreach.message_body);
-    const maxWords = outreach.channel === 'text' ? 120 : 250;
+    const maxWords = outreach.channel === 'text' ? MAX_TEXT_WORDS : MAX_EMAIL_WORDS;
     if (wordCount > maxWords) {
-      return jsonError(500, `Generated message too long (${wordCount} words, max ${maxWords})`);
+      return jsonError(502, `Generated message too long (${wordCount} words, max ${maxWords})`);
+    }
+
+    if (outreach.message_body.includes('\u2014')) {
+      return jsonError(502, 'Generated message contains an em dash');
     }
 
     const bodyLower = outreach.message_body.toLowerCase();
     for (const phrase of FORBIDDEN_PHRASES) {
       if (bodyLower.includes(phrase)) {
-        return jsonError(500, `Generated message contains forbidden phrase: "${phrase}"`);
+        return jsonError(502, `Generated message contains forbidden phrase: "${phrase}"`);
       }
     }
 
@@ -487,6 +503,7 @@ Remember: output ONLY valid JSON with the 6 fields. No markdown, no explanation.
       .eq('id', contactId);
 
     if (updateError) {
+      console.error('[Generate Outreach] Save failed:', updateError);
       return jsonError(500, 'Failed to save outreach to database');
     }
 
@@ -497,7 +514,7 @@ Remember: output ONLY valid JSON with the 6 fields. No markdown, no explanation.
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     if (message.includes('timed out')) {
-      return jsonError(504, 'AI generation timed out — please try again');
+      return jsonError(504, 'AI generation timed out. Please try again.');
     }
     console.error('Generate outreach error:', err);
     return jsonError(500, 'Failed to generate outreach');

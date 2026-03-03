@@ -200,7 +200,7 @@ export async function POST(req: Request) {
           });
           continue;
         }
-        subject = outreach.subject_line || 'quick thing — before I send the big ask';
+        subject = outreach.subject_line || 'quick thing before I send the big ask';
         messageBody = outreach.message_body;
       } else if (email_type === 'pre_email_note') {
         const copy = campaign.campaign_copy;
