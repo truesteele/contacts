@@ -56,26 +56,27 @@ JUSTIN'S VOICE — STUDY THIS CAREFULLY
 
 Justin writes like this:
 - Direct, punchy, uses sentence fragments for emphasis
-- Em dashes for parenthetical thoughts — like this
+- Periods and commas for pacing. No em dashes in email (use sentence breaks instead)
 - "This keeps happening" as a transition between stories and ask
 - "Quick thing" as an opener for casual messages
-- Casual and conversational — sounds like a text from a friend, not a fundraiser
+- Casual and conversational. Sounds like a text from a friend, not a fundraiser
 - 2:1 "you/your" to "we/our" ratio
 - Under 200 words for emails, shorter for texts
 - "If you want in" = joining, not saving
 - Never uses words like "generous," "charitable," "donation opportunity," "transformative impact"
 - Never sounds like he's reading from a script
+- NEVER use em dashes (—) anywhere in the output. Use periods, commas, or parentheses instead.
 
 Here's what a REAL message from Justin sounds like:
 
 ---
-Hey [Name] —
+Hey [Name],
 
-Quick thing. Sally and I have 10 camping trips planned this season through Outdoorithm Collective — Joshua Tree, Pinnacles, Yosemite, Lassen, the works.
+Quick thing. Sally and I have 8 camping trips planned this season through Outdoorithm Collective. Joshua Tree, Pinnacles, Yosemite, Lassen, the works.
 
 Hard to describe what happens on these trips. Families who've never slept in a tent show up and something shifts. Deep rest. Real connection. Kids running free. A dad told us feeling safe in the woods for the first time "changed the narrative." A mom called it the most restorative sleep she'd had in years.
 
-I'm about to send a broader ask to my network, but wanted to reach out to you first. Each trip costs about $10K to run. We've got $35K from grants. A friend is matching the first $20K dollar-for-dollar.
+I'm about to send a broader ask to my network, but wanted to reach out to you first. Each trip costs about $10K to run. We've got $45K from grants. A friend is matching the first $20K dollar-for-dollar.
 
 Would love to count you in. Happy to talk if you want to know more.
 
@@ -92,20 +93,20 @@ Outdoorithm Collective is a 501(c)(3) outdoor equity nonprofit co-founded by Jus
 Mission: Making outdoor recreation accessible to underserved communities through guided camping expeditions.
 
 Come Alive 2026:
-- Goal: $100K — fund 10 camping trips this season
-- Math: 10 trips. $10K each. $100K total.
-- Already committed: $35K from grants and early supporters
-- Gap: $65K from friends and community
+- Goal: $120K. 8 camping trips this season plus $40K in shared gear.
+- Math: 8 trips. ~$10K each to run. Plus $40K in shared gear. $120K total.
+- Already committed: $45K from grants and early supporters
+- Gap: $75K from friends and community
 - Match: $20K dollar-for-dollar from an early supporter
-- Launch: ~February 26, 2026
-- Close: ~March 17, 2026 (before Joshua Tree March 30)
+- Launch: ~March 10, 2026
+- Close: ~March 28, 2026 (before Joshua Tree March 30)
 
 Impact language:
 - $500 = one family comes alive
 - $1,000 = two families at the campfire
 - $2,500 = a quarter of a trip funded
-- $5,000 = half a trip — rest, community, grit for 10 families
-- $10,000 = a full trip — 10-12 families come alive together
+- $5,000 = half a trip. Rest, community, grit for 10 families
+- $10,000 = a full trip. 10-12 families come alive together
 
 ═══════════════════════════════════════════════════════════════
 THE THREE CAMPAIGN PERSONAS
@@ -114,33 +115,33 @@ THE THREE CAMPAIGN PERSONAS
 PERSONA 1: THE BELIEVER
 "I'm in because Justin asked."
 - Close friends, family, co-founders, OC trip participants
-- Giving is relationship-first — they'd support anything Justin builds
+- Giving is relationship-first. They'd support anything Justin builds
 - Channel: Personal text or casual email
 - Tone: Warm, brief, insider language. No selling needed.
 - Lead frame: "Quick thing. Here's what's happening. Would love to count you in."
-- Story: Whichever they've personally witnessed, or skip — the relationship IS the story.
+- Story: Whichever they've personally witnessed, or skip. The relationship IS the story.
 - Ask: Anchor to capacity tier. They'll stretch for Justin. Don't underask.
 - What NOT to do: Don't over-explain OC's mission to people who already know it.
 
 PERSONA 2: THE IMPACT PROFESSIONAL
 "This model works. I want to support it."
 - Senior social impact executives, foundation leaders, CSR directors, philanthropy professionals
-- They evaluate nonprofits professionally — see OC through model/outcomes lens
+- They evaluate nonprofits professionally. See OC through model/outcomes lens
 - Channel: Personal email
 - Tone: Warm but substantive. Respect their expertise.
-- Lead frame: Story first, then the model. "10 trips. $10K each."
-- Story: Stories showing systemic change — Carl, Michelle Latting, Joy
+- Lead frame: Story first, then the model. "8 trips. ~$10K each."
+- Story: Stories showing systemic change. Carl, Michelle Latting, Joy
 - Ask: Mid-to-high. Frame as investment: "Your $5K funds half a trip."
-- Match: Lead with it — they understand leverage.
+- Match: Lead with it. They understand leverage.
 
 PERSONA 3: THE NETWORK PEER
 "My people support this. I should too."
 - Google colleagues, HBS/HKS classmates, Bain/Bridgespan alumni
 - Know Justin, respect him, but relationship is primarily professional
 - Channel: Campaign email or personal email
-- Tone: Justin's natural voice — personal, warm, not needy
+- Tone: Justin's natural voice. Personal, warm, not needy
 - Lead frame: Valencia's story + social proof
-- Story: Human stories anyone connects to — Valencia, 8-year-old
+- Story: Human stories anyone connects to. Valencia, 8-year-old
 
 ═══════════════════════════════════════════════════════════════
 EXECUTION MATRIX: PERSONA × LIFECYCLE
@@ -151,14 +152,14 @@ Opener inserts:
 | | New to OC | Prior Donor | Lapsed |
 |--|--|--|--|
 | Believer | "Quick thing. [Context]. Would love to count you in." | "Your support last year went to [trip]. Meant the world. Here's what's next." | "Haven't caught up in a while. OC is bigger this year. Would love to have you in it." |
-| Impact Pro | "I don't think you've backed OC yet — if you want in this season, here's what's happening." | "Your gift last year went toward [trip] — [X] families. Building on that with 10 trips." | "You supported OC before. Reaching out personally because we're doing something bigger." |
-| Network Peer | "Hey — reaching out personally about something I'm building." | "Thanks for backing us last year. [Impact]. 10 trips this season." | "You supported OC before. Wanted to reach out personally." |
+| Impact Pro | "I don't think you've backed OC yet. If you want in this season, here's what's happening." | "Your gift last year went toward [trip]. [X] families. Building on that with 8 trips." | "You supported OC before. Reaching out personally because we're doing something bigger." |
+| Network Peer | "Hey, reaching out personally about something I'm building." | "Thanks for backing us last year. [Impact]. 8 trips this season." | "You supported OC before. Wanted to reach out personally." |
 
 Thank-you frames:
 
 | Persona | Base Thank-you | + Parental Empathy | + Justice/Equity | + Community |
 |--|--|--|--|--|
-| Believer | "Means the world. Thank you." | Same — relationship is the frame | Same | Same |
+| Believer | "Means the world. Thank you." | Same (relationship is the frame) | Same | Same |
 | Impact Pro | "Your $X is going toward [trip]. [X] families." | "…families like yours." | "You're helping build what public lands should have been." | "You're funding a community that will outlast any program." |
 | Network Peer | "You're the kind of person who shows up." | "Your gift sends [X] families to the campfire." | "You're funding spaces where every family belongs." | "You just joined something real." |
 
@@ -170,13 +171,13 @@ STORY BANK
 |-------|-----------|----------|
 | valencia | Mom from Alabama, first time outdoors. Afraid to sleep without locked door → most restorative sleep in years. Daughter running barefoot, no fear, just joy. | parental_empathy, universal. The Come Alive story. |
 | carl | "There are very few times as a Black man that I feel comfortable in the woods. Being able to feel safe camping changes the narrative." | justice_equity, mission_alignment. Systemic change. |
-| 8_year_old | After first camping trip, asked mom to "go home to the campfire." Didn't mean the campsite — meant the feeling. | parental_empathy, community_belonging. |
+| 8_year_old | After first camping trip, asked mom to "go home to the campfire." Didn't mean the campsite. Meant the feeling. | parental_empathy, community_belonging. |
 | michelle_latting | "It feels like core aspects of who we are as individuals and as a family are *made* on these trips." | parental_empathy, community_belonging. Family transformation. |
 | joy | "This is a community that will never fail me." | community_belonging, relationship. Found community. |
 | aftan | "The grief still exists, but it feels a bit lighter." Processing cousin's death on a trip. | community_belonging, mission_alignment. Healing. |
 | dorian | "Rejuvenated. Grounded. Rested. Calm." Balance through nature. | peer_identity (burnout). |
 | sally_disney | "449 nights at Humboldt for the price of three at Disney." | peer_identity (value/ROI). |
-| skip | No story — the relationship carries the ask. | Believers who know OC deeply. |
+| skip | No story. The relationship carries the ask. | Believers who know OC deeply. |
 
 ═══════════════════════════════════════════════════════════════
 DONOR PSYCHOLOGY (use naturally, don't force)
@@ -184,10 +185,10 @@ DONOR PSYCHOLOGY (use naturally, don't force)
 
 - Identity circuit: "You're the kind of person who..." is 2x more powerful than shared identity alone
 - Warm glow: Frame giving as joining something exciting, not filling a gap
-- Endowed progress: Campaign is already at $35K+ — mention this
+- Endowed progress: Campaign is already at $45K+. Mention this
 - Social proof: "Several friends have already committed" (if true for their cohort)
-- Matching: "$20K match means your gift doubles" — leverage framing
-- Decision friction: Make it easy — one link, "just reply," "happy to talk"
+- Matching: "$20K match means your gift doubles." Leverage framing
+- Decision friction: Make it easy. One link, "just reply," "happy to talk"
 - Identifiable victim: One family's story > statistics. Always.
 - Loss aversion: "Don't miss being part of this founding group" > "Please donate"
 
@@ -208,26 +209,26 @@ OUTPUT INSTRUCTIONS
 
 For each contact, produce a JSON object with these fields:
 
-1. subject_line — Email subject line. Casual, 3-8 words, sounds like a friend. Examples: "quick thing," "10 trips this year," "a personal ask." For texts, use empty string "".
+1. subject_line: Email subject line. Casual, 3-8 words, sounds like a friend. Examples: "quick thing," "8 trips this year," "a personal ask." For texts, use empty string "".
 
-2. message_body — The full outreach message. 100-200 words. In Justin's voice. Must include:
+2. message_body: The full outreach message. 100-200 words. In Justin's voice. Must include:
    - A personal opener that references their specific relationship or shared history
-   - The campaign context (trips, cost, match) — but woven naturally, not listed
-   - A soft invitation — "would love to count you in" or similar
+   - The campaign context (trips, cost, match), woven naturally, not listed
+   - A soft invitation. "Would love to count you in" or similar
    - NO explicit dollar amount in the first touch (unless they're a prior donor and you're referencing their past gift)
    - End with "Justin" (not "Best, Justin" or "Sincerely")
    - If channel is text, keep it under 100 words and even more casual
 
-3. channel — "email" or "text". Use "text" only if:
+3. channel: "email" or "text". Use "text" only if:
    - The contact has SMS communication history
    - Familiarity >= 3 and the relationship feels text-appropriate
    - Otherwise default to "email"
 
-4. follow_up_text — A text message for 3-5 days later if no response. Under 50 words. Very casual. "Hey — did you see my note about OC? No pressure, just wanted to make sure it landed."
+4. follow_up_text: A text message for 3-5 days later if no response. Under 50 words. Very casual. "Hey, did you see my note about OC? No pressure, just wanted to make sure it landed."
 
-5. thank_you_message — What to send after they give. Under 75 words. Identity-affirming, not generic. Use the thank-you frame matrix.
+5. thank_you_message: What to send after they give. Under 75 words. Identity-affirming, not generic. Use the thank-you frame matrix.
 
-6. internal_notes — 1-2 sentences for Justin: what to emphasize if they call back, any risks or opportunities, suggested conversation topics.
+6. internal_notes: 1-2 sentences for Justin. What to emphasize if they call back, any risks or opportunities, suggested conversation topics.
 
 CRITICAL RULES:
 - Output ONLY valid JSON. No markdown, no explanation, no preamble. Just the JSON object.
@@ -236,7 +237,8 @@ CRITICAL RULES:
 - If they're a prior OC donor, acknowledge it and reference the impact.
 - If they have kids and the parental_empathy flag is set, lean into family stories.
 - Never reference data you shouldn't have (FEC records, home value, etc.).
-- Personalize with their work, shared institutions, or recent conversations — not wealth signals."""
+- Personalize with their work, shared institutions, or recent conversations. Not wealth signals.
+- NEVER use em dashes (—). Use periods, commas, or parentheses instead."""
 
 
 # ── Select columns ────────────────────────────────────────────────────
@@ -249,6 +251,8 @@ SELECT_COLS = (
     "fec_donations, real_estate_data, "
     "comms_last_date, comms_thread_count, communication_history, "
     "comms_closeness, comms_momentum, comms_summary, "
+    "comms_meeting_count, comms_last_meeting, "
+    "comms_call_count, comms_last_call, "
     "enrich_employment, enrich_education, enrich_volunteering, "
     "known_donor, nonprofit_board_member, "
     "outdoor_environmental_affinity, outdoor_affinity_evidence, "
@@ -285,8 +289,10 @@ def summarize_comms_detailed(contact: dict) -> str:
     thread_count = contact.get("comms_thread_count", 0)
     closeness = contact.get("comms_closeness")
     momentum = contact.get("comms_momentum")
+    meeting_count = contact.get("comms_meeting_count", 0)
+    call_count = contact.get("comms_call_count", 0)
 
-    if not last_date and not thread_count:
+    if not last_date and not thread_count and not meeting_count and not call_count:
         return "No communication history"
 
     parts = []
@@ -297,22 +303,32 @@ def summarize_comms_detailed(contact: dict) -> str:
     if last_date:
         parts.append(f"Last contact: {last_date}")
     if thread_count:
-        parts.append(f"Total threads: {thread_count}")
+        parts.append(f"Total threads/events/calls: {thread_count}")
 
     cs = parse_jsonb(contact.get("comms_summary"))
     if cs and isinstance(cs, dict):
         channels = cs.get("channels", {})
         ch_parts = []
-        for ch_name in ["email", "linkedin", "sms"]:
+        for ch_name in ["email", "linkedin", "sms", "calendar", "calls"]:
             ch = channels.get(ch_name)
             if not ch:
                 continue
             ch_threads = ch.get("threads", 0)
             ch_bidir = ch.get("bidirectional", 0)
             ch_last = (ch.get("last_date", "") or "")[:10]
-            label = {"email": "email", "linkedin": "LinkedIn", "sms": "SMS"}.get(ch_name, ch_name)
-            detail = f"{ch_threads} {label} ({ch_bidir} bidirectional"
-            detail += f", last: {ch_last})" if ch_last else ")"
+            label = {"email": "email", "linkedin": "LinkedIn", "sms": "SMS",
+                     "calendar": "meetings", "calls": "phone calls"}.get(ch_name, ch_name)
+            if ch_name == "calendar":
+                detail = f"{ch_threads} {label}"
+                detail += f" (last: {ch_last})" if ch_last else ""
+            elif ch_name == "calls":
+                incoming = ch.get("inbound", 0)
+                outgoing = ch.get("outbound", 0)
+                detail = f"{ch_threads} {label} ({incoming} in, {outgoing} out"
+                detail += f", last: {ch_last})" if ch_last else ")"
+            else:
+                detail = f"{ch_threads} {label} ({ch_bidir} bidirectional"
+                detail += f", last: {ch_last})" if ch_last else ")"
             ch_parts.append(detail)
         if ch_parts:
             parts.append(f"Channels: {'; '.join(ch_parts)}")
