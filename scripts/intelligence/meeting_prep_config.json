@@ -1,0 +1,28 @@
+{
+  "excluded_domains": [
+    "flourishfund.org"
+  ],
+  "excluded_emails": [],
+  "internal_emails": [
+    "sally@outdoorithmcollective.org",
+    "sally.steele@gmail.com",
+    "karibu@kindora.co"
+  ],
+  "skip_recurring": true,
+  "skip_declined": true,
+  "skip_all_day": true,
+  "skip_cancelled": true,
+  "skip_keywords": [
+    "wellness session",
+    "group workshop"
+  ],
+  "add_unknown_contacts": true,
+  "contact_pool_for_new": "meeting",
+  "google_doc_folder_name": "Meeting Prep Memos",
+  "google_doc_account": "justin@truesteele.com",
+  "attach_to_calendar": true,
+  "reuse_daily_google_doc": true,
+  "timezone": "America/Los_Angeles",
+  "perplexity_model": "sonar-pro",
+  "memo_model": "claude-sonnet-4-6"
+}
