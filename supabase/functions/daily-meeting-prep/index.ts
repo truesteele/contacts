@@ -204,7 +204,9 @@ async function refreshAllTokens(accounts: GoogleAccount[]): Promise<void> {
   );
   for (let i = 0; i < results.length; i++) {
     if (results[i].status === "rejected") {
-      console.error(`[TOKEN] Failed for ${accounts[i].email}: ${(results[i] as PromiseRejectedResult).reason}`);
+      console.error(`[TOKEN] FAILED for ${accounts[i].email}: ${(results[i] as PromiseRejectedResult).reason}`);
+    } else {
+      console.log(`[TOKEN] OK: ${accounts[i].email}`);
     }
   }
 }
@@ -997,15 +999,14 @@ async function createGoogleDoc(
   const folderId = await getOrCreateDriveFolder(token, CONFIG.googleDocFolderName);
   console.log(`  Drive folder: ${CONFIG.googleDocFolderName} (${folderId})`);
 
-  // Format date for title
+  // Format date for title — must match Python's strftime("%A, %B %d, %Y") format
+  // which uses leading zeros for day (e.g. "March 03" not "March 3")
   const d = new Date(dateStr + "T12:00:00");
-  const titleDate = d.toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    timeZone: "UTC",
-  });
+  const weekday = d.toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" });
+  const month = d.toLocaleDateString("en-US", { month: "long", timeZone: "UTC" });
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  const year = d.getUTCFullYear();
+  const titleDate = `${weekday}, ${month} ${day}, ${year}`;
   const title = `Meeting Prep \u2014 ${titleDate}`;
 
   let docId: string | null = null;
@@ -1027,7 +1028,7 @@ async function createGoogleDoc(
     });
     const parents = (fileMeta.parents || []).join(",");
 
-    await fetch(
+    const moveResp = await fetch(
       `https://www.googleapis.com/drive/v3/files/${docId}?addParents=${folderId}${parents ? `&removeParents=${parents}` : ""}&fields=id`,
       {
         method: "PATCH",
@@ -1035,6 +1036,10 @@ async function createGoogleDoc(
         body: "{}",
       }
     );
+    if (!moveResp.ok) {
+      const moveErr = await moveResp.text();
+      console.error(`  [WARN] Failed to move doc to folder: ${moveResp.status} ${moveErr.slice(0, 300)}`);
+    }
   }
 
   const fullContent = buildDocText(titleDate, memos);
@@ -1215,11 +1220,17 @@ async function runPipeline(): Promise<{
   // 6. Create Google Doc
   console.log("\n6. Creating Google Doc...");
   let docInfo: { docId: string; docUrl: string } | null = null;
+  let docError: string | undefined;
   try {
     const { dateStr } = getTodayDateRange();
     docInfo = await createGoogleDoc(accounts, dateStr, memos);
+    if (!docInfo) {
+      docError = `Google Doc returned null — likely no access token for ${CONFIG.googleDocAccount}`;
+      console.error(`   [ERROR] ${docError}`);
+    }
   } catch (e) {
-    console.error(`   [ERROR] Google Doc creation failed: ${e}`);
+    docError = e instanceof Error ? e.message : String(e);
+    console.error(`   [ERROR] Google Doc creation failed: ${docError}`);
   }
 
   // 7. Attach to calendar events
@@ -1238,6 +1249,7 @@ async function runPipeline(): Promise<{
     meetingsFound: allEvents.length,
     memosGenerated: memos.length,
     docUrl: docInfo?.docUrl,
+    error: docError ? `Google Doc failed: ${docError}` : undefined,
   };
 }
 
@@ -1259,10 +1271,11 @@ Deno.serve(async (req) => {
     const result = await runPipeline();
 
     if (runId) {
+      const status = !result.success ? "error" : result.error ? "partial" : "success";
       await recordRunEnd(
         supabase,
         runId,
-        result.success ? "success" : "error",
+        status,
         result.meetingsFound,
         result.memosGenerated,
         result.docUrl,
