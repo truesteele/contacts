@@ -136,7 +136,7 @@ const CONFIG = {
   contactPoolForNew: "meeting",
   googleDocFolderName: "Meeting Prep Memos",
   googleDocAccount: "justin@truesteele.com",
-  attachToCalendar: true,
+  attachToCalendar: false, // disabled — attachments are visible to all attendees
   reuseDailyGoogleDoc: true,
   perplexityModel: "sonar-pro",
   memoModel: "claude-sonnet-4-6",

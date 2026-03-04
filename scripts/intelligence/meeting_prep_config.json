@@ -20,7 +20,7 @@
   "contact_pool_for_new": "meeting",
   "google_doc_folder_name": "Meeting Prep Memos",
   "google_doc_account": "justin@truesteele.com",
-  "attach_to_calendar": true,
+  "attach_to_calendar": false,
   "reuse_daily_google_doc": true,
   "timezone": "America/Los_Angeles",
   "perplexity_model": "sonar-pro",
