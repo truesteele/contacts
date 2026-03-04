@@ -948,40 +948,164 @@ function formatEventTime(event: CalendarEvent): string {
   }
 }
 
-function buildDocText(dateStr: string, memos: MemoData[]): string {
-  const parts: string[] = [];
-  parts.push(`Meeting Prep Memos\n${dateStr}\n\n`);
-  parts.push("TODAY'S SCHEDULE\n\n");
+// ── Markdown → HTML ─────────────────────────────────────────────────────────
 
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function inlineFormat(line: string): string {
+  let s = escapeHtml(line);
+  // Bold: **text**
+  s = s.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+  // Italic: *text* (but not inside bold)
+  s = s.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, "<i>$1</i>");
+  return s;
+}
+
+function markdownToHtml(md: string): string {
+  const lines = md.split("\n");
+  const out: string[] = [];
+  let inTable = false;
+  let inList = false;
+  let tableRowIdx = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    const raw = lines[i];
+    const trimmed = raw.trim();
+
+    // Blank line
+    if (!trimmed) {
+      if (inTable) { out.push("</table>"); inTable = false; tableRowIdx = 0; }
+      if (inList) { out.push("</ul>"); inList = false; }
+      continue;
+    }
+
+    // Horizontal rule
+    if (/^-{3,}$/.test(trimmed) || /^={3,}$/.test(trimmed)) {
+      if (inTable) { out.push("</table>"); inTable = false; tableRowIdx = 0; }
+      if (inList) { out.push("</ul>"); inList = false; }
+      out.push("<hr>");
+      continue;
+    }
+
+    // Heading
+    const headingMatch = trimmed.match(/^(#{1,3})\s+(.+)/);
+    if (headingMatch) {
+      if (inTable) { out.push("</table>"); inTable = false; tableRowIdx = 0; }
+      if (inList) { out.push("</ul>"); inList = false; }
+      const level = headingMatch[1].length;
+      out.push(`<h${level}>${inlineFormat(headingMatch[2])}</h${level}>`);
+      continue;
+    }
+
+    // Table row
+    if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
+      // Skip separator rows like |---|---|
+      if (/^\|[\s\-:|]+\|$/.test(trimmed)) { tableRowIdx++; continue; }
+      if (!inTable) { out.push('<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;">'); inTable = true; tableRowIdx = 0; }
+      const cells = trimmed.slice(1, -1).split("|").map((c) => c.trim());
+      const tag = tableRowIdx === 0 ? "th" : "td";
+      out.push("<tr>" + cells.map((c) => `<${tag}>${inlineFormat(c)}</${tag}>`).join("") + "</tr>");
+      tableRowIdx++;
+      continue;
+    }
+
+    // Bullet list
+    if (/^[-*]\s+/.test(trimmed)) {
+      if (inTable) { out.push("</table>"); inTable = false; tableRowIdx = 0; }
+      if (!inList) { out.push("<ul>"); inList = true; }
+      out.push(`<li>${inlineFormat(trimmed.replace(/^[-*]\s+/, ""))}</li>`);
+      continue;
+    }
+
+    // Numbered list
+    if (/^\d+\.\s+/.test(trimmed)) {
+      if (inTable) { out.push("</table>"); inTable = false; tableRowIdx = 0; }
+      // Render as bullet — Google Docs handles numbering on import
+      if (!inList) { out.push("<ul>"); inList = true; }
+      out.push(`<li>${inlineFormat(trimmed.replace(/^\d+\.\s+/, ""))}</li>`);
+      continue;
+    }
+
+    // Regular paragraph
+    if (inTable) { out.push("</table>"); inTable = false; tableRowIdx = 0; }
+    if (inList) { out.push("</ul>"); inList = false; }
+    out.push(`<p>${inlineFormat(trimmed)}</p>`);
+  }
+
+  if (inTable) out.push("</table>");
+  if (inList) out.push("</ul>");
+
+  return out.join("\n");
+}
+
+function buildDocHtml(dateStr: string, memos: MemoData[]): string {
+  const parts: string[] = [];
+  parts.push("<html><body>");
+  parts.push(`<h1>Meeting Prep Memos</h1>`);
+  parts.push(`<p><b>${escapeHtml(dateStr)}</b></p>`);
+  parts.push(`<h2>Today's Schedule</h2>`);
+  parts.push("<ul>");
   for (const m of memos) {
     const timeStr = formatEventTime(m.event);
     const summary = m.event.summary || "Untitled";
-    parts.push(`  ${timeStr}  ${summary}\n`);
+    parts.push(`<li><b>${escapeHtml(timeStr)}</b> &mdash; ${escapeHtml(summary)}</li>`);
   }
-  parts.push("\n" + "=".repeat(60) + "\n\n");
+  parts.push("</ul><hr>");
 
   for (const m of memos) {
-    parts.push(m.memoText);
-    parts.push("\n\n" + "=".repeat(60) + "\n\n");
+    parts.push(markdownToHtml(m.memoText));
+    parts.push("<hr>");
   }
 
-  return parts.join("");
+  parts.push("</body></html>");
+  return parts.join("\n");
 }
 
-async function replaceGoogleDocText(token: string, docId: string, text: string): Promise<void> {
-  const doc = await googleGet(`https://docs.googleapis.com/v1/documents/${docId}`, token);
-  const body = doc.body?.content || [];
-  const endIndex = body.length > 0 ? body[body.length - 1].endIndex || 1 : 1;
+async function uploadHtmlAsDoc(
+  token: string,
+  title: string,
+  html: string,
+  folderId: string
+): Promise<string> {
+  const boundary = "doc_boundary_" + Date.now();
+  const metadata = JSON.stringify({
+    name: title,
+    mimeType: "application/vnd.google-apps.document",
+    parents: [folderId],
+  });
 
-  const requests: unknown[] = [];
-  if (endIndex > 1) {
-    requests.push({
-      deleteContentRange: { range: { startIndex: 1, endIndex: endIndex - 1 } },
-    });
+  const body = [
+    `--${boundary}`,
+    "Content-Type: application/json; charset=UTF-8",
+    "",
+    metadata,
+    `--${boundary}`,
+    "Content-Type: text/html; charset=UTF-8",
+    "",
+    html,
+    `--${boundary}--`,
+  ].join("\r\n");
+
+  const resp = await fetch(
+    "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": `multipart/related; boundary=${boundary}`,
+      },
+      body,
+    }
+  );
+
+  if (!resp.ok) {
+    const text = await resp.text();
+    throw new Error(`HTML doc upload failed: ${resp.status} ${text.slice(0, 500)}`);
   }
-  requests.push({ insertText: { location: { index: 1 }, text } });
-
-  await googlePost(`https://docs.googleapis.com/v1/documents/${docId}:batchUpdate`, token, { requests });
+  const data = await resp.json();
+  return data.id;
 }
 
 async function createGoogleDoc(
@@ -1000,7 +1124,6 @@ async function createGoogleDoc(
   console.log(`  Drive folder: ${CONFIG.googleDocFolderName} (${folderId})`);
 
   // Format date for title — must match Python's strftime("%A, %B %d, %Y") format
-  // which uses leading zeros for day (e.g. "March 03" not "March 3")
   const d = new Date(dateStr + "T12:00:00");
   const weekday = d.toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" });
   const month = d.toLocaleDateString("en-US", { month: "long", timeZone: "UTC" });
@@ -1009,45 +1132,30 @@ async function createGoogleDoc(
   const titleDate = `${weekday}, ${month} ${day}, ${year}`;
   const title = `Meeting Prep \u2014 ${titleDate}`;
 
-  let docId: string | null = null;
-  let created = false;
+  // Build formatted HTML content
+  const html = buildDocHtml(titleDate, memos);
 
+  // For idempotent reruns: delete existing daily doc so we can recreate with HTML
   if (CONFIG.reuseDailyGoogleDoc) {
-    docId = await findExistingDailyDoc(token, folderId, title);
-    if (docId) console.log("  Reusing existing daily Google Doc");
-  }
-
-  if (!docId) {
-    const doc = await googlePost("https://docs.googleapis.com/v1/documents", token, { title });
-    docId = doc.documentId;
-    created = true;
-
-    // Move to folder
-    const fileMeta = await googleGet(`https://www.googleapis.com/drive/v3/files/${docId}`, token, {
-      fields: "parents",
-    });
-    const parents = (fileMeta.parents || []).join(",");
-
-    const moveResp = await fetch(
-      `https://www.googleapis.com/drive/v3/files/${docId}?addParents=${folderId}${parents ? `&removeParents=${parents}` : ""}&fields=id`,
-      {
-        method: "PATCH",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: "{}",
+    const existingId = await findExistingDailyDoc(token, folderId, title);
+    if (existingId) {
+      console.log("  Replacing existing daily doc (delete + recreate for formatting)");
+      const delResp = await fetch(`https://www.googleapis.com/drive/v3/files/${existingId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!delResp.ok) {
+        console.error(`  [WARN] Failed to delete old doc: ${delResp.status}`);
       }
-    );
-    if (!moveResp.ok) {
-      const moveErr = await moveResp.text();
-      console.error(`  [WARN] Failed to move doc to folder: ${moveResp.status} ${moveErr.slice(0, 300)}`);
     }
   }
 
-  const fullContent = buildDocText(titleDate, memos);
-  await replaceGoogleDocText(token, docId!, fullContent);
+  // Create new Google Doc from HTML (natively formatted)
+  const docId = await uploadHtmlAsDoc(token, title, html, folderId);
 
   const docUrl = `https://docs.google.com/document/d/${docId}/edit`;
-  console.log(`  ${created ? "Created" : "Updated"} Google Doc: ${docUrl}`);
-  return { docId: docId!, docUrl };
+  console.log(`  Created formatted Google Doc: ${docUrl}`);
+  return { docId, docUrl };
 }
 
 // ── Calendar Attachment ─────────────────────────────────────────────────────
