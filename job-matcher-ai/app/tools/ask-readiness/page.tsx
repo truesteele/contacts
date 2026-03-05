@@ -9,12 +9,20 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { ContactDetailSheet } from '@/components/contact-detail-sheet';
 import { cn } from '@/lib/utils';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   ArrowLeft,
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
   Building2,
   Download,
+  Filter,
   Heart,
   MapPin,
   Search,
@@ -124,6 +132,13 @@ const CAPACITY_LABELS: Record<string, string> = {
   unknown: 'Unknown',
 };
 
+const FIT_LABELS: Record<string, string> = {
+  high: 'High',
+  medium: 'Medium',
+  low: 'Low',
+  none: 'None',
+};
+
 // ── Helpers ────────────────────────────────────────────────────────────
 
 function FamiliarityDots({ rating }: { rating: number }) {
@@ -193,28 +208,48 @@ export default function AskReadinessPage() {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTiers, setActiveTiers] = useState<Set<string>>(new Set());
+  const [filterCapacity, setFilterCapacity] = useState<string>('all');
+  const [filterApproach, setFilterApproach] = useState<string>('all');
+  const [filterTiming, setFilterTiming] = useState<string>('all');
+  const [filterFit, setFilterFit] = useState<string>('all');
+  const [filterComms, setFilterComms] = useState<string>('all');
   const [sortBy, setSortBy] = useState<SortField>('score');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [selectedContactId, setSelectedContactId] = useState<number | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const res = await fetch('/api/network-intel/ask-readiness?goal=outdoorithm_fundraising');
-        if (!res.ok) throw new Error('Failed to load');
-        const data = await res.json();
-        setContacts(data.contacts || []);
-        setTierCounts(data.tier_counts || null);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
+  const loadContacts = useCallback(async (opts?: { silent?: boolean }) => {
+    if (!opts?.silent) {
+      setLoading(true);
+      setError('');
+    }
+
+    try {
+      const res = await fetch('/api/network-intel/ask-readiness?goal=outdoorithm_fundraising');
+      if (!res.ok) throw new Error('Failed to load');
+      const data = await res.json();
+      setContacts(data.contacts || []);
+      setTierCounts(data.tier_counts || null);
+      if (!opts?.silent) {
+        setError('');
+      }
+    } catch (err: any) {
+      if (opts?.silent) {
+        console.error('[Ask Readiness] Failed to refresh contacts:', err);
+      } else {
+        setError(err.message || 'Failed to load contacts');
+      }
+    } finally {
+      if (!opts?.silent) {
         setLoading(false);
       }
     }
-    load();
   }, []);
+
+  useEffect(() => {
+    loadContacts();
+  }, [loadContacts]);
 
   const toggleTier = useCallback((tier: string) => {
     setActiveTiers((prev) => {
@@ -239,12 +274,59 @@ export default function AskReadinessPage() {
     });
   }, []);
 
+  const activeFilterCount = useMemo(() => {
+    let count = activeTiers.size > 0 ? 1 : 0;
+    if (filterCapacity !== 'all') count++;
+    if (filterApproach !== 'all') count++;
+    if (filterTiming !== 'all') count++;
+    if (filterFit !== 'all') count++;
+    if (filterComms !== 'all') count++;
+    return count;
+  }, [activeTiers, filterCapacity, filterApproach, filterTiming, filterFit, filterComms]);
+
+  const clearAllFilters = useCallback(() => {
+    setActiveTiers(new Set());
+    setFilterCapacity('all');
+    setFilterApproach('all');
+    setFilterTiming('all');
+    setFilterFit('all');
+    setFilterComms('all');
+    setSearchTerm('');
+  }, []);
+
   const filteredAndSorted = useMemo(() => {
     let result = contacts;
 
     // Filter by tier
     if (activeTiers.size > 0) {
       result = result.filter((c) => activeTiers.has(c.tier));
+    }
+
+    // Filter by capacity
+    if (filterCapacity !== 'all') {
+      result = result.filter((c) => (c.ai_capacity_tier || 'unknown') === filterCapacity);
+    }
+
+    // Filter by approach
+    if (filterApproach !== 'all') {
+      result = result.filter((c) => c.recommended_approach === filterApproach);
+    }
+
+    // Filter by timing
+    if (filterTiming !== 'all') {
+      result = result.filter((c) => c.ask_timing === filterTiming);
+    }
+
+    // Filter by OC fit
+    if (filterFit !== 'all') {
+      result = result.filter((c) => (c.ai_outdoorithm_fit || 'none') === filterFit);
+    }
+
+    // Filter by comms history
+    if (filterComms === 'yes') {
+      result = result.filter((c) => c.comms_last_date);
+    } else if (filterComms === 'no') {
+      result = result.filter((c) => !c.comms_last_date);
     }
 
     // Filter by search term
@@ -294,7 +376,7 @@ export default function AskReadinessPage() {
     });
 
     return sorted;
-  }, [contacts, activeTiers, searchTerm, sortBy, sortOrder]);
+  }, [contacts, activeTiers, filterCapacity, filterApproach, filterTiming, filterFit, filterComms, searchTerm, sortBy, sortOrder]);
 
   const handleExportCSV = useCallback(() => {
     if (filteredAndSorted.length === 0) return;
@@ -430,7 +512,7 @@ export default function AskReadinessPage() {
         )}
 
         {/* Search + actions bar */}
-        <div className="flex items-center gap-3 mb-3">
+        <div className="flex items-center gap-3 mb-2">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
@@ -450,18 +532,6 @@ export default function AskReadinessPage() {
             )}
           </div>
 
-          {activeTiers.size > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setActiveTiers(new Set())}
-              className="text-xs gap-1"
-            >
-              <X className="w-3 h-3" />
-              Clear filter
-            </Button>
-          )}
-
           <span className="text-xs text-muted-foreground ml-auto">
             {filteredAndSorted.length.toLocaleString()} contacts
           </span>
@@ -472,12 +542,91 @@ export default function AskReadinessPage() {
           </Button>
         </div>
 
+        {/* Filter bar */}
+        <div className="flex items-center gap-2 mb-3 flex-wrap">
+          <Filter className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+
+          <Select value={filterCapacity} onValueChange={setFilterCapacity}>
+            <SelectTrigger className="h-7 w-[130px] text-xs">
+              <SelectValue placeholder="Capacity" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Capacity</SelectItem>
+              {Object.entries(CAPACITY_LABELS).map(([val, label]) => (
+                <SelectItem key={val} value={val}>{label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={filterApproach} onValueChange={setFilterApproach}>
+            <SelectTrigger className="h-7 w-[150px] text-xs">
+              <SelectValue placeholder="Approach" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Approaches</SelectItem>
+              {Object.entries(APPROACH_LABELS).map(([val, label]) => (
+                <SelectItem key={val} value={val}>{label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={filterTiming} onValueChange={setFilterTiming}>
+            <SelectTrigger className="h-7 w-[155px] text-xs">
+              <SelectValue placeholder="Timing" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Timing</SelectItem>
+              {Object.entries(TIMING_LABELS).map(([val, label]) => (
+                <SelectItem key={val} value={val}>{label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={filterFit} onValueChange={setFilterFit}>
+            <SelectTrigger className="h-7 w-[120px] text-xs">
+              <SelectValue placeholder="OC Fit" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All OC Fit</SelectItem>
+              {Object.entries(FIT_LABELS).map(([val, label]) => (
+                <SelectItem key={val} value={val}>{label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={filterComms} onValueChange={setFilterComms}>
+            <SelectTrigger className="h-7 w-[130px] text-xs">
+              <SelectValue placeholder="Comms" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Comms</SelectItem>
+              <SelectItem value="yes">Has Comms</SelectItem>
+              <SelectItem value="no">No Comms</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {activeFilterCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearAllFilters}
+              className="text-xs gap-1 h-7 px-2"
+            >
+              <X className="w-3 h-3" />
+              Clear all ({activeFilterCount})
+            </Button>
+          )}
+        </div>
+
         {/* Table */}
         <Card>
           <ScrollArea className="h-[calc(100vh-300px)] min-h-[400px]">
             <table className="w-full text-sm">
               <thead className="bg-muted/50 sticky top-0 z-10">
                 <tr className="border-b">
+                  <th className="text-left p-2 w-[40px]">
+                    <span className="font-medium text-xs uppercase tracking-wide text-muted-foreground">#</span>
+                  </th>
                   {([
                     ['score', 'Score', 'w-[100px]'],
                     ['tier', 'Tier', 'w-[110px]'],
@@ -511,7 +660,7 @@ export default function AskReadinessPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredAndSorted.map((contact) => {
+                {filteredAndSorted.map((contact, index) => {
                   const isExpanded = expandedId === contact.id;
                   const tierConfig = TIER_CONFIG[contact.tier] || TIER_CONFIG.long_term;
                   const ocEng = contact.oc_engagement;
@@ -523,6 +672,10 @@ export default function AskReadinessPage() {
                       key={contact.id}
                       className="border-b hover:bg-muted/30 transition-colors group"
                     >
+                      {/* Row number */}
+                      <td className="p-2 text-xs text-muted-foreground font-mono tabular-nums">
+                        {index + 1}
+                      </td>
                       {/* Score */}
                       <td className="p-2">
                         <ScoreBar score={contact.score} />
@@ -727,6 +880,9 @@ export default function AskReadinessPage() {
         contactId={selectedContactId}
         open={sheetOpen}
         onOpenChange={setSheetOpen}
+        onUpdated={() => {
+          void loadContacts({ silent: true });
+        }}
       />
     </main>
   );

@@ -12,6 +12,14 @@ import { Badge } from '@/components/ui/badge';
 // Using plain div with overflow instead of Radix ScrollArea to avoid horizontal overflow issues
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Building2,
   MapPin,
@@ -23,12 +31,17 @@ import {
   MessageSquare,
   Lightbulb,
   AlertCircle,
+  AlertTriangle,
   RefreshCw,
   Target,
   CheckCircle2,
   Home,
   DollarSign,
   Phone,
+  Save,
+  Loader2,
+  Info,
+  Megaphone,
 } from 'lucide-react';
 
 interface SharedInstitution {
@@ -67,6 +80,38 @@ interface AskReadinessGoal {
   scored_at?: string;
 }
 
+interface CampaignScaffold {
+  persona?: string;
+  campaign_list?: string;
+  capacity_tier?: string;
+  primary_ask_amount?: number;
+  primary_motivation?: string;
+  lifecycle_stage?: string;
+}
+
+interface PersonalOutreach {
+  subject_line?: string;
+  message_body?: string;
+  channel?: string;
+  follow_up_text?: string;
+  thank_you_message?: string;
+  internal_notes?: string;
+}
+
+interface CampaignCopy {
+  pre_email_note?: string;
+  text_followup_opener?: string;
+  text_followup_milestone?: string;
+  thank_you_message?: string;
+}
+
+interface Campaign2026 {
+  scaffold?: CampaignScaffold;
+  personal_outreach?: PersonalOutreach;
+  campaign_copy?: CampaignCopy;
+  sidelined?: { reason: string; sidelined_at: string; original_list: string } | null;
+}
+
 interface ContactDetail {
   id: number;
   first_name: string;
@@ -95,6 +140,8 @@ interface ContactDetail {
   // Wealth signals
   fec_donations?: Record<string, any> | null;
   real_estate_data?: Record<string, any> | null;
+  // Campaign
+  campaign_2026?: Campaign2026 | null;
   // AI scores
   ai_proximity_score?: number;
   ai_proximity_tier?: string;
@@ -120,7 +167,22 @@ interface ContactDetailSheetProps {
   contactId: number | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onUpdated?: () => void;
 }
+
+const LIST_OPTIONS = [
+  { value: 'A', label: 'List A', description: 'Inner circle, personal Opus-written outreach', color: 'bg-violet-100 border-violet-300 text-violet-900 dark:bg-violet-950/40 dark:border-violet-700 dark:text-violet-200' },
+  { value: 'B', label: 'List B', description: 'Ready now, primary email campaign', color: 'bg-blue-100 border-blue-300 text-blue-900 dark:bg-blue-950/40 dark:border-blue-700 dark:text-blue-200' },
+  { value: 'C', label: 'List C', description: 'Cultivate first, secondary email', color: 'bg-amber-100 border-amber-300 text-amber-900 dark:bg-amber-950/40 dark:border-amber-700 dark:text-amber-200' },
+  { value: 'D', label: 'List D', description: 'Extended network, broadest email', color: 'bg-gray-100 border-gray-300 text-gray-700 dark:bg-gray-800/40 dark:border-gray-600 dark:text-gray-300' },
+  { value: 'sidelined', label: 'Sidelined', description: 'Removed from campaign', color: 'bg-red-100 border-red-300 text-red-900 dark:bg-red-950/40 dark:border-red-700 dark:text-red-200' },
+];
+
+const PERSONA_LABELS: Record<string, string> = {
+  believer: 'Believer',
+  impact_professional: 'Impact Professional',
+  explorer: 'Explorer',
+};
 
 const TIER_LABELS: Record<string, string> = {
   inner_circle: 'Inner Circle',
@@ -263,10 +325,21 @@ export function ContactDetailSheet({
   contactId,
   open,
   onOpenChange,
+  onUpdated,
 }: ContactDetailSheetProps) {
   const [detail, setDetail] = useState<ContactDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showAllDonations, setShowAllDonations] = useState(false);
+
+  // Campaign list state
+  const [selectedList, setSelectedList] = useState('');
+  const [originalList, setOriginalList] = useState('');
+  const [sidelineReason, setSidelineReason] = useState('');
+  const [campaignSaving, setCampaignSaving] = useState(false);
+  const [campaignSaveError, setCampaignSaveError] = useState('');
+  const [generatingOutreach, setGeneratingOutreach] = useState(false);
+  const campaignDirty = selectedList !== originalList;
 
   const fetchDetail = useCallback(async (id: number) => {
     setLoading(true);
@@ -281,6 +354,15 @@ export function ContactDetailSheet({
       }
       const data = await res.json();
       setDetail(data);
+
+      // Populate campaign list state
+      const list =
+        data.campaign_2026?.scaffold?.campaign_list ||
+        (data.campaign_2026?.sidelined ? 'sidelined' : '');
+      setSelectedList(list);
+      setOriginalList(list);
+      setSidelineReason(data.campaign_2026?.sidelined?.reason || '');
+      setCampaignSaveError('');
     } catch (err: any) {
       setError(err.message || 'Failed to load contact details');
     } finally {
@@ -295,6 +377,12 @@ export function ContactDetailSheet({
     if (!open) {
       setDetail(null);
       setError('');
+      setShowAllDonations(false);
+      setSelectedList('');
+      setOriginalList('');
+      setSidelineReason('');
+      setCampaignSaveError('');
+      setGeneratingOutreach(false);
     }
   }, [open, contactId, fetchDetail]);
 
@@ -329,6 +417,112 @@ export function ContactDetailSheet({
         ([, v]) => v && typeof v === 'object' && 'score' in v
       )
     : [];
+
+  const campaign = detail?.campaign_2026;
+  const isSidelined = selectedList === 'sidelined';
+  const movingToA = selectedList === 'A' && originalList !== 'A';
+
+  const generateCampaignOutreach = useCallback(
+    async (contactId: number, failurePrefix: string) => {
+      setGeneratingOutreach(true);
+      setCampaignSaveError('');
+      let generationError = '';
+      try {
+        const genRes = await fetch(
+          `/api/network-intel/campaign/${contactId}/generate-outreach`,
+          { method: 'POST' }
+        );
+        if (!genRes.ok) {
+          const genBody = await genRes.json().catch(() => ({}));
+          throw new Error(genBody.error || 'Failed to generate outreach');
+        }
+      } catch (genErr: any) {
+        generationError = `${failurePrefix}: ${genErr.message || 'Unknown error'}`;
+      } finally {
+        setGeneratingOutreach(false);
+      }
+      await fetchDetail(contactId);
+      if (generationError) {
+        setCampaignSaveError(generationError);
+      }
+    },
+    [fetchDetail]
+  );
+
+  const handleCampaignSave = useCallback(async () => {
+    if (!detail || !campaignDirty) return;
+    setCampaignSaving(true);
+    setCampaignSaveError('');
+
+    try {
+      // Update the list assignment
+      const patchRes = await fetch(`/api/network-intel/campaign/${detail.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          section: 'scaffold',
+          field: 'campaign_list',
+          value: selectedList,
+        }),
+      });
+      if (!patchRes.ok) throw new Error('Failed to update list assignment');
+
+      // Handle sidelined
+      if (isSidelined) {
+        const sidelineRes = await fetch(`/api/network-intel/campaign/${detail.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            section: 'sidelined',
+            value: {
+              reason: sidelineReason || 'No reason given',
+              sidelined_at: new Date().toISOString(),
+              original_list: originalList,
+            },
+          }),
+        });
+        if (!sidelineRes.ok) throw new Error('Failed to save sideline reason');
+      } else if (originalList === 'sidelined') {
+        // Restore from sidelined
+        const restoreRes = await fetch(`/api/network-intel/campaign/${detail.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ section: 'sidelined', value: null }),
+        });
+        if (!restoreRes.ok) throw new Error('Failed to restore from sidelined');
+      }
+
+      setOriginalList(selectedList);
+
+      // If moved to A, auto-generate outreach
+      if (movingToA) {
+        setCampaignSaving(false);
+        await generateCampaignOutreach(
+          detail.id,
+          'List updated to A. Outreach generation failed'
+        );
+      } else {
+        await fetchDetail(detail.id);
+      }
+
+      onUpdated?.();
+    } catch (err: any) {
+      setCampaignSaveError(err.message || 'Failed to save');
+    } finally {
+      setCampaignSaving(false);
+    }
+  }, [
+    detail,
+    campaignDirty,
+    selectedList,
+    originalList,
+    isSidelined,
+    sidelineReason,
+    movingToA,
+    generateCampaignOutreach,
+    fetchDetail,
+    onUpdated,
+  ]);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -520,6 +714,228 @@ export function ContactDetailSheet({
                     </div>
                   )}
                 </div>
+
+                {/* Campaign Assignment */}
+                <>
+                  <Separator />
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-medium flex items-center gap-1.5">
+                      <Megaphone className="w-4 h-4" />
+                      Campaign 2026
+                    </h3>
+
+                    {/* Color-coded list selector banner */}
+                    {(() => {
+                      const currentOpt = LIST_OPTIONS.find((o) => o.value === selectedList);
+                      return (
+                        <div
+                          className={`rounded-lg border p-3 ${
+                            currentOpt?.color || 'bg-muted border-border'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-semibold">
+                                {currentOpt?.label || 'Not assigned'}
+                              </div>
+                              <div className="text-xs opacity-75 mt-0.5">
+                                {currentOpt?.description || 'No campaign list assigned'}
+                              </div>
+                            </div>
+                            <Select
+                              value={selectedList || undefined}
+                              onValueChange={(val) => {
+                                setSelectedList(val);
+                                if (val !== 'sidelined') setSidelineReason('');
+                                setCampaignSaveError('');
+                              }}
+                            >
+                              <SelectTrigger className="h-8 w-[140px] text-xs font-medium bg-white/80 dark:bg-black/30 border shadow-sm">
+                                <SelectValue placeholder="Move to..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {LIST_OPTIONS.map((opt) => (
+                                  <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                                    <div>
+                                      <span className="font-medium">{opt.label}</span>
+                                      <span className="ml-1.5 text-muted-foreground">
+                                        {opt.description}
+                                      </span>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Scaffold badges */}
+                    {campaign?.scaffold && (
+                      <div className="flex flex-wrap gap-1.5 items-center">
+                        {campaign.scaffold.persona && (
+                          <Badge variant="outline" className="text-[10px]">
+                            {PERSONA_LABELS[campaign.scaffold.persona] ||
+                              campaign.scaffold.persona}
+                          </Badge>
+                        )}
+                        {campaign.scaffold.primary_ask_amount && (
+                          <Badge variant="outline" className="text-[10px]">
+                            <DollarSign className="w-3 h-3 mr-0.5" />
+                            {campaign.scaffold.primary_ask_amount.toLocaleString()}
+                          </Badge>
+                        )}
+                        {campaign.scaffold.capacity_tier && (
+                          <Badge variant="outline" className="text-[10px]">
+                            {campaign.scaffold.capacity_tier.replace(/_/g, ' ')}
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Sideline reason */}
+                    {isSidelined && (
+                      <div className="rounded-md border border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20 dark:border-yellow-800 p-3 space-y-2">
+                        <div className="flex items-center gap-1.5 text-xs font-medium text-yellow-800 dark:text-yellow-200">
+                          <AlertTriangle className="w-3.5 h-3.5" />
+                          Sidelined from campaign
+                        </div>
+                        <Textarea
+                          value={sidelineReason}
+                          onChange={(e) => setSidelineReason(e.target.value)}
+                          placeholder="Reason for sidelining..."
+                          className="text-sm min-h-[40px] bg-white dark:bg-background"
+                        />
+                      </div>
+                    )}
+
+                    {/* Move-to-A info banner */}
+                    {movingToA && !generatingOutreach && (
+                      <div className="rounded-md border border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800 p-3">
+                        <div className="flex items-center gap-1.5 text-xs font-medium text-blue-800 dark:text-blue-200">
+                          <Info className="w-3.5 h-3.5 shrink-0" />
+                          Saving will generate a personal outreach message using Claude Opus (~15s)
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Generating outreach loading */}
+                    {generatingOutreach && (
+                      <div className="rounded-md border border-violet-200 bg-violet-50 dark:bg-violet-950/20 dark:border-violet-800 p-3">
+                        <div className="flex items-center gap-2 text-xs font-medium text-violet-800 dark:text-violet-200">
+                          <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+                          Generating personal outreach with Claude Opus...
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Save error */}
+                    {campaignSaveError && (
+                      <div className="rounded-md border border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800 p-3">
+                        <div className="flex items-center gap-1.5 text-xs font-medium text-red-800 dark:text-red-200">
+                          <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                          {campaignSaveError}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Save button */}
+                    {campaignDirty && (
+                      <Button
+                        size="sm"
+                        onClick={handleCampaignSave}
+                        disabled={
+                          campaignSaving ||
+                          generatingOutreach ||
+                          (isSidelined && !sidelineReason.trim())
+                        }
+                        className="w-full gap-1.5"
+                      >
+                        {campaignSaving ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Save className="w-3.5 h-3.5" />
+                        )}
+                        {campaignSaving
+                          ? 'Saving...'
+                          : `Move to ${
+                              LIST_OPTIONS.find((o) => o.value === selectedList)?.label ||
+                              selectedList
+                            }`}
+                      </Button>
+                    )}
+
+                    {selectedList === 'A' && !campaignDirty && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (!detail) return;
+                          void generateCampaignOutreach(
+                            detail.id,
+                            'Outreach generation failed'
+                          );
+                        }}
+                        disabled={campaignSaving || generatingOutreach}
+                        className="w-full gap-1.5"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        {campaign?.personal_outreach?.message_body
+                          ? 'Regenerate Outreach with Opus'
+                          : 'Generate Outreach with Opus'}
+                      </Button>
+                    )}
+
+                    {/* Outreach preview */}
+                    {selectedList === 'A' && campaign?.personal_outreach?.message_body && (
+                      <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+                        <div className="text-xs text-muted-foreground font-medium">
+                          Proposed Outreach
+                        </div>
+                        {campaign.personal_outreach.subject_line && (
+                          <div className="text-sm font-medium">
+                            {campaign.personal_outreach.subject_line}
+                          </div>
+                        )}
+                        <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                          {campaign.personal_outreach.message_body}
+                        </p>
+                        {campaign.personal_outreach.follow_up_text && (
+                          <div className="pt-2 border-t">
+                            <div className="text-xs text-muted-foreground font-medium mb-1">
+                              Follow-up
+                            </div>
+                            <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                              {campaign.personal_outreach.follow_up_text}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {['B', 'C', 'D'].includes(selectedList) &&
+                      campaign?.campaign_copy?.pre_email_note && (
+                        <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+                          <div className="text-xs text-muted-foreground font-medium">
+                            Pre-Email Note
+                          </div>
+                          <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                            {campaign.campaign_copy.pre_email_note}
+                          </p>
+                        </div>
+                      )}
+
+                    {!campaign?.personal_outreach?.message_body &&
+                      !campaign?.campaign_copy?.pre_email_note &&
+                      selectedList &&
+                      selectedList !== 'sidelined' && (
+                        <div className="text-xs text-muted-foreground italic">
+                          No outreach generated yet
+                        </div>
+                      )}
+                  </div>
+                </>
 
                 {/* Communication History */}
                 {hasCommsHistory && (
@@ -948,24 +1364,41 @@ export function ContactDetailSheet({
                                     <span>cycles: {(detail.fec_donations.cycles as string[]).join(', ')}</span>
                                   )}
                                 </div>
-                                {detail.fec_donations.recent_donations && (detail.fec_donations.recent_donations as any[]).length > 0 && (
-                                  <div className="mt-1.5 space-y-0.5">
-                                    <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Recent</div>
-                                    {(detail.fec_donations.recent_donations as any[]).slice(0, 5).map((d: any, i: number) => (
-                                      <div key={i} className="flex items-center justify-between text-xs">
-                                        <span className="text-muted-foreground truncate max-w-[200px]">
-                                          {(d.committee || '').length > 35
-                                            ? (d.committee || '').slice(0, 35) + '...'
-                                            : d.committee || '?'}
-                                        </span>
-                                        <div className="flex items-center gap-2 shrink-0">
-                                          <span className="font-mono">${Number(d.amount || 0).toLocaleString()}</span>
-                                          <span className="text-muted-foreground text-[10px]">{d.date || ''}</span>
-                                        </div>
+                                {detail.fec_donations.recent_donations && (detail.fec_donations.recent_donations as any[]).length > 0 && (() => {
+                                  const allDonations = detail.fec_donations!.recent_donations as any[];
+                                  const displayDonations = showAllDonations ? allDonations : allDonations.slice(0, 5);
+                                  const hasMore = allDonations.length > 5;
+                                  return (
+                                    <div className="mt-1.5 space-y-0.5">
+                                      <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                                        {showAllDonations ? `All ${allDonations.length} Donations` : 'Recent'}
                                       </div>
-                                    ))}
-                                  </div>
-                                )}
+                                      {displayDonations.map((d: any, i: number) => (
+                                        <div key={i} className="flex items-center justify-between text-xs">
+                                          <span className="text-muted-foreground truncate max-w-[200px]">
+                                            {(d.committee || '').length > 35
+                                              ? (d.committee || '').slice(0, 35) + '...'
+                                              : d.committee || '?'}
+                                          </span>
+                                          <div className="flex items-center gap-2 shrink-0">
+                                            <span className="font-mono">${Number(d.amount || 0).toLocaleString()}</span>
+                                            <span className="text-muted-foreground text-[10px]">{d.date || ''}</span>
+                                          </div>
+                                        </div>
+                                      ))}
+                                      {hasMore && (
+                                        <button
+                                          onClick={() => setShowAllDonations(!showAllDonations)}
+                                          className="text-xs text-primary hover:underline mt-1"
+                                        >
+                                          {showAllDonations
+                                            ? 'Show less'
+                                            : `Show all ${allDonations.length} donations`}
+                                        </button>
+                                      )}
+                                    </div>
+                                  );
+                                })()}
                               </>
                             ) : (
                               <p className="text-sm text-muted-foreground">Donation records found</p>

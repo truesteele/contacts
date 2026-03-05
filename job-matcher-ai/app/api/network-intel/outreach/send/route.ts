@@ -1,15 +1,54 @@
 import { NextResponse } from 'next/server';
-import { Resend } from 'resend';
 import { supabase } from '@/lib/supabase';
 
 export const runtime = 'edge';
 
-let _resend: Resend | null = null;
-function getResend(): Resend {
-  if (!_resend) {
-    _resend = new Resend(process.env.RESEND_API_KEY);
+interface ResendEmailResponse {
+  id?: string;
+  error?: { message?: string };
+  message?: string;
+}
+
+async function sendWithResend(params: {
+  toEmail: string;
+  subject: string;
+  htmlBody: string;
+  textBody: string;
+}): Promise<{ id: string | null }> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    throw new Error('RESEND_API_KEY is not configured');
   }
-  return _resend;
+
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: FROM_EMAIL,
+      to: [params.toEmail],
+      reply_to: REPLY_TO,
+      subject: params.subject,
+      html: params.htmlBody,
+      text: params.textBody,
+      headers: {
+        'List-Unsubscribe': `<mailto:${REPLY_TO}?subject=unsubscribe>`,
+      },
+    }),
+  });
+
+  const payload = (await response.json().catch(() => ({}))) as ResendEmailResponse;
+  if (!response.ok) {
+    throw new Error(
+      payload.error?.message ||
+        payload.message ||
+        `Resend request failed (${response.status})`
+    );
+  }
+
+  return { id: payload.id ?? null };
 }
 
 const FROM_EMAIL = 'Justin Steele <justin@truesteele.com>';
@@ -204,32 +243,12 @@ export async function POST(req: Request) {
 
         const htmlBody = textToHtml(finalBody);
 
-        const { data: sendData, error: sendError } = await getResend().emails.send({
-          from: FROM_EMAIL,
-          to: [toEmail],
-          replyTo: REPLY_TO,
+        const sendData = await sendWithResend({
+          toEmail,
           subject: finalSubject,
-          html: htmlBody,
-          text: finalBody,
-          headers: {
-            'List-Unsubscribe': `<mailto:${REPLY_TO}?subject=unsubscribe>`,
-          },
+          htmlBody,
+          textBody: finalBody,
         });
-
-        if (sendError) {
-          await supabase
-            .from('outreach_drafts')
-            .update({ status: 'failed' })
-            .eq('id', d.id);
-
-          results.push({
-            draft_id: d.id,
-            contact_id: d.contact_id,
-            status: 'failed',
-            error: sendError.message,
-          });
-          continue;
-        }
 
         // Update draft as sent
         await supabase
@@ -244,7 +263,7 @@ export async function POST(req: Request) {
           draft_id: d.id,
           contact_id: d.contact_id,
           status: 'sent',
-          resend_id: sendData?.id,
+          resend_id: sendData.id || undefined,
         });
       } catch (err: any) {
         await supabase

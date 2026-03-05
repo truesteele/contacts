@@ -24,7 +24,7 @@ export async function GET(
         'ai_kindora_prospect_score, ai_kindora_prospect_type, ai_outdoorithm_fit, ai_tags, ' +
         'familiarity_rating, comms_last_date, comms_thread_count, communication_history, ' +
         'comms_closeness, comms_momentum, comms_reasoning, ' +
-        'shared_institutions, ask_readiness, fec_donations, real_estate_data'
+        'shared_institutions, ask_readiness, fec_donations, real_estate_data, campaign_2026'
       )
       .eq('id', contactId)
       .single();
@@ -104,6 +104,9 @@ export async function GET(
 
       // Sales fit
       kindora_rationale: salesFit.kindora_rationale || '',
+
+      // Campaign 2026
+      campaign_2026: c.campaign_2026 || null,
     });
   } catch (err: any) {
     console.error('[Contact Detail] Error:', err);

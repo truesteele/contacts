@@ -1,4 +1,3 @@
-import { Resend } from 'resend';
 import { supabase } from '@/lib/supabase';
 
 export const runtime = 'edge';
@@ -6,12 +5,52 @@ export const runtime = 'edge';
 const FROM_EMAIL = 'Justin Steele <justin@outdoorithmcollective.org>';
 const REPLY_TO = 'justinrsteele@gmail.com';
 
-let _resend: Resend | null = null;
-function getResend(): Resend {
-  if (!_resend) {
-    _resend = new Resend(process.env.RESEND_API_KEY_OC);
+interface ResendEmailResponse {
+  id?: string;
+  error?: { message?: string };
+  message?: string;
+}
+
+async function sendWithResend(params: {
+  toEmail: string;
+  subject: string;
+  htmlBody: string;
+  textBody: string;
+}): Promise<{ id: string | null }> {
+  const apiKey = process.env.RESEND_API_KEY_OC;
+  if (!apiKey) {
+    throw new Error('RESEND_API_KEY_OC is not configured');
   }
-  return _resend;
+
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: FROM_EMAIL,
+      to: [params.toEmail],
+      reply_to: REPLY_TO,
+      subject: params.subject,
+      html: params.htmlBody,
+      text: params.textBody,
+      headers: {
+        'List-Unsubscribe': `<mailto:${REPLY_TO}?subject=unsubscribe>`,
+      },
+    }),
+  });
+
+  const payload = (await response.json().catch(() => ({}))) as ResendEmailResponse;
+  if (!response.ok) {
+    throw new Error(
+      payload.error?.message ||
+        payload.message ||
+        `Resend request failed (${response.status})`
+    );
+  }
+
+  return { id: payload.id ?? null };
 }
 
 function textToHtml(body: string): string {
@@ -228,27 +267,12 @@ export async function POST(req: Request) {
       try {
         const htmlBody = textToHtml(messageBody);
 
-        const { data: sendData, error: sendError } = await getResend().emails.send({
-          from: FROM_EMAIL,
-          to: [toEmail],
-          replyTo: REPLY_TO,
+        const sendData = await sendWithResend({
+          toEmail,
           subject,
-          html: htmlBody,
-          text: messageBody,
-          headers: {
-            'List-Unsubscribe': `<mailto:${REPLY_TO}?subject=unsubscribe>`,
-          },
+          htmlBody,
+          textBody: messageBody,
         });
-
-        if (sendError) {
-          results.push({
-            contact_id: c.id,
-            contact_name: contactName,
-            status: 'failed',
-            error: sendError.message,
-          });
-          continue;
-        }
 
         // Update send_status in campaign_2026
         const updatedSendStatus = {
@@ -269,7 +293,7 @@ export async function POST(req: Request) {
           contact_id: c.id,
           contact_name: contactName,
           status: 'sent',
-          resend_id: sendData?.id,
+          resend_id: sendData.id || undefined,
         });
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Send failed';
