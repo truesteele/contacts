@@ -131,11 +131,11 @@ const LIFECYCLE_LABELS: Record<string, string> = {
 };
 
 const LIST_OPTIONS = [
-  { value: 'A', label: 'List A', description: 'Inner circle — personal Opus-written outreach' },
-  { value: 'B', label: 'List B', description: 'Ready now — primary email campaign' },
-  { value: 'C', label: 'List C', description: 'Cultivate first — secondary email' },
-  { value: 'D', label: 'List D', description: 'Extended network — broadest email' },
-  { value: 'sidelined', label: 'Sidelined', description: 'Removed from campaign' },
+  { value: 'A', label: 'List A', description: 'Inner circle, personal Opus-written outreach', color: 'bg-violet-100 border-violet-300 text-violet-900 dark:bg-violet-950/40 dark:border-violet-700 dark:text-violet-200' },
+  { value: 'B', label: 'List B', description: 'Ready now, primary email campaign', color: 'bg-blue-100 border-blue-300 text-blue-900 dark:bg-blue-950/40 dark:border-blue-700 dark:text-blue-200' },
+  { value: 'C', label: 'List C', description: 'Cultivate first, secondary email', color: 'bg-amber-100 border-amber-300 text-amber-900 dark:bg-amber-950/40 dark:border-amber-700 dark:text-amber-200' },
+  { value: 'D', label: 'List D', description: 'Extended network, broadest email', color: 'bg-gray-100 border-gray-300 text-gray-700 dark:bg-gray-800/40 dark:border-gray-600 dark:text-gray-300' },
+  { value: 'sidelined', label: 'Sidelined', description: 'Removed from campaign', color: 'bg-red-100 border-red-300 text-red-900 dark:bg-red-950/40 dark:border-red-700 dark:text-red-200' },
 ];
 
 const MAX_CHAT_TURNS = 12;
@@ -633,30 +633,45 @@ export function MessageDetailSheet({
 
             <div className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden" ref={contentRef}>
               <div className="px-6 pb-6 space-y-5 min-w-0 max-w-full">
-                {/* Scaffold summary with list selector */}
+                {/* List assignment — prominent */}
+                {(() => {
+                  const currentOpt = LIST_OPTIONS.find(o => o.value === selectedList);
+                  return (
+                    <div className={`rounded-lg border p-3 ${currentOpt?.color || 'bg-muted border-border'}`}>
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-semibold">{currentOpt?.label || 'No list'}</div>
+                          <div className="text-xs opacity-75 mt-0.5">{currentOpt?.description}</div>
+                        </div>
+                        <Select
+                          value={selectedList}
+                          onValueChange={(val) => {
+                            setSelectedList(val);
+                            if (val !== 'sidelined') setSidelineReason('');
+                            markDirty();
+                          }}
+                        >
+                          <SelectTrigger className="h-8 w-[140px] text-xs font-medium bg-white/80 dark:bg-black/30 border shadow-sm">
+                            <SelectValue placeholder="Move to..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {LIST_OPTIONS.map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                                <div>
+                                  <span className="font-medium">{opt.label}</span>
+                                  <span className="ml-1.5 text-muted-foreground">{opt.description}</span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Scaffold badges */}
                 <div className="flex flex-wrap gap-1.5 items-center">
-                  <Select
-                    value={selectedList}
-                    onValueChange={(val) => {
-                      setSelectedList(val);
-                      if (val !== 'sidelined') setSidelineReason('');
-                      markDirty();
-                    }}
-                  >
-                    <SelectTrigger className="h-6 w-[110px] text-[10px] font-medium border rounded-full px-2">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {LIST_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value} className="text-xs">
-                          <div>
-                            <span className="font-medium">{opt.label}</span>
-                            <span className="ml-1.5 text-muted-foreground">{opt.description}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                   <Badge variant="outline" className="text-[10px]">
                     {PERSONA_LABELS[scaffold?.persona || ''] || scaffold?.persona || '—'}
                   </Badge>
