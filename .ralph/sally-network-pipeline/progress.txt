@@ -391,3 +391,25 @@ Started: 2026-03-09
 - Script is simple and fast — no API calls, purely DB matching
 - LinkedIn URL normalization is critical: unquote handles %20-encoded URLs, www prefix handles inconsistencies between scraped URLs
 
+### Iteration 14 — US-014: Create NETWORK_ONBOARDING_PLAYBOOK.md (2026-03-09)
+**Status:** COMPLETE
+**What was done:**
+- Created `docs/NETWORK_ONBOARDING_PLAYBOOK.md` — comprehensive 18-stage playbook for onboarding new users
+- Covers all aspects:
+  - Prerequisites: input files, env setup, naming conventions
+  - 18 pipeline stages with: description, dependencies, cost, time, adaptation checklist, verification queries
+  - Execution order summary with parallel opportunity notes
+  - Cost breakdown table ($12-16 per user)
+  - Common issues and solutions (Supabase, GPT-5 mini, Google OAuth, Apify, name matching)
+  - Quick-start checklist for rapid onboarding
+- References Sally's pipeline as the working example throughout
+- Self-contained — someone can follow this doc end-to-end to onboard a new user
+- Uses `{user}` / `{User}` / `{USER}` placeholders throughout for easy find-replace
+**Verification:** Doc created at expected path with all acceptance criteria covered
+**Learnings:**
+- The full Sally pipeline is 15 Python scripts (9,112 lines), 2 TypeScript API routes, 2 TSX UI pages, and 1 SQL migration
+- Total pipeline cost is ~$12-16 per user (dominated by Apify enrichment and GPT ask-readiness scoring)
+- Most adaptation is mechanical find-replace on table names and user names — the critical custom work is the anchor profile and email persona doc
+- Parallel execution can cut total time from 5 hours sequential to ~3 hours
+
+## PIPELINE COMPLETE — All 14 stories implemented
