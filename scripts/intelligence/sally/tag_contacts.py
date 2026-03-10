@@ -1,0 +1,599 @@
+#!/usr/bin/env python3
+"""
+Sally Network Intelligence — LLM Structured Tagging via GPT-5 mini
+
+Processes Sally's contacts through GPT-5 mini structured output to generate:
+- Relationship proximity scores (0-100)
+- Giving capacity estimates
+- Topical affinity tags
+- Kindora sales fit scores
+- Outreach context and personalization hooks
+
+Usage:
+  python scripts/intelligence/sally/tag_contacts.py --test        # Process 10 contacts
+  python scripts/intelligence/sally/tag_contacts.py --test -n 5   # Process 5 contacts
+  python scripts/intelligence/sally/tag_contacts.py --dry-run     # Assemble prompts only
+  python scripts/intelligence/sally/tag_contacts.py               # Full run (all contacts)
+  python scripts/intelligence/sally/tag_contacts.py --force       # Re-tag already-tagged contacts
+  python scripts/intelligence/sally/tag_contacts.py --ids 1,2,3   # Tag specific contacts
+"""
+
+import os
+import sys
+import json
+import time
+import argparse
+from datetime import datetime, timezone
+from typing import Optional
+from enum import Enum
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+from dotenv import load_dotenv
+from openai import OpenAI, RateLimitError, APIError
+from pydantic import BaseModel, Field
+from supabase import create_client, Client
+
+load_dotenv()
+
+# ── Pydantic Output Schema ─────────────────────────────────────────────
+
+class ProximityTier(str, Enum):
+    inner_circle = "inner_circle"
+    close = "close"
+    warm = "warm"
+    familiar = "familiar"
+    acquaintance = "acquaintance"
+    distant = "distant"
+
+class CapacityTier(str, Enum):
+    major_donor = "major_donor"
+    mid_level = "mid_level"
+    grassroots = "grassroots"
+    unknown = "unknown"
+
+class ProspectType(str, Enum):
+    enterprise_buyer = "enterprise_buyer"
+    champion = "champion"
+    influencer = "influencer"
+    not_relevant = "not_relevant"
+
+class FitLevel(str, Enum):
+    high = "high"
+    medium = "medium"
+    low = "low"
+    none = "none"
+
+class TopicStrength(str, Enum):
+    high = "high"
+    medium = "medium"
+    low = "low"
+
+class BestApproach(str, Enum):
+    personal_email = "personal_email"
+    linkedin_message = "linkedin_message"
+    intro_via_mutual = "intro_via_mutual"
+
+class SharedEmployer(BaseModel):
+    org: str
+    overlap_years: str = ""
+    relationship: str = ""
+
+class SharedSchool(BaseModel):
+    school: str
+    overlap: str = ""
+
+class RelationshipProximity(BaseModel):
+    score: int = Field(ge=0, le=100)
+    tier: ProximityTier
+    shared_employers: list[SharedEmployer] = []
+    shared_schools: list[SharedSchool] = []
+    shared_boards: list[str] = []
+    shared_volunteering: list[str] = []
+    proximity_signals: list[str] = []
+    reasoning: str
+
+class GivingCapacity(BaseModel):
+    tier: CapacityTier
+    score: int = Field(ge=0, le=100)
+    signals: list[str] = []
+    estimated_range: str = ""
+    reasoning: str
+
+class TopicTag(BaseModel):
+    topic: str
+    strength: TopicStrength
+    evidence: str = ""
+
+class TopicalAffinity(BaseModel):
+    topics: list[TopicTag] = []
+    primary_interests: list[str] = []
+    talking_points: list[str] = []
+
+class SalesFit(BaseModel):
+    kindora_prospect: bool
+    prospect_type: ProspectType
+    score: int = Field(ge=0, le=100)
+    reasoning: str
+    signals: list[str] = []
+
+class OutreachContext(BaseModel):
+    outdoorithm_invite_fit: FitLevel
+    kindora_pitch_fit: FitLevel
+    best_approach: BestApproach
+    personalization_hooks: list[str] = []
+    suggested_opener: str = ""
+
+class ContactIntelligence(BaseModel):
+    relationship_proximity: RelationshipProximity
+    giving_capacity: GivingCapacity
+    topical_affinity: TopicalAffinity
+    sales_fit: SalesFit
+    outreach_context: OutreachContext
+
+
+# ── Sally's Anchor Profile ────────────────────────────────────────────
+# TODO: Update SALLY_ANCHOR_PROFILE after running enrich_apify.py on Sally's LinkedIn profile
+# to include her full career timeline, schools, boards, and dates from enrichment data.
+
+SALLY_ANCHOR_PROFILE = """ANCHOR PERSON (Sally Steele):
+- Current roles: Co-Founder at Outdoorithm Collective (outdoor equity nonprofit, Jan 2024-present), Co-Founder at Outdoorithm (outdoor recreation app, Feb 2023-present)
+- Previous employers: (To be filled after Apify enrichment — Sally's full career history will be extracted from LinkedIn)
+- Schools: (To be filled after Apify enrichment)
+- Boards: Outdoorithm Collective (Board of Directors, 2024-present)
+- Key interests/topics: Outdoor equity & nature access, Community building, Nonprofit leadership, Family outdoor recreation, Social impact, Environmental justice
+- LinkedIn: https://www.linkedin.com/in/steelesally/
+- Location: San Francisco Bay Area
+- Note: Sally is co-founder with Justin Steele of both Outdoorithm and Outdoorithm Collective. They share many professional connections."""
+
+
+SYSTEM_PROMPT = """You are a network intelligence analyst. Given an anchor person's profile and a target contact's LinkedIn data, produce a structured analysis.
+
+SCORING GUIDELINES:
+
+Relationship Proximity (0-100):
+- 80-100 (inner_circle): Worked together directly, personal relationship
+- 60-79 (close): Shared institution with temporal overlap, periodic contact
+- 40-59 (warm): Shared institution different era, met through context, or strong shared interests
+- 20-39 (familiar): LinkedIn connection, some shared interests or industry
+- 10-19 (acquaintance): Connected, no meaningful overlap
+- 0-9 (distant): No overlap or signals
+
+Key signals for proximity: Shared employers (especially same time period), shared schools (especially same years), shared boards/volunteer orgs, shared industry/community, LinkedIn connection tenure (earlier = potentially closer), shared location.
+
+Giving Capacity (0-100) — estimate DISCRETIONARY personal giving capacity, not gross income:
+- 70-100 (major_donor, $10K+): People with demonstrated liquid wealth — large FEC political donations, high-value owned property, tech equity (VP+ at public tech companies with long tenure), successful founders/entrepreneurs, or known philanthropists. Hard evidence required for top scores.
+- 40-69 (mid_level, $1K-$10K): Solid professionals with some disposable income — mid-career tech workers, directors at large companies, well-compensated professionals. Factor in location cost of living and obligations (expensive home = expensive mortgage).
+- 15-39 (grassroots, $100-$1K): Individual contributors, early career, nonprofit/education/government staff without equity upside.
+- 0-14 (unknown): Insufficient data to assess.
+
+Capacity nuances — think about NET capacity not gross signals:
+- Career sector matters: Tech company equity (stock grants) creates wealth that salary alone doesn't. A 10-year Google VP likely has $5-20M+ in vested equity. A nonprofit CEO at the same title level has zero equity — just salary.
+- An expensive home in a high-COL area is both an asset AND an obligation. A $2M Bay Area home means ~$12K/month in mortgage/taxes. Factor this in.
+- FEC political donations are the strongest behavioral signal — they prove both disposable income AND willingness to write checks.
+- If someone is flagged as a renter, the property Zestimate is the landlord's asset, not theirs.
+- Be transparent about what is hard evidence vs title-based inference.
+
+CRITICAL — INSTITUTIONAL vs PERSONAL GIVING:
+You are ONLY assessing this person's PERSONAL discretionary giving capacity. Do NOT:
+- Conflate someone's professional grantmaking role with their personal giving capacity
+- Score someone as major_donor just because they run or work at a foundation, trust, or giving vehicle
+- Treat "manages $X in grants" as personal wealth — they are stewards of institutional money, not owners of it
+A program officer at the Ford Foundation may personally give $500 from their own salary. Score THAT, not the Ford Foundation's $16B endowment. A CEO of a grantmaking trust on an academic/nonprofit salary with no equity upside is a grassroots or mid_level personal giver, regardless of how much institutional money flows through their organization.
+If someone works in institutional philanthropy, note it as a signal of philanthropic VALUES alignment, but score capacity based on their personal finances (salary level, property, FEC donations, career sector).
+
+Kindora Sales Fit (0-100):
+Kindora is an AI-powered grant matching platform for nonprofits. High-fit prospects work at foundations, manage nonprofit networks, lead grantmaking programs, or influence nonprofit technology purchasing.
+
+Topical Affinity:
+Use these controlled topic tags when applicable: outdoor_equity, nature_recreation, environmental_justice, philanthropy, grantmaking, nonprofit_leadership, ai_technology, social_impact_tech, public_interest_tech, corporate_social_responsibility, esg, racial_justice, dei, equity, education, workforce_development, family_youth, parenting, social_enterprise, impact_investing, community_development, urban_equity, climate, health_equity, arts_culture
+
+Outreach Context:
+- outdoorithm_invite_fit: Would this person attend an Outdoorithm Collective outdoor equity fundraiser?
+- kindora_pitch_fit: Is this person relevant for a Kindora enterprise sales conversation?
+- personalization_hooks: Specific, actionable hooks for a warm outreach message (reference shared experiences, mutual interests, recent career moves)
+- suggested_opener: A natural, brief opening line Sally could use
+
+Be realistic with scores. Not everyone is a close contact — most LinkedIn connections are acquaintances or distant. Be generous with topical tags and outreach hooks — even distant contacts deserve useful personalization."""
+
+
+def parse_jsonb(val) -> object:
+    """Parse a JSONB field that may be a string or already parsed."""
+    if val is None:
+        return None
+    if isinstance(val, str):
+        try:
+            return json.loads(val)
+        except (json.JSONDecodeError, ValueError):
+            return val
+    return val
+
+
+def build_contact_context(contact: dict) -> str:
+    """Assemble the per-contact context document for the LLM."""
+    parts = []
+    name = f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip()
+    parts.append(f"TARGET CONTACT: {name}")
+
+    if contact.get("headline"):
+        parts.append(f"Headline: {contact['headline']}")
+    if contact.get("company") or contact.get("position"):
+        parts.append(f"Current: {contact.get('position', '?')} at {contact.get('company', '?')}")
+    if contact.get("summary"):
+        parts.append(f"Summary: {contact['summary']}")
+    if contact.get("connected_on"):
+        parts.append(f"LinkedIn connected: {contact['connected_on']}")
+    if contact.get("city") or contact.get("state"):
+        loc = ", ".join(filter(None, [contact.get("city"), contact.get("state")]))
+        parts.append(f"Location: {loc}")
+
+    # JSONB enrichment fields
+    employment = parse_jsonb(contact.get("enrich_employment"))
+    if employment:
+        parts.append(f"Employment History: {json.dumps(employment)}")
+
+    education = parse_jsonb(contact.get("enrich_education"))
+    if education:
+        parts.append(f"Education: {json.dumps(education)}")
+
+    # Sally's table has enrich_skills as text[] (not enrich_skills_detailed JSONB)
+    skills = contact.get("enrich_skills")
+    if skills and isinstance(skills, list):
+        parts.append(f"Skills: {', '.join(skills[:30])}")
+
+    # Wealth signals
+    fec = parse_jsonb(contact.get("fec_donations"))
+    if fec and isinstance(fec, dict) and fec.get("donation_count", 0) > 0 and not fec.get("skipped_reason"):
+        fec_parts = [f"${fec.get('total_amount', 0):,.0f} total across {fec.get('donation_count', 0)} donations"]
+        if fec.get("max_single"):
+            fec_parts.append(f"largest single: ${fec['max_single']:,.0f}")
+        if fec.get("cycles"):
+            fec_parts.append(f"cycles: {', '.join(fec['cycles'])}")
+        parts.append(f"FEC Political Donations: {'. '.join(fec_parts)}")
+
+    re_data = parse_jsonb(contact.get("real_estate_data"))
+    if re_data and isinstance(re_data, dict) and re_data.get("address"):
+        source = re_data.get("source", "")
+        if source not in ("skip_trace_rejected", "skip_trace_failed"):
+            if re_data.get("building_level_data"):
+                parts.append(f"Real Estate: Resident at {re_data['address']} (condo/apartment building — unit-level value unknown)")
+            else:
+                ownership = re_data.get("ownership_likelihood", "uncertain")
+                re_parts = []
+                if ownership == "likely_renter":
+                    re_parts.append(f"Renter at {re_data['address']}")
+                else:
+                    label = "Owner" if ownership == "likely_owner" else "Condo owner" if ownership == "likely_owner_condo" else "Ownership uncertain"
+                    re_parts.append(f"Property ({label}): {re_data['address']}")
+                    if re_data.get("zestimate"):
+                        re_parts.append(f"Zestimate: ${re_data['zestimate']:,.0f}")
+                    details = []
+                    if re_data.get("property_type"):
+                        details.append(re_data["property_type"].replace("_", " ").lower())
+                    if re_data.get("beds"):
+                        details.append(f"{re_data['beds']}bd/{re_data.get('baths', '?')}ba")
+                    if re_data.get("sqft"):
+                        details.append(f"{re_data['sqft']:,} sqft")
+                    if details:
+                        re_parts.append(", ".join(details))
+                parts.append(f"Real Estate: {'. '.join(re_parts)}")
+
+    return "\n".join(parts)
+
+
+# ── Main Tagger Class ──────────────────────────────────────────────────
+
+class ContactTagger:
+    MODEL = "gpt-5-mini"
+    # Columns available in sally_contacts (no enrich_skills_detailed,
+    # enrich_volunteering, enrich_certifications, enrich_publications, enrich_honors_awards)
+    SELECT_COLS = (
+        "id, first_name, last_name, headline, summary, company, position, "
+        "connected_on, city, state, ai_tags, "
+        "enrich_employment, enrich_education, enrich_skills, "
+        "fec_donations, real_estate_data"
+    )
+
+    def __init__(self, test_mode=False, dry_run=False, force=False, workers=10, test_count=10, ids=None):
+        self.test_mode = test_mode
+        self.dry_run = dry_run
+        self.force = force
+        self.workers = workers
+        self.test_count = test_count
+        self.ids = ids
+        self.supabase: Optional[Client] = None
+        self.openai: Optional[OpenAI] = None
+        self.stats = {
+            "processed": 0,
+            "skipped": 0,
+            "errors": 0,
+            "input_tokens": 0,
+            "output_tokens": 0,
+        }
+
+    def connect(self) -> bool:
+        url = os.environ.get("SUPABASE_URL")
+        key = os.environ.get("SUPABASE_SERVICE_KEY")
+        openai_key = os.environ.get("OPENAI_APIKEY")
+
+        if not url or not key:
+            print("ERROR: Missing SUPABASE_URL or SUPABASE_SERVICE_KEY")
+            return False
+        if not openai_key and not self.dry_run:
+            print("ERROR: Missing OPENAI_APIKEY")
+            return False
+
+        self.supabase = create_client(url, key)
+        if not self.dry_run:
+            self.openai = OpenAI(api_key=openai_key)
+        print(f"Connected to Supabase{' and OpenAI' if not self.dry_run else ' (dry-run, no OpenAI)'}")
+        return True
+
+    def get_contacts(self) -> list[dict]:
+        # If specific IDs requested, fetch just those
+        if self.ids:
+            response = (
+                self.supabase.table("sally_contacts")
+                .select(self.SELECT_COLS)
+                .in_("id", self.ids)
+                .execute()
+            )
+            return response.data
+
+        all_contacts = []
+        page_size = 1000
+        offset = 0
+
+        while True:
+            query = (
+                self.supabase.table("sally_contacts")
+                .select(self.SELECT_COLS)
+                .order("id")
+                .range(offset, offset + page_size - 1)
+            )
+
+            if not self.force:
+                query = query.is_("ai_tags", "null")
+
+            response = query.execute()
+            page = response.data
+            if not page:
+                break
+
+            all_contacts.extend(page)
+            if len(page) < page_size:
+                break
+            offset += page_size
+
+        if self.test_mode:
+            all_contacts = all_contacts[:self.test_count]
+
+        return all_contacts
+
+    def tag_contact(self, contact: dict) -> Optional[ContactIntelligence]:
+        """Call GPT-5 mini to tag a single contact. Returns parsed output or None on error."""
+        contact_context = build_contact_context(contact)
+        user_message = f"{SALLY_ANCHOR_PROFILE}\n\n{contact_context}"
+
+        if self.dry_run:
+            name = f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip()
+            token_est = len(user_message) // 4
+            print(f"  [DRY-RUN] {name}: ~{token_est} input tokens")
+            return None
+
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                resp = self.openai.responses.parse(
+                    model=self.MODEL,
+                    instructions=SYSTEM_PROMPT,
+                    input=user_message,
+                    text_format=ContactIntelligence,
+                )
+
+                # Track token usage
+                if resp.usage:
+                    self.stats["input_tokens"] += resp.usage.input_tokens
+                    self.stats["output_tokens"] += resp.usage.output_tokens
+
+                if resp.output_parsed:
+                    return resp.output_parsed
+
+                print(f"    Warning: No parsed output, refusal={getattr(resp, 'refusal', None)}")
+                return None
+
+            except RateLimitError:
+                wait = 2 ** (attempt + 1)
+                print(f"    Rate limited, waiting {wait}s...")
+                time.sleep(wait)
+            except APIError as e:
+                print(f"    API error: {e}")
+                if attempt < max_retries - 1:
+                    time.sleep(2)
+                else:
+                    return None
+            except Exception as e:
+                print(f"    Unexpected error: {e}")
+                return None
+
+        return None
+
+    def save_tags(self, contact_id: int, result: ContactIntelligence) -> bool:
+        """Save the LLM output to sally_contacts."""
+        tags_json = result.model_dump(mode="json")
+        # sally_contacts doesn't have ai_kindora_prospect_score, ai_kindora_prospect_type,
+        # ai_tags_generated_at, or ai_tags_model columns — store metadata in ai_tags JSONB
+        tags_json["_generated_at"] = datetime.now(timezone.utc).isoformat()
+        tags_json["_model"] = self.MODEL
+
+        updates = {
+            "ai_tags": tags_json,
+            # Denormalized scores
+            "ai_proximity_score": result.relationship_proximity.score,
+            "ai_proximity_tier": result.relationship_proximity.tier.value,
+            "ai_capacity_score": result.giving_capacity.score,
+            "ai_capacity_tier": result.giving_capacity.tier.value,
+            "ai_outdoorithm_fit": result.outreach_context.outdoorithm_invite_fit.value,
+        }
+
+        try:
+            self.supabase.table("sally_contacts").update(updates).eq("id", contact_id).execute()
+            return True
+        except Exception as e:
+            print(f"    DB error for id={contact_id}: {e}")
+            return False
+
+    def process_contact(self, contact: dict) -> bool:
+        """Process a single contact: tag + save. Returns True on success."""
+        name = f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip()
+        contact_id = contact["id"]
+
+        result = self.tag_contact(contact)
+        if result is None:
+            if not self.dry_run:
+                self.stats["errors"] += 1
+            return False
+
+        if self.save_tags(contact_id, result):
+            prox = result.relationship_proximity
+            cap = result.giving_capacity
+            print(f"  [{contact_id}] {name}: proximity={prox.score} ({prox.tier.value}), "
+                  f"capacity={cap.score} ({cap.tier.value}), "
+                  f"kindora={result.sales_fit.score}")
+            self.stats["processed"] += 1
+            return True
+        else:
+            self.stats["errors"] += 1
+            return False
+
+    def run(self):
+        if not self.connect():
+            return False
+
+        start_time = time.time()
+        contacts = self.get_contacts()
+        total = len(contacts)
+        print(f"Found {total} contacts to process")
+
+        if total == 0:
+            print("Nothing to do — all contacts already tagged (use --force to re-tag)")
+            return True
+
+        if self.dry_run:
+            print(f"\n--- DRY RUN: Assembling prompts for {total} contacts ---\n")
+            total_tokens = 0
+            for c in contacts:
+                ctx = build_contact_context(c)
+                user_msg = f"{SALLY_ANCHOR_PROFILE}\n\n{ctx}"
+                tokens = len(user_msg) // 4
+                total_tokens += tokens
+                name = f"{c.get('first_name', '')} {c.get('last_name', '')}".strip()
+                print(f"  [{c['id']}] {name}: ~{tokens} input tokens")
+            print(f"\n--- DRY RUN COMPLETE ---")
+            print(f"  Total contacts: {total}")
+            print(f"  Est. input tokens: ~{total_tokens:,}")
+            print(f"  Est. output tokens: ~{total * 800:,}")
+            input_cost = total_tokens * 0.15 / 1_000_000
+            output_cost = total * 800 * 0.60 / 1_000_000
+            print(f"  Est. cost: ~${input_cost + output_cost:.2f} "
+                  f"(input: ${input_cost:.2f}, output: ${output_cost:.2f})")
+            return True
+
+        if self.test_mode:
+            print(f"\n--- TEST MODE: Processing {total} contacts sequentially ---\n")
+            for c in contacts:
+                self.process_contact(c)
+        else:
+            print(f"\n--- Processing {total} contacts with {self.workers} workers ---\n")
+            with ThreadPoolExecutor(max_workers=self.workers) as executor:
+                futures = {}
+                for c in contacts:
+                    future = executor.submit(self.process_contact, c)
+                    futures[future] = c["id"]
+
+                done_count = 0
+                for future in as_completed(futures):
+                    done_count += 1
+                    try:
+                        future.result()
+                    except Exception as e:
+                        cid = futures[future]
+                        print(f"  [ERROR] Contact {cid}: {e}")
+                        self.stats["errors"] += 1
+
+                    if done_count % 50 == 0 or done_count == total:
+                        elapsed = time.time() - start_time
+                        rate = done_count / elapsed if elapsed > 0 else 0
+                        print(f"\n--- Progress: {done_count}/{total} "
+                              f"({self.stats['processed']} tagged, {self.stats['errors']} errors) "
+                              f"[{rate:.1f} contacts/sec, {elapsed:.0f}s elapsed] ---\n")
+
+        elapsed = time.time() - start_time
+        self.print_summary(elapsed)
+        return self.stats["errors"] < total * 0.05  # Success if <5% errors
+
+    def print_summary(self, elapsed: float):
+        s = self.stats
+        input_cost = s["input_tokens"] * 0.15 / 1_000_000
+        output_cost = s["output_tokens"] * 0.60 / 1_000_000
+        total_cost = input_cost + output_cost
+
+        print("\n" + "=" * 60)
+        print("SALLY TAGGING SUMMARY")
+        print("=" * 60)
+        print(f"  Contacts tagged:    {s['processed']}")
+        print(f"  Contacts skipped:   {s['skipped']}")
+        print(f"  Errors:             {s['errors']}")
+        print(f"  Input tokens:       {s['input_tokens']:,}")
+        print(f"  Output tokens:      {s['output_tokens']:,}")
+        print(f"  Cost:               ${total_cost:.2f} (input: ${input_cost:.2f}, output: ${output_cost:.2f})")
+        print(f"  Time elapsed:       {elapsed:.1f}s")
+        if s["processed"] > 0:
+            print(f"  Avg time/contact:   {elapsed / s['processed']:.2f}s")
+        print("=" * 60)
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Tag Sally's contacts with GPT-5 mini structured output"
+    )
+    parser.add_argument("--test", "-t", action="store_true",
+                        help="Process only N contacts for validation (default: 10)")
+    parser.add_argument("--count", "-n", type=int, default=10,
+                        help="Number of contacts to process in test mode (default: 10)")
+    parser.add_argument("--dry-run", "-d", action="store_true",
+                        help="Assemble prompts but don't call OpenAI")
+    parser.add_argument("--force", "-f", action="store_true",
+                        help="Re-tag contacts that already have ai_tags")
+    parser.add_argument("--workers", "-w", type=int, default=150,
+                        help="Number of concurrent workers (default: 150)")
+    parser.add_argument("--contact-id", type=int, default=None,
+                        help="Tag a single contact by ID")
+    parser.add_argument("--ids", type=str, default=None,
+                        help="Comma-separated list of contact IDs to tag (e.g., '1,2,3')")
+    parser.add_argument("--batch", "-b", type=int, default=None,
+                        help="Process only N contacts (alias for --test -n N)")
+    args = parser.parse_args()
+
+    ids_list = None
+    if args.contact_id:
+        ids_list = [args.contact_id]
+    elif args.ids:
+        ids_list = [int(x.strip()) for x in args.ids.split(",") if x.strip()]
+
+    test_mode = args.test or args.batch is not None
+    test_count = args.batch if args.batch else args.count
+
+    tagger = ContactTagger(
+        test_mode=test_mode,
+        dry_run=args.dry_run,
+        force=args.force or ids_list is not None,
+        workers=args.workers,
+        test_count=test_count,
+        ids=ids_list,
+    )
+    success = tagger.run()
+    sys.exit(0 if success else 1)
+
+
+if __name__ == "__main__":
+    main()
