@@ -7,7 +7,7 @@ Started: 2026-03-09
 - Justin's scripts in scripts/intelligence/ are the templates for Sally's adaptations
 - Sally's scripts go in scripts/intelligence/sally/
 - Sally's tables: sally_contacts, sally_contact_email_threads, sally_contact_calendar_events, sally_contact_sms_conversations
-- Env vars: OPENAI_APIKEY (no underscore), ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_KEY, SUPABASE_DB_PASSWORD, APIFY_TOKEN
+- Env vars: OPENAI_APIKEY (no underscore), ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_KEY, SUPABASE_DB_PASSWORD, APIFY_TOKEN
 - Python venv at .venv/, activate with source .venv/bin/activate
 - GPT-5 mini does NOT support temperature=0
 - supabase-contacts MCP server for DB operations
@@ -48,4 +48,75 @@ Started: 2026-03-09
 - Migration applies cleanly via MCP `apply_migration` — no need for psycopg2 or CLI
 - `bigint GENERATED ALWAYS AS IDENTITY` works for sally_contacts.id (same as contact_sms_conversations pattern)
 - `bigserial` used for email_threads and calendar_events PKs (same as Justin's tables)
+
+### Iteration 2 — US-002: Import LinkedIn Connections (2026-03-09)
+**Status:** COMPLETE
+**What was done:**
+- Created `scripts/intelligence/sally/import_linkedin.py`
+- Reads `docs/Sally/linkedin_connections.csv` (850 rows including header)
+- Cross-references `docs/Sally/sally_network_contacts.csv` to pull `calendar_email` (56 non-null)
+- Normalizes LinkedIn URLs (lowercase, trailing slash, www prefix)
+- Generates `normalized_full_name`, `linkedin_username` from URL
+- Parses connection date ("March 6, 2026" → "2026-03-06")
+- Sets `position` and `headline` from Title column (skips "--" values)
+- Inserts via supabase-py with manual check-then-insert/update (no native upsert on non-PK column)
+- Supports `--dry-run` flag
+**Results:** 850 contacts inserted, 56 with email, 0 errors
+**Verification:** `SELECT count(*) FROM sally_contacts` → 850, `count(email)` → 56
+**Learnings:**
+- Supabase env var is `SUPABASE_SERVICE_KEY` (not `SUPABASE_KEY` as in some older scripts)
+- LinkedIn CSV actually has 850 data rows (not 849 as noted in PRD — the first row Justin Steele is in the CSV too)
+- sally_network_contacts.csv has 850 rows with lowercase column names (first_name vs First Name)
+- The `--` value in Title column should be treated as null
+
+### Iteration 3 — US-003: Import SMS Conversations (2026-03-09)
+**Status:** COMPLETE
+**What was done:**
+- Created `scripts/intelligence/sally/import_sms.py`
+- Reads `docs/Sally/sms_parsed.json` (1,230 phone number entries)
+- Merges duplicate phone formats (e.g., +17032170509, 7032170509, (703) 217-0509) → 950 unique numbers
+- Filters to 394 entries with contact_name (matchable)
+- Matches by exact name (60 high confidence) and fuzzy SequenceMatcher ≥0.85 (20 medium confidence)
+- Inserts into `sally_contact_sms_conversations` with upsert on contact_id+phone_number
+- CLI args: `--test`, `--dry-run`, `--force`
+**Results:** 80 conversations matched, 22,611 total messages, 0 errors
+**Verification:** `SELECT count(*) FROM sally_contact_sms_conversations` → 80
+**Learnings:**
+- 214 phone numbers had duplicate formats in the parsed JSON — merging is essential
+- 314 unmatched entries are mostly family nicknames (Mom, Krizol, Kim), first-name-only contacts, or people not on LinkedIn
+- Fuzzy matching catches hyphenated name differences (Kay Fernandez-Smith ↔ Kay Fernandez Smith) and middle initial differences (Natasha Logan ↔ Natasha L. Logan)
+- `SUPABASE_SERVICE_KEY` env var confirmed from previous iteration
+
+### Iteration 4 — US-004: Create gather_comms.py, gather_calendar.py, setup_oauth.py (2026-03-09)
+**Status:** COMPLETE
+**What was done:**
+- Created `scripts/intelligence/sally/gather_comms.py` — adapted from `gather_comms_history.py`
+  - Scans Sally's 3 Gmail accounts: sally.steele@gmail.com, sally@outdoorithm.com, sally@outdoorithmcollective.org
+  - Reads from `sally_contacts`, writes to `sally_contact_email_threads`
+  - Credential lookup: checks `docs/credentials/Sally/tokens/` first, then `~/.google_workspace_mcp/credentials/`
+  - System prompt says "Sally Steele" instead of "Justin Steele"
+  - Sally's contacts only have `email` and `email_2` fields (no work_email/personal_email)
+  - CLI: --test, --count, --force, --collect-only, --summarize-only, --contact-id, --ids, --recent-days, --workers
+- Created `scripts/intelligence/sally/gather_calendar.py` — adapted from `gather_calendar_meetings.py`
+  - Event-centric: pulls ALL events, matches attendees against sally_contacts email lookup
+  - Reads from `sally_contacts`, writes to `sally_contact_calendar_events`
+  - Updates comms_meeting_count + comms_last_meeting on sally_contacts
+  - Skips events Sally declined; handles all-day events, conference detection, event classification
+  - CLI: --test, --force, --collect-only, --summarize-only, --account, --recent-days, --ids, --workers
+- Created `scripts/intelligence/sally/setup_oauth.py` — OAuth setup helper
+  - Maps each account to its client_secret file by project_id prefix
+  - Uses `google_auth_oauthlib.InstalledAppFlow` with local server on port 8080
+  - Saves tokens to `docs/credentials/Sally/tokens/{account}.json`
+  - Scopes: Gmail readonly + Calendar readonly
+  - `--check` flag shows which tokens already exist
+- Applied migration `add_sally_comms_columns` to add missing columns:
+  - `communication_history jsonb`, `comms_last_gathered_at timestamptz`, `meetings_last_gathered_at timestamptz`
+- All 3 scripts pass syntax check
+**Verification:** Syntax check passed; NOT run (requires OAuth tokens from Sally)
+**Learnings:**
+- sally_contacts schema was missing `communication_history`, `comms_last_gathered_at`, `meetings_last_gathered_at` — needed migration to add them
+- Sally's contacts only have `email` and `email_2` (no work_email/personal_email from LinkedIn import), so email lookup is simpler
+- Justin's scripts reference `JUSTIN_EMAILS` set for self-filtering; Sally's use `SALLY_EMAILS` — critical to get right so she doesn't match herself as a contact
+- OAuth setup uses port 8080 (not 8000) to avoid conflict with Google Workspace MCP servers
+- Token files saved with same JSON structure as MCP credentials for compatibility
 

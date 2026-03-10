@@ -86,7 +86,7 @@ Create the Sally-specific database tables via Supabase migration.
 
 ### US-002: Create and Run import_linkedin.py
 **Priority:** 2
-**Status:** [ ] Complete
+**Status:** [x] Complete
 
 **Description:**
 Import Sally's 849 LinkedIn connections into `sally_contacts`.
@@ -113,7 +113,7 @@ Import Sally's 849 LinkedIn connections into `sally_contacts`.
 
 ### US-003: Create and Run import_sms.py
 **Priority:** 3
-**Status:** [ ] Complete
+**Status:** [x] Complete
 
 **Description:**
 Match Sally's 1,230 SMS conversations to her imported contacts and store in `sally_contact_sms_conversations`.
@@ -140,7 +140,7 @@ Match Sally's 1,230 SMS conversations to her imported contacts and store in `sal
 
 ### US-004: Create gather_comms.py and gather_calendar.py
 **Priority:** 4
-**Status:** [ ] Complete
+**Status:** [x] Complete
 
 **Description:**
 Create Gmail and Calendar gathering scripts for Sally's 3 Google accounts. These scripts require OAuth tokens to run — create the scripts and an OAuth setup helper, but don't run the full gather (tokens not yet available).
