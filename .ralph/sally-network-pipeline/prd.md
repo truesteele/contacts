@@ -333,7 +333,7 @@ Create the campaign scaffolding and copy-writing scripts for Sally's contacts.
 
 ### US-010: Create Sally Email Persona and write_outreach.py
 **Priority:** 10
-**Status:** [ ] Complete
+**Status:** [x] Complete
 
 **Description:**
 Build Sally's email persona from her LinkedIn posts and create the personal outreach writer script.
@@ -367,7 +367,7 @@ Build Sally's email persona from her LinkedIn posts and create the personal outr
 
 ### US-011: Create Sally Ask-Readiness API Route and UI Page
 **Priority:** 11
-**Status:** [ ] Complete
+**Status:** [x] Complete
 
 **Description:**
 Create the API route and UI page for Sally's ask-readiness view.
@@ -394,7 +394,7 @@ Create the API route and UI page for Sally's ask-readiness view.
 
 ### US-012: Create Sally Campaign API Route and UI Page
 **Priority:** 12
-**Status:** [ ] Complete
+**Status:** [x] Complete
 
 **Description:**
 Create the API route and UI page for Sally's campaign view.

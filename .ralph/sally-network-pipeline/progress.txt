@@ -267,3 +267,103 @@ Started: 2026-03-09
 - write_campaign_copy.py reuses the same CampaignCopy schema (pre_email_note, text_followup_opener, text_followup_milestone, thank_you_message, thank_you_channel, email_sequence) — no structural changes needed
 - Both scripts have same "Network Peer" default as Justin's — largest segment, campaign email sequence
 
+### Iteration 10 — US-010: Create Sally Email Persona and write_outreach.py (2026-03-09)
+**Status:** COMPLETE
+**What was done:**
+- Created `docs/Sally/SALLY_EMAIL_PERSONA.md` — comprehensive voice guide built from 24 LinkedIn posts
+  - Analyzed Sally's 3 primary voices: Community Host, Storyteller/Builder, Philosopher/Minister
+  - Key voice markers identified:
+    - Mantra-driven storytelling ("Camp as it comes," "Leave anyway," "Take up space")
+    - Cinematic scene-setting with vivid sensory details
+    - Minister's cadence: story → reflection → invitation
+    - Em dashes used freely (unlike Justin who avoids them)
+    - Contrast structures (Disney vs. Humboldt, urgent vs. essential)
+    - Community-centered naming (always credits people)
+    - "Justin and I" pairing
+  - Voice comparison table: Sally vs. Justin across 8 dimensions
+  - 12 camper quotes bank for fundraising use
+  - 15-point quick reference for writing as Sally
+  - Representative snippets from 10 different posts
+  - Calibration notes for adapting LinkedIn voice to email
+  - Noted limitation: email voice inferred from LinkedIn (will be updated after Gmail gathering)
+- Created `scripts/intelligence/sally/write_outreach.py` — adapted from `scripts/intelligence/write_personal_outreach.py`
+  - Table: `contacts` → `sally_contacts`
+  - System prompt: complete voice rewrite for Sally
+    - Sample message rewrites show Sally's scene-setting opener style
+    - Em dashes allowed (part of her voice, unlike Justin's "no em dashes" rule)
+    - Message body max increased to 250 words (Sally writes longer than Justin)
+    - "Join us" / "be part of this" framing (vs Justin's "would love to count you in")
+    - Sally's bio section: REI Path Ahead fellow, Louisville Institute grantee, minister
+  - Persona descriptions adapted: Believers approach via scene from shared history, Impact Pros via camper transformation moments
+  - Story bank: added `stuck_van` and `uncle_john` stories unique to Sally's telling
+  - Opener inserts: "Something I want to share with you" (Sally) vs "Quick thing" (Justin)
+  - SELECT_COLS: removed Justin-only columns (enrich_volunteering, known_donor, nonprofit_board_member, outdoor_environmental_affinity, equity_access_focus, joshua_tree_invited, linkedin_reactions, comms_call_count, comms_last_call)
+  - Removed `summarize_linkedin_reactions()` function (not in sally_contacts)
+  - Removed alignment flags section from build_contact_context (no outdoor/equity/donor columns)
+  - Removed calls channel from comms summary
+  - `summarize_shared_institutions()` uses `sally_period` key (falls back to `justin_period`)
+  - Removed rewrite pass (no `rewrite_outreach_opus.py` equivalent for Sally yet)
+  - `SUPABASE_SERVICE_KEY` env var (consistent with other Sally scripts)
+- Script passes syntax check
+**Verification:** Syntax check passed; NOT run (requires full pipeline completion first)
+**Learnings:**
+- Sally's LinkedIn voice is significantly different from Justin's — longer, more narrative, more philosophical, uses em dashes freely
+- The persona doc is ~15 sections, modeled after Justin's 17-section doc but structured for Sally's unique patterns
+- Sally's most powerful fundraising tool is direct camper quotes — she uses them more than Justin does
+- The contrast structure (Disney vs. Humboldt, urgent vs. essential) is Sally's signature argumentative device, while Justin uses the "soft-direct ask" pattern
+- Sally's email voice is inferred from LinkedIn posts since we don't have her Gmail data yet — the persona doc explicitly notes this limitation and flags sections that need updating
+- Removed the rewrite pass from write_outreach.py since there's no Sally-specific `rewrite_outreach_opus.py` — can be added later if needed
+- sally_contacts has no `comms_call_count` or `comms_last_call` columns (Sally has no phone call data yet)
+
+### Iteration 11 — US-011: Create Sally Ask-Readiness API Route and UI Page (2026-03-09)
+**Status:** COMPLETE
+**What was done:**
+- Created `job-matcher-ai/app/api/network-intel/sally/ask-readiness/route.ts`
+  - Clone of Justin's `ask-readiness/route.ts` with table changed from `contacts` → `sally_contacts`
+  - Same SELECT_COLS, same JSONB flattening logic, same tier_counts response
+  - Error messages prefixed with "Sally" for debugging
+- Created `job-matcher-ai/app/tools/sally-ask-readiness/page.tsx`
+  - Clone of Justin's `ask-readiness/page.tsx` with key differences:
+  - Header: "Sally's Network — Ask Readiness" (uses `&apos;` for apostrophe in JSX)
+  - API endpoint: `/api/network-intel/sally/ask-readiness`
+  - CSV export filename: `sally_ask_readiness_YYYY-MM-DD.csv`
+  - Component name: `SallyAskReadinessPage` (not `AskReadinessPage`)
+  - Removed `ContactDetailSheet` (it's wired to Justin's `contacts` table — Sally's contacts don't have a detail sheet yet)
+  - Name column uses plain `<span>` instead of clickable button (no detail sheet to open)
+  - All other features identical: tier cards, search, filters, sortable columns, expand/collapse, CSV export
+- TypeScript compiles cleanly with `npx tsc --noEmit`
+**Verification:** TypeScript compilation passed; API will work once sally_contacts has ask_readiness data
+**Learnings:**
+- The `ContactDetailSheet` component is hardcoded to read from `contacts` table — can't reuse it for Sally's contacts without modification. Removed it from Sally's page rather than breaking it.
+- Sally's page is functionally identical to Justin's — only 3 real changes: table name in API, header text in UI, and CSV filename
+- The ask-readiness API route pattern is very clean — just change `from('contacts')` to `from('sally_contacts')` and everything else works
+
+### Iteration 12 — US-012: Create Sally Campaign API Route and UI Page (2026-03-09)
+**Status:** COMPLETE
+**What was done:**
+- Created `job-matcher-ai/app/api/network-intel/sally/campaign/route.ts`
+  - Clone of Justin's `campaign/route.ts` with table changed from `contacts` → `sally_contacts`
+  - Removed `personal_email` and `work_email` from SELECT_COLS (sally_contacts only has `email`)
+  - Same JSONB flattening logic: scaffold, personal_outreach, campaign_copy, send_status, donation, sidelined
+  - Same stats computation: by_list, by_persona, by_capacity, by_lifecycle, by_send_status
+  - Error messages prefixed with "Sally" for debugging
+- Created `job-matcher-ai/app/tools/sally-campaign/page.tsx`
+  - Clone of Justin's `campaign/page.tsx` as view-only (per PRD: "skip send for now — just the view")
+  - Header: "Sally's Network — Campaign" (uses `&apos;` + `&mdash;` for JSX entities)
+  - API endpoint: `/api/network-intel/sally/campaign`
+  - Component name: `SallyCampaignPage` (not `CampaignPage`)
+  - Removed all send functionality: no sendMethod state, no handleSendOne/handleSendAllA/handleSendPreEmail/handleSendEmail1, no send buttons, no TooltipProvider around tables
+  - Removed `MessageDetailSheet` (hardcoded to Justin's `contacts` table via `/api/network-intel/campaign/${id}`)
+  - Removed donation recording form (requires campaign/[id] PATCH route which doesn't exist for Sally)
+  - Removed respond marking (requires campaign/[id] PATCH route)
+  - Removed row click handlers and cursor-pointer (no detail sheet to open)
+  - Kept all view features: Dashboard tab (progress, stats, breakdowns, sidelined), List A tab (sortable table), Lists B-D tab (search, filters, sortable table), Activity tab (feed)
+  - Removed unused imports: Send, SendHorizonal, Plus, Check, Input, Separator, Tooltip*, Button (for send actions)
+- TypeScript compiles cleanly with `npx tsc --noEmit`
+**Verification:** TypeScript compilation passed; API will work once sally_contacts has campaign_2026 data
+**Learnings:**
+- The `MessageDetailSheet` component uses Justin's `/api/network-intel/campaign/${id}` routes (GET, PATCH, chat, generate-outreach) — all hardcoded to `contacts` table. Can't reuse for Sally without creating parallel [id] routes.
+- Sally's campaign page is intentionally view-only for now. Send/edit/donation features can be added later by creating Sally-specific `campaign/[id]` and `campaign/send` routes.
+- The API route is nearly identical — just table name and SELECT_COLS changes. The JSONB structure (campaign_2026) is the same schema in both tables.
+- sally_contacts doesn't have `personal_email` or `work_email` columns (only `email` and `email_2`), so resolveEmail logic simplified
+
