@@ -301,7 +301,7 @@ Create the familiarity backfill and ask-readiness scoring scripts for Sally.
 
 ### US-009: Create scaffold_campaign.py and write_campaign_copy.py
 **Priority:** 9
-**Status:** [ ] Complete
+**Status:** [x] Complete
 
 **Description:**
 Create the campaign scaffolding and copy-writing scripts for Sally's contacts.

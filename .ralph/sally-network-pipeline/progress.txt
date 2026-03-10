@@ -230,3 +230,40 @@ Started: 2026-03-09
 - Goal context for outdoorithm_fundraising updated to mention "co-founded by Sally and Justin Steele" (both are co-founders)
 - `capacity_indicators` column doesn't exist in sally_contacts (it's a derived field in Justin's table)
 
+### Iteration 9 — US-009: Create scaffold_campaign.py and write_campaign_copy.py (2026-03-09)
+**Status:** COMPLETE
+**What was done:**
+- Created `scripts/intelligence/sally/scaffold_campaign.py` — adapted from `scripts/intelligence/scaffold_campaign.py`
+  - Table: `contacts` → `sally_contacts`
+  - System prompt: all "Justin Steele" → "Sally Steele", "Justin's network" → "Sally's network"
+  - SALLY_TIER_1_NAMES: empty set (TODO: populate with Sally's inner circle once she reviews)
+  - SELECT_COLS: removed columns not in sally_contacts schema:
+    - `enrich_volunteering`, `known_donor`, `nonprofit_board_member`
+    - `outdoor_environmental_affinity`, `outdoor_affinity_evidence`
+    - `equity_access_focus`, `equity_focus_evidence`
+    - `joshua_tree_invited`, `linkedin_reactions`
+  - build_contact_context: removed alignment_flags section (no outdoor/equity/known_donor columns), removed linkedin_reactions section
+  - summarize_comms: removed "calls" channel (Sally has no call logs)
+  - "Familiarity Rating: Sally's personal assessment" (not Justin's)
+  - "personalization_sentence: shared history with Sally" (not Justin)
+  - Sally's voice section: placeholder noting full patterns will be in SALLY_EMAIL_PERSONA.md (US-010)
+  - Sally's bio section replaces Justin's bio
+  - `SUPABASE_SERVICE_KEY` env var (consistent with other Sally scripts)
+- Created `scripts/intelligence/sally/write_campaign_copy.py` — adapted from `scripts/intelligence/write_campaign_copy.py`
+  - Same table/env var changes as scaffold
+  - System prompt: all "Justin" → "Sally" voice references
+  - Sally's voice patterns section: placeholder for SALLY_EMAIL_PERSONA.md
+  - SELECT_COLS: same adjustments (removed calls, outdoor/equity flags, linkedin_reactions)
+  - summarize_comms_brief: removed phone calls channel
+  - "Format: 3 plain-text personal emails from Sally's personal email"
+  - Same Pydantic schemas: CampaignCopy, ThankYouChannel
+  - Same ThreadPoolExecutor, retry logic, null byte stripping
+- Both scripts pass syntax check
+**Verification:** Syntax check passed; NOT run (requires ask-readiness scoring first)
+**Learnings:**
+- scaffold_campaign.py system prompt is ~400 lines with extensive campaign strategy — adapted all "Justin" references to "Sally" while keeping the strategy identical (same campaign, same stories, same donor psychology)
+- SALLY_TIER_1_NAMES left empty — Sally needs to manually identify her inner circle (can't be data-derived per the persona decision tree)
+- Sally's voice placeholder is minimal — US-010 will create the full persona doc from her LinkedIn posts
+- write_campaign_copy.py reuses the same CampaignCopy schema (pre_email_note, text_followup_opener, text_followup_milestone, thank_you_message, thank_you_channel, email_sequence) — no structural changes needed
+- Both scripts have same "Network Peer" default as Justin's — largest segment, campaign email sequence
+
