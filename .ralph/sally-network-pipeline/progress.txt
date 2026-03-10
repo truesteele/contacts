@@ -142,3 +142,56 @@ Started: 2026-03-09
 - Apify actor returns data in same format regardless of which table we're enriching — map_profile_to_updates logic is identical, just the output column filter changes
 - Full run (850 contacts) would cost ~$3.40 and take 30-60 min — DO NOT run without explicit request
 
+### Iteration 6 — US-006: Create tag_contacts.py with Sally Anchor Profile (2026-03-09)
+**Status:** COMPLETE
+**What was done:**
+- Created `scripts/intelligence/sally/tag_contacts.py` — adapted from `scripts/intelligence/tag_contacts_gpt5m.py`
+- Key adaptations:
+  - Reads from `sally_contacts` instead of `contacts`
+  - `SALLY_ANCHOR_PROFILE` constant with known facts: Co-Founder Outdoorithm (2023), Co-Founder OC (2024), Bay Area
+  - TODO comment to update anchor profile after Apify enrichment runs
+  - System prompt references Sally (suggested_opener for Sally, etc.)
+  - SELECT_COLS adjusted: no `enrich_skills_detailed`, `enrich_volunteering`, `enrich_certifications`, `enrich_publications`, `enrich_honors_awards` (not in sally_contacts schema)
+  - Uses `enrich_skills` (text array) instead of `enrich_skills_detailed` (JSONB) for skills context
+  - save_tags skips columns not in sally_contacts: `ai_kindora_prospect_score`, `ai_kindora_prospect_type`, `ai_tags_generated_at`, `ai_tags_model`
+  - Stores generation metadata (`_generated_at`, `_model`) inside `ai_tags` JSONB instead
+  - `SUPABASE_SERVICE_KEY` env var (consistent with other Sally scripts)
+  - Added `--contact-id` and `--batch` CLI args for convenience
+- Same Pydantic schemas as Justin's: RelationshipProximity, GivingCapacity, TopicalAffinity, SalesFit, OutreachContext → ContactIntelligence
+- ThreadPoolExecutor with 150 default workers
+- CLI args: --test, --count, --dry-run, --force, --workers, --contact-id, --ids, --batch
+**Verification:** Syntax check passed; NOT run (requires Apify enrichment first for meaningful results)
+**Learnings:**
+- sally_contacts schema is leaner than contacts — no `enrich_skills_detailed` (JSONB with skill details), no volunteering/certifications/publications/honors columns
+- `enrich_skills` in sally_contacts is text[] (array of skill names), while Justin's has `enrich_skills_detailed` as JSONB with {skill_name, endorsement_count} objects
+- sally_contacts also lacks `ai_kindora_prospect_score` and `ai_kindora_prospect_type` denormalized columns — but these values are still in `ai_tags` JSONB for querying
+- Anchor profile is placeholder — must be updated after Apify enrichment reveals Sally's full career history
+
+### Iteration 7 — US-007: Create rebuild_comms_summary.py and score_comms_closeness.py (2026-03-09)
+**Status:** COMPLETE
+**What was done:**
+- Created `scripts/intelligence/sally/rebuild_comms_summary.py` — adapted from `scripts/intelligence/rebuild_comms_summary.py`
+  - Reads from `sally_contact_email_threads`, `sally_contact_calendar_events`, `sally_contact_sms_conversations`
+  - Writes `comms_summary` JSONB + denormalized fields to `sally_contacts`
+  - Key difference from Justin's: no `contact_call_logs` table (Sally doesn't have phone call data yet)
+  - Added `build_sms_channel()` method — builds channel stats from `sally_contact_sms_conversations` directly (Justin's SMS comes through `contact_email_threads` via different path, Sally's is a dedicated table)
+  - Computes per-channel stats: threads, messages, first/last dates, bidirectional/inbound/outbound counts
+  - Updates `comms_last_date`, `comms_thread_count`, `comms_meeting_count`, `comms_last_meeting`
+  - CLI args: --test, --contact-id, --ids, --force
+- Created `scripts/intelligence/sally/score_comms_closeness.py` — adapted from `scripts/intelligence/score_comms_closeness.py`
+  - Reads `comms_summary` from `sally_contacts`, scores via GPT-5 mini structured output
+  - Writes `comms_closeness`, `comms_momentum`, `comms_reasoning` to `sally_contacts`
+  - System prompt adapted: "Sally" instead of "Justin" in closeness labels
+  - Channel hierarchy adjusted: no phone calls channel (Sally has no call logs), SMS is highest signal
+  - Same Pydantic schemas: CommsCloseness, CommsMomentum, CommsClosenessResult
+  - ThreadPoolExecutor with 150 default workers
+  - CLI args: --test, --workers, --force, --contact-id, --ids, --batch
+  - `SUPABASE_SERVICE_KEY` env var (consistent with other Sally scripts)
+- Both scripts pass syntax check
+**Verification:** Syntax check passed; NOT run (requires comms data from US-004 OAuth setup)
+**Learnings:**
+- Sally's SMS data comes from a dedicated `sally_contact_sms_conversations` table (imported in US-003), unlike Justin's where SMS flows through `contact_email_threads` or `contact_sms_conversations` → need explicit `build_sms_channel()` method
+- Sally has no `contact_call_logs` equivalent — removed calls channel from both scripts
+- The closeness scoring is purely behavioral — no anchor profile changes needed, just table names and "Sally" vs "Justin" in prompts
+- SMS directionality from `sally_contact_sms_conversations` uses `sent_count`/`received_count` fields directly (vs Justin's call_type enum)
+

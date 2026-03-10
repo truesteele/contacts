@@ -209,7 +209,7 @@ Create the Apify LinkedIn enrichment script for Sally's contacts.
 
 ### US-006: Create tag_contacts.py with Sally Anchor Profile
 **Priority:** 6
-**Status:** [ ] Complete
+**Status:** [x] Complete
 
 **Description:**
 Create the LLM tagging script for Sally's contacts with her own anchor profile.
@@ -240,7 +240,7 @@ Create the LLM tagging script for Sally's contacts with her own anchor profile.
 
 ### US-007: Create rebuild_comms_summary.py and score_comms_closeness.py
 **Priority:** 7
-**Status:** [ ] Complete
+**Status:** [x] Complete
 
 **Description:**
 Create the communication summary aggregator and closeness scoring scripts for Sally.
