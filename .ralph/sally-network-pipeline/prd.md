@@ -182,7 +182,7 @@ Create Gmail and Calendar gathering scripts for Sally's 3 Google accounts. These
 
 ### US-005: Create enrich_apify.py
 **Priority:** 5
-**Status:** [ ] Complete
+**Status:** [x] Complete
 
 **Description:**
 Create the Apify LinkedIn enrichment script for Sally's contacts.

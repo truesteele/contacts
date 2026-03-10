@@ -120,3 +120,25 @@ Started: 2026-03-09
 - OAuth setup uses port 8080 (not 8000) to avoid conflict with Google Workspace MCP servers
 - Token files saved with same JSON structure as MCP credentials for compatibility
 
+### Iteration 5 — US-005: Create enrich_apify.py (2026-03-09)
+**Status:** COMPLETE
+**What was done:**
+- Created `scripts/intelligence/sally/enrich_apify.py` — adapted from `scripts/enrichment/enrich_contacts_apify.py`
+- Key adaptations:
+  - Reads from `sally_contacts` instead of `contacts`
+  - VALID_COLUMNS whitelist ensures only columns in sally_contacts schema are written (strips Justin-only columns like num_followers, linkedin_profile, school_name_education, etc.)
+  - Apify token env var: tries `APIFY_TOKEN` first, falls back to `APIFY_API_KEY`
+  - Supabase auth: uses `SUPABASE_SERVICE_KEY` (consistent with other Sally scripts)
+  - Added `--contact-id` flag for single-contact enrichment
+- Same Apify actor: `harvestapi/linkedin-profile-scraper` ($0.004/profile)
+- Same batching strategy: 25 URLs/batch, 8 concurrent runs
+- URL normalization: unquote + www prefix (same as Justin's)
+- Enrichment columns written: headline, summary, company, position, linkedin_username, enrich_current_company, enrich_current_title, enrich_current_since, enrich_years_in_current_role, enrich_total_experience_years, enrich_follower_count, enrich_connections, enrich_schools, enrich_companies_worked, enrich_titles_held, enrich_skills, enrich_board_positions, enrich_volunteer_orgs, enrich_employment, enrich_education, enriched_at, enrichment_source
+- CLI args: --test, --batch N, --start-from N, --force, --contact-id ID, --ids (comma-separated)
+**Test results:** --test enriched Spencer Moore (id=1) with 16 fields — Senior Account Executive at OutsidePR, 749 followers, 52 skills, 6 companies, 2 schools
+**Verification:** Syntax check passed; --test ran successfully
+**Learnings:**
+- sally_contacts doesn't have many of Justin's flat columns (num_followers, connections, linkedin_profile, school_name_education, etc.) — VALID_COLUMNS whitelist is essential
+- Apify actor returns data in same format regardless of which table we're enriching — map_profile_to_updates logic is identical, just the output column filter changes
+- Full run (850 contacts) would cost ~$3.40 and take 30-60 min — DO NOT run without explicit request
+
