@@ -1,0 +1,51 @@
+# Ralph Progress Log
+Loop: sally-network-pipeline
+Started: 2026-03-09
+---
+
+## Codebase Patterns
+- Justin's scripts in scripts/intelligence/ are the templates for Sally's adaptations
+- Sally's scripts go in scripts/intelligence/sally/
+- Sally's tables: sally_contacts, sally_contact_email_threads, sally_contact_calendar_events, sally_contact_sms_conversations
+- Env vars: OPENAI_APIKEY (no underscore), ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_KEY, SUPABASE_DB_PASSWORD, APIFY_TOKEN
+- Python venv at .venv/, activate with source .venv/bin/activate
+- GPT-5 mini does NOT support temperature=0
+- supabase-contacts MCP server for DB operations
+- Full approved plan at /Users/Justin/.claude/plans/snoopy-marinating-tiger.md
+
+## Sally's Input Files
+- LinkedIn CSV: docs/Sally/linkedin_connections.csv (849 rows: First Name, Last Name, LinkedIn URL, Title, Connection Date)
+- Network CSV: docs/Sally/sally_network_contacts.csv (850 rows with calendar_email column, ~56 non-null emails)
+- SMS JSON: docs/Sally/sms_parsed.json (1,230 phone numbers, keyed by phone → {contact_name, phone_number, total_count, sent_count, received_count, first_date, last_date, recent_messages, sample_messages})
+- Google credentials: docs/credentials/Sally/ (3 client_secret JSON files)
+
+## Key Adaptations (Justin → Sally)
+- Table name: contacts → sally_contacts
+- Email threads: contact_email_threads → sally_contact_email_threads
+- Calendar events: contact_calendar_events → sally_contact_calendar_events
+- SMS: contact_sms_conversations → sally_contact_sms_conversations
+- Anchor profile: ANCHOR_PROFILE (Justin) → SALLY_ANCHOR_PROFILE (Sally)
+- System prompts: "Justin Steele" → "Sally Steele"
+- API routes: /api/network-intel/ → /api/network-intel/sally/
+- UI headers: add "Sally's Network" prefix
+
+---
+
+## Iteration Log
+
+### Iteration 1 — US-001: Create Sally Database Tables (2026-03-09)
+**Status:** COMPLETE
+**What was done:**
+- Created migration file: `supabase/migrations/20260309_add_sally_contacts.sql`
+- Applied migration via `supabase-contacts` MCP `apply_migration` tool
+- Created 4 tables: `sally_contacts`, `sally_contact_email_threads`, `sally_contact_calendar_events`, `sally_contact_sms_conversations`
+- Created 6 custom indexes: linkedin_url, normalized_full_name, ask_readiness (GIN) on sally_contacts; contact_id on all 3 child tables
+- Unique constraints on child tables for dedup (thread_id+account, event_id+account, contact_id+phone)
+- sally_contacts has `justin_contact_id bigint REFERENCES contacts(id)` for cross-network linking
+- Vector columns: `embedding vector(768)`, `interests_embedding vector(768)` (pgvector already installed)
+**Verification:** All 4 tables confirmed via `information_schema.tables`, all 13 indexes confirmed via `pg_indexes`
+**Learnings:**
+- Migration applies cleanly via MCP `apply_migration` — no need for psycopg2 or CLI
+- `bigint GENERATED ALWAYS AS IDENTITY` works for sally_contacts.id (same as contact_sms_conversations pattern)
+- `bigserial` used for email_threads and calendar_events PKs (same as Justin's tables)
+
