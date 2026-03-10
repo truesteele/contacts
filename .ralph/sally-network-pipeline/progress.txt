@@ -367,3 +367,27 @@ Started: 2026-03-09
 - The API route is nearly identical — just table name and SELECT_COLS changes. The JSONB structure (campaign_2026) is the same schema in both tables.
 - sally_contacts doesn't have `personal_email` or `work_email` columns (only `email` and `email_2`), so resolveEmail logic simplified
 
+### Iteration 13 — US-013: Create and Run cross_reference.py (2026-03-09)
+**Status:** COMPLETE
+**What was done:**
+- Created `scripts/intelligence/sally/cross_reference.py`
+  - Fetches all Sally contacts (850) and Justin contacts (2,949) with LinkedIn URLs
+  - Normalizes URLs (lowercase, unquote, www prefix, strip trailing slash) for matching
+  - Matches by normalized LinkedIn URL
+  - Updates `sally_contacts.justin_contact_id` FK for all matches
+  - Prints summary: total shared, overlap rate, tier breakdown, closeness breakdown
+  - Prints top 20 shared connections sorted by Justin's ask-readiness score
+  - CLI args: --dry-run, --clear
+- Ran successfully — 281 shared connections found (33.1% overlap)
+**Results:**
+- 281 shared connections out of 850 Sally contacts (33.1% overlap)
+- 569 Sally-only contacts (unique to her network)
+- Ask-readiness tier breakdown (shared only): 44 ready_now, 201 cultivate_first, 35 long_term, 1 not_a_fit
+- Top shared contacts: Erin Teague (92), David Kyuman Kim (90), Maab Ibrahim (90), Tiffany Cheng Nyaggah (90), Karibu Nyaggah (90)
+**Verification:** `SELECT count(*) FROM sally_contacts WHERE justin_contact_id IS NOT NULL` → 281
+**Learnings:**
+- 33.1% overlap is a healthy number — Sally brings 569 unique contacts to the campaign
+- Of the 281 shared contacts, 44 are already `ready_now` in Justin's scoring — these are highest-priority shared connections where both can vouch
+- Script is simple and fast — no API calls, purely DB matching
+- LinkedIn URL normalization is critical: unquote handles %20-encoded URLs, www prefix handles inconsistencies between scraped URLs
+
