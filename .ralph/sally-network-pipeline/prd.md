@@ -269,7 +269,7 @@ Create the communication summary aggregator and closeness scoring scripts for Sa
 
 ### US-008: Create backfill_familiarity.py and score_ask_readiness.py
 **Priority:** 8
-**Status:** [ ] Complete
+**Status:** [x] Complete
 
 **Description:**
 Create the familiarity backfill and ask-readiness scoring scripts for Sally.

@@ -195,3 +195,38 @@ Started: 2026-03-09
 - The closeness scoring is purely behavioral — no anchor profile changes needed, just table names and "Sally" vs "Justin" in prompts
 - SMS directionality from `sally_contact_sms_conversations` uses `sent_count`/`received_count` fields directly (vs Justin's call_type enum)
 
+### Iteration 8 — US-008: Create backfill_familiarity.py and score_ask_readiness.py (2026-03-09)
+**Status:** COMPLETE
+**What was done:**
+- Created `scripts/intelligence/sally/backfill_familiarity.py`
+  - Computes familiarity_rating (0-4) from comms density + SMS presence
+  - Logic: 0=no comms, 1=email/calendar only, 2=has SMS, 3=high SMS (>50) or multi-channel, 4=very high SMS (>200) + meetings
+  - Fetches SMS data from `sally_contact_sms_conversations` for lookup
+  - CLI args: --test (10 contacts), --dry-run, --force, --contact-id
+  - Reads from `sally_contacts`, writes `familiarity_rating`
+- Created `scripts/intelligence/sally/score_ask_readiness.py`
+  - Adapted from `scripts/intelligence/score_ask_readiness.py`
+  - All "Justin Steele" → "Sally Steele" in system prompt and context builder
+  - Table: `sally_contacts` instead of `contacts`
+  - SELECT_COLS adjusted: removed columns not in sally_contacts schema:
+    - `known_donor`, `nonprofit_board_member`, `outdoor_environmental_affinity`, `outdoor_affinity_evidence`
+    - `equity_access_focus`, `equity_focus_evidence`, `joshua_tree_invited`, `linkedin_reactions`
+    - `enrich_volunteering`, `notes`, `capacity_indicators`
+  - Removed corresponding functions: `summarize_volunteering_data()`, `summarize_linkedin_reactions()`
+  - Removed mission alignment flags section (no outdoor_environmental_affinity/equity_access_focus columns)
+  - Removed prior fundraising signals section (no known_donor/joshua_tree_invited columns)
+  - Removed "calls" from channel breakdown in summarize_comms (Sally has no call logs)
+  - `build_contact_context()` references "Sally's personal assessment" not "Justin's"
+  - `summarize_shared_institutions()` uses `sally_period` key (falls back to `justin_period`)
+  - Added `--contact-id` CLI arg for convenience
+  - Same Pydantic schemas, ThreadPoolExecutor, retry logic, null byte stripping
+  - `SUPABASE_SERVICE_KEY` env var (consistent with other Sally scripts)
+- Both scripts pass syntax check
+**Verification:** Syntax check passed; NOT run (requires enrichment + comms data)
+**Learnings:**
+- sally_contacts has significantly fewer columns than contacts — ~12 columns removed from SELECT_COLS
+- The system prompt is ~280 lines and has many "Justin" references — all needed careful replacement with "Sally"
+- Familiarity backfill is a simple heuristic that doesn't need GPT — purely algorithmic from SMS + comms counts
+- Goal context for outdoorithm_fundraising updated to mention "co-founded by Sally and Justin Steele" (both are co-founders)
+- `capacity_indicators` column doesn't exist in sally_contacts (it's a derived field in Justin's table)
+
