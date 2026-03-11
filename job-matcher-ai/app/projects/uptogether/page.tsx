@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { cn } from '@/lib/utils'
 import {
   ChevronDown,
@@ -18,6 +18,9 @@ import {
   Circle,
   Loader2,
   AlertTriangle,
+  StickyNote,
+  Plus,
+  X,
 } from 'lucide-react'
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -39,6 +42,8 @@ interface ProjectTask {
 }
 
 // ── Constants ──────────────────────────────────────────────────────────
+
+const STATUS_CYCLE: ProjectTask['status'][] = ['todo', 'in_progress', 'done', 'blocked']
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
   todo: {
@@ -66,6 +71,8 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; 
     icon: <AlertTriangle className="w-3.5 h-3.5" />,
   },
 }
+
+const OWNER_OPTIONS = ['Justin', 'Cesar', 'Rachel', 'Ivanna', 'UT Team'] as const
 
 const OWNER_CONFIG: Record<string, { color: string; bg: string; initials: string; ring: string }> = {
   Justin: { color: 'text-teal-700', bg: 'bg-teal-50 border-teal-200', initials: 'JS', ring: 'ring-teal-200' },
@@ -117,7 +124,6 @@ const KEY_DATES = [
   { label: 'Deadline', date: 'Apr 3', past: false },
 ]
 
-// Sprint weeks for timeline
 const SPRINT_WEEKS = [
   { week: 1, label: 'Week 1', dates: 'Mar 10–16', milestone: 'Kickoff + SXSW' },
   { week: 2, label: 'Week 2', dates: 'Mar 17–23', milestone: 'App Draft Due' },
@@ -142,23 +148,124 @@ function getCurrentWeek(): number {
 
 // ── Sub-components ─────────────────────────────────────────────────────
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({
+  status,
+  onClick,
+  saving,
+}: {
+  status: string
+  onClick?: () => void
+  saving?: boolean
+}) {
   const config = STATUS_CONFIG[status] || STATUS_CONFIG.todo
   return (
-    <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium', config.bg)}>
-      {config.icon}
+    <button
+      onClick={(e) => {
+        e.stopPropagation()
+        onClick?.()
+      }}
+      className={cn(
+        'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium transition-all',
+        config.bg,
+        onClick && 'cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-slate-300 active:scale-95'
+      )}
+    >
+      {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : config.icon}
       {config.label}
-    </span>
+    </button>
   )
 }
 
-function OwnerPill({ owner }: { owner: string | null }) {
-  if (!owner) return null
-  const config = OWNER_CONFIG[owner] || { color: 'text-slate-600', bg: 'bg-slate-50 border-slate-200', initials: owner.slice(0, 2).toUpperCase() }
+function OwnerPill({
+  owner,
+  onSelect,
+  saving,
+}: {
+  owner: string | null
+  onSelect?: (owner: string | null) => void
+  saving?: boolean
+}) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [open])
+
+  const config = owner
+    ? OWNER_CONFIG[owner] || { color: 'text-slate-600', bg: 'bg-slate-50 border-slate-200', initials: owner.slice(0, 2).toUpperCase() }
+    : null
+
   return (
-    <span className={cn('inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium border', config.bg, config.color)}>
-      {owner}
-    </span>
+    <div className="relative" ref={ref}>
+      <button
+        onClick={(e) => {
+          e.stopPropagation()
+          if (onSelect) setOpen(!open)
+        }}
+        className={cn(
+          'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium border transition-all',
+          config ? [config.bg, config.color] : 'bg-slate-50 border-dashed border-slate-300 text-slate-400',
+          onSelect && 'cursor-pointer hover:ring-2 hover:ring-offset-1 hover:ring-slate-300 active:scale-95'
+        )}
+      >
+        {saving ? (
+          <Loader2 className="w-3 h-3 animate-spin" />
+        ) : null}
+        {owner || 'Assign'}
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1 z-50 bg-white border border-border/60 rounded-lg shadow-lg py-1 min-w-[140px]">
+          {OWNER_OPTIONS.map((o) => {
+            const oc = OWNER_CONFIG[o]
+            return (
+              <button
+                key={o}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onSelect?.(o)
+                  setOpen(false)
+                }}
+                className={cn(
+                  'w-full text-left px-3 py-1.5 text-xs flex items-center gap-2 hover:bg-slate-50 transition-colors',
+                  owner === o && 'font-semibold bg-slate-50'
+                )}
+              >
+                <span className={cn('w-5 h-5 rounded-full flex items-center justify-center text-white text-[9px] font-bold',
+                  o === 'Justin' ? 'bg-teal-600' :
+                  o === 'Cesar' ? 'bg-amber-500' :
+                  o === 'Rachel' ? 'bg-violet-500' :
+                  o === 'Ivanna' ? 'bg-rose-500' : 'bg-slate-500'
+                )}>
+                  {oc.initials}
+                </span>
+                {o}
+              </button>
+            )
+          })}
+          {owner && (
+            <>
+              <div className="border-t border-border/40 my-1" />
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onSelect?.(null)
+                  setOpen(false)
+                }}
+                className="w-full text-left px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-50 transition-colors"
+              >
+                Unassign
+              </button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -192,54 +299,199 @@ function ProgressBar({ done, total }: { done: number; total: number }) {
   )
 }
 
-function TaskRow({ task }: { task: ProjectTask }) {
+function TaskRow({
+  task,
+  onUpdate,
+  saving,
+  notesOpen,
+  onToggleNotes,
+}: {
+  task: ProjectTask
+  onUpdate: (id: string, updates: Partial<ProjectTask>) => void
+  saving: boolean
+  notesOpen: boolean
+  onToggleNotes: (id: string) => void
+}) {
+  const [notesValue, setNotesValue] = useState(task.notes || '')
+  const notesRef = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => {
+    setNotesValue(task.notes || '')
+  }, [task.notes])
+
+  useEffect(() => {
+    if (notesOpen && notesRef.current) {
+      notesRef.current.focus()
+    }
+  }, [notesOpen])
+
+  function toggleCheckbox() {
+    const newStatus = task.status === 'done' ? 'todo' : 'done'
+    onUpdate(task.id, { status: newStatus })
+  }
+
+  function cycleStatus() {
+    const idx = STATUS_CYCLE.indexOf(task.status)
+    const next = STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length]
+    onUpdate(task.id, { status: next })
+  }
+
+  function changeOwner(owner: string | null) {
+    onUpdate(task.id, { owner })
+  }
+
+  function saveNotes() {
+    if (notesValue !== (task.notes || '')) {
+      onUpdate(task.id, { notes: notesValue || null })
+    }
+  }
+
   return (
-    <div className="group flex items-start gap-3 py-2.5 px-3 rounded-lg hover:bg-slate-50/60 transition-colors">
-      <div className={cn('mt-0.5 flex-shrink-0', STATUS_CONFIG[task.status]?.color || 'text-slate-400')}>
-        {task.status === 'done' ? (
-          <CheckCircle2 className="w-[18px] h-[18px]" />
-        ) : task.status === 'blocked' ? (
-          <AlertTriangle className="w-[18px] h-[18px]" />
-        ) : task.status === 'in_progress' ? (
-          <Clock className="w-[18px] h-[18px]" />
-        ) : (
-          <Circle className="w-[18px] h-[18px]" />
-        )}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className={cn('text-sm', task.status === 'done' && 'line-through text-muted-foreground')}>
-            {task.title}
-          </span>
-          {task.description && (
-            <span className="text-[11px] text-muted-foreground/70 bg-slate-100 px-1.5 py-0.5 rounded font-mono">
-              {task.description}
+    <div>
+      <div className="group flex items-start gap-3 py-2.5 px-3 rounded-lg hover:bg-slate-50/60 transition-colors">
+        <button
+          onClick={toggleCheckbox}
+          className={cn('mt-0.5 flex-shrink-0 transition-colors', STATUS_CONFIG[task.status]?.color || 'text-slate-400',
+            'hover:text-teal-600 active:scale-90'
+          )}
+        >
+          {saving ? (
+            <Loader2 className="w-[18px] h-[18px] animate-spin" />
+          ) : task.status === 'done' ? (
+            <CheckCircle2 className="w-[18px] h-[18px]" />
+          ) : task.status === 'blocked' ? (
+            <AlertTriangle className="w-[18px] h-[18px]" />
+          ) : task.status === 'in_progress' ? (
+            <Clock className="w-[18px] h-[18px]" />
+          ) : (
+            <Circle className="w-[18px] h-[18px]" />
+          )}
+        </button>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={cn('text-sm', task.status === 'done' && 'line-through text-muted-foreground')}>
+              {task.title}
+            </span>
+            {task.description && (
+              <span className="text-[11px] text-muted-foreground/70 bg-slate-100 px-1.5 py-0.5 rounded font-mono">
+                {task.description}
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onToggleNotes(task.id)
+            }}
+            className={cn(
+              'p-1 rounded transition-all',
+              notesOpen || task.notes
+                ? 'text-teal-600 bg-teal-50 hover:bg-teal-100'
+                : 'text-slate-300 hover:text-slate-500 opacity-0 group-hover:opacity-100'
+            )}
+            title={task.notes ? 'View notes' : 'Add notes'}
+          >
+            <StickyNote className="w-3.5 h-3.5" />
+          </button>
+          {task.due_date && (
+            <span className="text-[11px] text-muted-foreground tabular-nums">
+              {new Date(task.due_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
             </span>
           )}
+          <OwnerPill owner={task.owner} onSelect={changeOwner} saving={saving} />
+          <StatusBadge status={task.status} onClick={cycleStatus} saving={saving} />
         </div>
       </div>
-      <div className="flex items-center gap-2 flex-shrink-0">
-        {task.due_date && (
-          <span className="text-[11px] text-muted-foreground tabular-nums">
-            {new Date(task.due_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-          </span>
-        )}
-        <OwnerPill owner={task.owner} />
-        <StatusBadge status={task.status} />
-      </div>
+      {notesOpen && (
+        <div className="ml-9 mr-3 mb-2 mt-0.5">
+          <textarea
+            ref={notesRef}
+            value={notesValue}
+            onChange={(e) => setNotesValue(e.target.value)}
+            onBlur={saveNotes}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                setNotesValue(task.notes || '')
+                onToggleNotes(task.id)
+              }
+            }}
+            placeholder="Add a note..."
+            className="w-full text-xs text-muted-foreground bg-slate-50 border border-border/40 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-teal-200 focus:border-teal-300 placeholder:text-slate-300 transition-all"
+            rows={2}
+          />
+        </div>
+      )}
+    </div>
+  )
+}
+
+function AddTaskForm({
+  section,
+  subsection,
+  onAdd,
+  onCancel,
+}: {
+  section: string
+  subsection?: string | null
+  onAdd: (task: { section: string; subsection?: string | null; title: string }) => void
+  onCancel: () => void
+}) {
+  const [title, setTitle] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    inputRef.current?.focus()
+  }, [])
+
+  function handleSubmit() {
+    const trimmed = title.trim()
+    if (!trimmed) return
+    onAdd({ section, subsection, title: trimmed })
+    setTitle('')
+    inputRef.current?.focus()
+  }
+
+  return (
+    <div className="flex items-center gap-2 py-2 px-3">
+      <Plus className="w-[18px] h-[18px] text-slate-300 flex-shrink-0" />
+      <input
+        ref={inputRef}
+        type="text"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') handleSubmit()
+          if (e.key === 'Escape') onCancel()
+        }}
+        placeholder="Task title..."
+        className="flex-1 text-sm bg-transparent border-none outline-none placeholder:text-slate-300"
+      />
+      <button
+        onClick={handleSubmit}
+        disabled={!title.trim()}
+        className="text-xs font-medium text-teal-700 bg-teal-50 px-2.5 py-1 rounded-md hover:bg-teal-100 disabled:opacity-40 disabled:cursor-default transition-colors"
+      >
+        Add
+      </button>
+      <button
+        onClick={onCancel}
+        className="text-xs text-slate-400 hover:text-slate-600 p-1 transition-colors"
+      >
+        <X className="w-3.5 h-3.5" />
+      </button>
     </div>
   )
 }
 
 function CollapsibleSection({
-  id,
   title,
   icon,
   tasks,
   defaultOpen = true,
   children,
 }: {
-  id: string
   title: string
   icon: React.ReactNode
   tasks: ProjectTask[]
@@ -272,17 +524,7 @@ function CollapsibleSection({
       </button>
       {open && (
         <div className="px-5 pb-4 border-t border-border/40">
-          {children || (
-            <div className="mt-1">
-              {tasks.length === 0 ? (
-                <p className="text-sm text-muted-foreground/60 py-4 text-center italic">
-                  No tasks yet
-                </p>
-              ) : (
-                tasks.map((task) => <TaskRow key={task.id} task={task} />)
-              )}
-            </div>
-          )}
+          {children}
         </div>
       )}
     </div>
@@ -292,9 +534,17 @@ function CollapsibleSection({
 function SubsectionGroup({
   label,
   tasks,
+  onUpdate,
+  savingTasks,
+  notesOpenId,
+  onToggleNotes,
 }: {
   label: string
   tasks: ProjectTask[]
+  onUpdate: (id: string, updates: Partial<ProjectTask>) => void
+  savingTasks: Set<string>
+  notesOpenId: string | null
+  onToggleNotes: (id: string) => void
 }) {
   const doneCount = tasks.filter((t) => t.status === 'done').length
   return (
@@ -306,7 +556,14 @@ function SubsectionGroup({
         </span>
       </div>
       {tasks.map((task) => (
-        <TaskRow key={task.id} task={task} />
+        <TaskRow
+          key={task.id}
+          task={task}
+          onUpdate={onUpdate}
+          saving={savingTasks.has(task.id)}
+          notesOpen={notesOpenId === task.id}
+          onToggleNotes={onToggleNotes}
+        />
       ))}
     </div>
   )
@@ -319,6 +576,9 @@ export default function UpTogetherTracker() {
   const [grouped, setGrouped] = useState<Record<string, ProjectTask[]>>({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [savingTasks, setSavingTasks] = useState<Set<string>>(new Set())
+  const [notesOpenId, setNotesOpenId] = useState<string | null>(null)
+  const [addingSection, setAddingSection] = useState<string | null>(null)
 
   const fetchTasks = useCallback(async () => {
     try {
@@ -327,8 +587,9 @@ export default function UpTogetherTracker() {
       const data = await res.json()
       setTasks(data.tasks || [])
       setGrouped(data.grouped || {})
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error'
+      setError(message)
     } finally {
       setLoading(false)
     }
@@ -338,11 +599,86 @@ export default function UpTogetherTracker() {
     fetchTasks()
   }, [fetchTasks])
 
+  // Recompute grouped whenever tasks change
+  function regroup(taskList: ProjectTask[]): Record<string, ProjectTask[]> {
+    const g: Record<string, ProjectTask[]> = {}
+    for (const task of taskList) {
+      const section = task.section || 'Uncategorized'
+      if (!g[section]) g[section] = []
+      g[section].push(task)
+    }
+    return g
+  }
+
+  const updateTask = useCallback(async (id: string, updates: Partial<ProjectTask>) => {
+    // Optimistic update
+    const prevTasks = tasks
+    const prevGrouped = grouped
+    const updatedTasks = tasks.map((t) => (t.id === id ? { ...t, ...updates } : t))
+    setTasks(updatedTasks)
+    setGrouped(regroup(updatedTasks))
+    setSavingTasks((prev) => new Set(prev).add(id))
+
+    try {
+      const res = await fetch('/api/projects/uptogether/tasks', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, ...updates }),
+      })
+      if (!res.ok) throw new Error('Failed to update')
+      const data = await res.json()
+      // Apply server response
+      const serverTask = data.task
+      const finalTasks = updatedTasks.map((t) => (t.id === id ? { ...t, ...serverTask } : t))
+      setTasks(finalTasks)
+      setGrouped(regroup(finalTasks))
+    } catch {
+      // Revert on error
+      setTasks(prevTasks)
+      setGrouped(prevGrouped)
+    } finally {
+      setSavingTasks((prev) => {
+        const next = new Set(prev)
+        next.delete(id)
+        return next
+      })
+    }
+  }, [tasks, grouped])
+
+  const createTask = useCallback(async (section: string, subsection: string | null, title: string) => {
+    const sectionTasks = grouped[section] || []
+    const maxSort = sectionTasks.reduce((max, t) => Math.max(max, t.sort_order), 0)
+
+    try {
+      const res = await fetch('/api/projects/uptogether/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          section,
+          subsection,
+          title,
+          sort_order: maxSort + 10,
+        }),
+      })
+      if (!res.ok) throw new Error('Failed to create task')
+      const data = await res.json()
+      const newTask = data.task as ProjectTask
+      const updatedTasks = [...tasks, newTask]
+      setTasks(updatedTasks)
+      setGrouped(regroup(updatedTasks))
+    } catch {
+      // silently fail — user can retry
+    }
+  }, [tasks, grouped])
+
+  function toggleNotes(id: string) {
+    setNotesOpenId((prev) => (prev === id ? null : id))
+  }
+
   const totalTasks = tasks.length
   const doneTasks = tasks.filter((t) => t.status === 'done').length
   const currentWeek = getCurrentWeek()
 
-  // Group tasks by section then subsection
   function getSubsections(section: string): Record<string, ProjectTask[]> {
     const sectionTasks = grouped[section] || []
     const subs: Record<string, ProjectTask[]> = {}
@@ -405,7 +741,6 @@ export default function UpTogetherTracker() {
 
         {/* Team + Key dates row */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Team */}
           <div className="bg-white border border-border/60 rounded-xl p-5 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
               <Users className="w-3.5 h-3.5 text-muted-foreground/70" />
@@ -418,7 +753,6 @@ export default function UpTogetherTracker() {
             </div>
           </div>
 
-          {/* Key dates */}
           <div className="bg-white border border-border/60 rounded-xl p-5 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
               <Calendar className="w-3.5 h-3.5 text-muted-foreground/70" />
@@ -488,13 +822,12 @@ export default function UpTogetherTracker() {
         return (
           <CollapsibleSection
             key={sectionKey}
-            id={sectionKey}
             title={SECTION_LABELS[sectionKey] || sectionKey}
             icon={SECTION_ICONS[sectionKey] || <FileText className="w-4 h-4" />}
             tasks={sectionTasks}
           >
             <div className="mt-1">
-              {sectionTasks.length === 0 ? (
+              {sectionTasks.length === 0 && addingSection !== sectionKey ? (
                 <p className="text-sm text-muted-foreground/60 py-4 text-center italic">
                   No tasks yet
                 </p>
@@ -504,12 +837,43 @@ export default function UpTogetherTracker() {
                     key={subKey}
                     label={subKey === '_default' ? 'General' : subKey}
                     tasks={subs[subKey]}
+                    onUpdate={updateTask}
+                    savingTasks={savingTasks}
+                    notesOpenId={notesOpenId}
+                    onToggleNotes={toggleNotes}
                   />
                 ))
               ) : (
-                sectionTasks.map((task) => <TaskRow key={task.id} task={task} />)
+                sectionTasks.map((task) => (
+                  <TaskRow
+                    key={task.id}
+                    task={task}
+                    onUpdate={updateTask}
+                    saving={savingTasks.has(task.id)}
+                    notesOpen={notesOpenId === task.id}
+                    onToggleNotes={toggleNotes}
+                  />
+                ))
               )}
             </div>
+            {addingSection === sectionKey ? (
+              <AddTaskForm
+                section={sectionKey}
+                onAdd={(t) => {
+                  createTask(t.section, t.subsection ?? null, t.title)
+                  setAddingSection(null)
+                }}
+                onCancel={() => setAddingSection(null)}
+              />
+            ) : (
+              <button
+                onClick={() => setAddingSection(sectionKey)}
+                className="flex items-center gap-2 mt-2 px-3 py-1.5 text-xs text-slate-400 hover:text-teal-600 hover:bg-teal-50/50 rounded-md transition-colors w-full"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Add task
+              </button>
+            )}
           </CollapsibleSection>
         )
       })}
@@ -522,11 +886,47 @@ export default function UpTogetherTracker() {
           return (
             <CollapsibleSection
               key={sectionKey}
-              id={sectionKey}
               title={sectionKey}
               icon={<FileText className="w-4 h-4" />}
               tasks={sectionTasks}
-            />
+            >
+              <div className="mt-1">
+                {sectionTasks.length === 0 ? (
+                  <p className="text-sm text-muted-foreground/60 py-4 text-center italic">
+                    No tasks yet
+                  </p>
+                ) : (
+                  sectionTasks.map((task) => (
+                    <TaskRow
+                      key={task.id}
+                      task={task}
+                      onUpdate={updateTask}
+                      saving={savingTasks.has(task.id)}
+                      notesOpen={notesOpenId === task.id}
+                      onToggleNotes={toggleNotes}
+                    />
+                  ))
+                )}
+              </div>
+              {addingSection === sectionKey ? (
+                <AddTaskForm
+                  section={sectionKey}
+                  onAdd={(t) => {
+                    createTask(t.section, t.subsection ?? null, t.title)
+                    setAddingSection(null)
+                  }}
+                  onCancel={() => setAddingSection(null)}
+                />
+              ) : (
+                <button
+                  onClick={() => setAddingSection(sectionKey)}
+                  className="flex items-center gap-2 mt-2 px-3 py-1.5 text-xs text-slate-400 hover:text-teal-600 hover:bg-teal-50/50 rounded-md transition-colors w-full"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Add task
+                </button>
+              )}
+            </CollapsibleSection>
           )
         })}
     </div>

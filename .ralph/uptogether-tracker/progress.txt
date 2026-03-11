@@ -100,3 +100,22 @@ Started: 2026-03-11
 - Subsection grouping: tasks with non-null `subsection` column get grouped under labeled headers
 - The `grouped` response from the API groups by section, but subsection grouping is done client-side
 - Key pattern: SECTION_ORDER array controls display order; any DB sections not in the list appear at bottom
+
+### Iteration 7 — US-007: Add Inline Editing and Real-Time Persistence (2026-03-11)
+**What:** Added full interactive editing to the tracker page with optimistic UI updates.
+**How:**
+- **Checkbox toggle:** Click status icon to toggle between todo/done — PATCHes immediately
+- **Status cycling:** Click status badge to cycle todo → in_progress → done → blocked → todo
+- **Owner reassignment:** Click owner pill to open dropdown with all 5 team members + Unassign option
+- **Notes editing:** Click sticky note icon to expand inline textarea, saves on blur, Escape to cancel
+- **Add task:** "Add task" button at bottom of each section opens inline form with Enter to submit, Escape to cancel
+- **Optimistic updates:** State updates immediately on click, reverts on API error
+- **Loading states:** Spinner replaces status icon/badge while saving
+- **Architecture:** `updateTask()` and `createTask()` callbacks at page level, passed down to TaskRow via props; `regroup()` helper keeps `grouped` state in sync with flat `tasks` array
+- Cleaned up CollapsibleSection to remove internal add-task state duplication — all add/edit logic managed by parent
+- Typecheck passes clean
+**Learnings:**
+- Owner dropdown: useRef + mousedown listener for click-outside-to-close pattern works well without needing a UI library popover
+- Optimistic updates need both `tasks` (flat) and `grouped` (by section) to stay in sync — `regroup()` helper avoids drift
+- Notes textarea: `useEffect` to sync value from props when task updates from server, separate `notesOpen` state at page level
+- `addingSection` state at page level ensures only one add form is open at a time across all sections
