@@ -1,0 +1,102 @@
+# Ralph Progress Log
+Loop: uptogether-tracker
+Started: 2026-03-11
+---
+
+## Codebase Patterns
+- Next.js 15 App Router at job-matcher-ai/
+- shadcn/ui components in components/ui/ (button, card, tabs, badge, checkbox, select, dropdown-menu, input, textarea, separator, tooltip, scroll-area, sheet)
+- Supabase client pattern: lib/supabase/client.ts (browser), lib/supabase/server.ts (server)
+- Auth middleware: lib/supabase/middleware.ts — checks ALLOWED_EMAILS from lib/auth-config.ts
+- CSS: globals.css has HSL custom properties for theme
+- Fonts: DM Sans, DM Serif Display, JetBrains Mono
+- Utility: cn() from lib/utils.ts
+- Deploy: cd job-matcher-ai && npx vercel --prod --yes (account: justin-outdoorithm, team: true-steele)
+
+---
+
+## Iteration Log
+
+### Iteration 2 — US-002: Add Env Vars and Supabase Clients (2026-03-11)
+**What:** Added projects DB env vars and created dedicated Supabase clients for the UpTogether tracker.
+**How:**
+- Added `NEXT_PUBLIC_PROJECTS_SUPABASE_URL`, `NEXT_PUBLIC_PROJECTS_SUPABASE_ANON_KEY`, `PROJECTS_SUPABASE_SERVICE_ROLE_KEY` to `.env.local`
+- Created `lib/supabase/projects-client.ts` — browser client using `createBrowserClient` (same pattern as existing `client.ts`)
+- Created `lib/supabase/projects-server.ts` — server client using `createClient` directly with service role key (no cookies needed since /projects is public)
+- Typecheck passes clean
+**Learnings:**
+- Server client for projects doesn't need cookies/SSR pattern since /projects is public — use `@supabase/supabase-js` `createClient` directly instead of `@supabase/ssr` `createServerClient`
+- `.env.local` is gitignored so env vars need to be added to Vercel separately in US-008
+
+### Iteration 3 — US-003: Create API Route for Project Tasks CRUD (2026-03-11)
+**What:** Created CRUD API route at `/api/projects/[projectId]/tasks` for project task management.
+**How:**
+- Created `app/api/projects/[projectId]/tasks/route.ts` with GET, POST, PATCH, DELETE handlers
+- GET: fetches all tasks for a project, ordered by section + sort_order, returns both flat array and grouped-by-section object
+- POST: creates a new task with project_id, section, title, etc.
+- PATCH: updates allowed fields (status, notes, owner, title, description, due_date) with auto-updated_at timestamp
+- DELETE: removes a task by id, scoped to project_id
+- All handlers use `createProjectsServerClient()` (service role key)
+- Typecheck passes clean
+**Learnings:**
+- Next.js 15 dynamic route params are `Promise<{ projectId: string }>` — must `await params`
+- Middleware redirects all non-public paths to `/login` — API route test returns redirect until US-004 adds `/projects` to public paths
+- Pattern: filter updates to allowlisted fields to prevent arbitrary column writes
+
+### Iteration 4 — US-004: Update Middleware for Public /projects Access (2026-03-11)
+**What:** Added `/projects` and `/api/projects` to public paths in auth middleware.
+**How:**
+- Edited `lib/supabase/middleware.ts` line 35 — added `pathname.startsWith('/projects')` and `pathname.startsWith('/api/projects')` to the public paths conditional
+- This allows the UpTogether team to access the tracker page and API without authentication
+- Typecheck passes clean
+**Learnings:**
+- Also needed to add `/api/projects` to public paths — otherwise the API route would redirect to login when called from the public page
+- Simple one-line change, no other files affected
+
+### Iteration 1 — US-001: Create Database Table (2026-03-11)
+**What:** Created `project_tasks` table on Supabase project `hjuvqpxvfrzwmlqzkpxh` via Management API.
+**How:**
+- Used Supabase Management API (`api.supabase.com/v1/projects/{ref}/database/query`) with PAT from `supabase-contacts` MCP server (PATs are account-level, work across projects)
+- Created table with 13 columns: id (uuid PK), project_id, section, subsection, title, description, status (default 'todo'), owner, due_date, sort_order, notes, created_at, updated_at
+- Created index on project_id
+- Enabled RLS with 4 permissive policies (public read/write/insert/delete)
+- Verified REST API access with anon key returns empty array
+**Learnings:**
+- `CREATE POLICY IF NOT EXISTS` syntax needs DO $$ block with pg_policies check
+- The PAT `sbp_aed2...` from supabase-contacts works for the projects DB too (same Supabase account)
+- No code files changed — pure DB migration, no commit needed
+
+### Iteration 5 — US-005: Create Projects Layout (2026-03-11)
+**What:** Created minimal standalone layout for `/projects` route.
+**How:**
+- Created `app/projects/layout.tsx` with clean white/warm background, max-w-5xl centered container
+- Added "True Steele Labs" wordmark in top-left as sticky header with subtle border and backdrop blur
+- No sidebar, no main app navigation — completely standalone
+- Uses inherited fonts from root layout (DM Sans, DM Serif Display, JetBrains Mono via CSS variables)
+- Typecheck passes clean
+**Learnings:**
+- Root layout provides font CSS variables via class names on `<body>`, so nested layouts inherit them automatically
+- Using `bg-white/60 backdrop-blur-sm` gives a polished glassmorphism effect on the header
+- Metadata can be overridden per route segment in Next.js App Router
+
+### Iteration 6 — US-006: Build Main Tracker Page (2026-03-11)
+**What:** Created the main tracker page at `/projects/uptogether` with full structure, data fetching, and read-only display.
+**How:**
+- Created `app/projects/uptogether/page.tsx` as a client component (~350 lines)
+- Fetches tasks from `/api/projects/uptogether/tasks` on mount with loading/error states
+- **Header:** DM Serif Display title, "Active Sprint" pulse badge, overall progress bar with percentage, team roster with colored avatar initials, key dates strip
+- **Sprint Timeline:** 4-week visual grid with current week highlighted (teal ring + "Now" badge), past weeks dimmed
+- **Sections:** 6 collapsible sections (Deliverables, Application Tracker, Materials, Sprint Timeline, Meetings, Open Questions) each with:
+  - Chevron toggle, section icon, item count badge, mini progress bar
+  - Subsection grouping support (e.g., Application sections, Priority tiers in Materials)
+  - Task rows with status icon, title, description badge, due date, owner pill, status badge
+- **Status colors:** todo=slate, in_progress=blue, done=emerald, blocked=red
+- **Owner pills:** Justin=teal, Cesar=amber, Rachel=violet, Ivanna=rose, UT Team=slate
+- Handles empty states gracefully, also renders any extra sections not in SECTION_ORDER
+- Typecheck passes clean
+**Learnings:**
+- Font variable `var(--font-dm-serif)` available from root layout for DM Serif Display
+- Using `tabular-nums` class keeps numeric values aligned in progress displays
+- Subsection grouping: tasks with non-null `subsection` column get grouped under labeled headers
+- The `grouped` response from the API groups by section, but subsection grouping is done client-side
+- Key pattern: SECTION_ORDER array controls display order; any DB sections not in the list appear at bottom
