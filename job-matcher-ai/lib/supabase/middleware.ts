@@ -32,7 +32,7 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
   // Allow public paths
-  if (pathname.startsWith('/login') || pathname.startsWith('/auth') || pathname.startsWith('/unauthorized')) {
+  if (pathname.startsWith('/login') || pathname.startsWith('/auth') || pathname.startsWith('/unauthorized') || pathname.startsWith('/projects') || pathname.startsWith('/api/projects')) {
     return supabaseResponse
   }
 
