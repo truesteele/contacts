@@ -501,6 +501,7 @@ class SallyCommsGatherer:
             "participants": thread_data.get("participants"),
             "labels": thread_data.get("labels"),
             "raw_messages": thread_data.get("raw_messages"),
+            "channel": "email",
             "gathered_at": datetime.now(timezone.utc).isoformat(),
         }
 

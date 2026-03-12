@@ -611,12 +611,18 @@ export default function UpTogetherTracker() {
   }
 
   const updateTask = useCallback(async (id: string, updates: Partial<ProjectTask>) => {
-    // Optimistic update
-    const prevTasks = tasks
-    const prevGrouped = grouped
-    const updatedTasks = tasks.map((t) => (t.id === id ? { ...t, ...updates } : t))
-    setTasks(updatedTasks)
-    setGrouped(regroup(updatedTasks))
+    // Optimistic update using functional updaters to avoid stale closures
+    let prevTasks: ProjectTask[] = []
+    let prevGrouped: Record<string, ProjectTask[]> = {}
+    setTasks((current) => {
+      prevTasks = current
+      const updated = current.map((t) => (t.id === id ? { ...t, ...updates } : t))
+      return updated
+    })
+    setGrouped((current) => {
+      prevGrouped = current
+      return regroup(prevTasks.map((t) => (t.id === id ? { ...t, ...updates } : t)))
+    })
     setSavingTasks((prev) => new Set(prev).add(id))
 
     try {
@@ -627,11 +633,12 @@ export default function UpTogetherTracker() {
       })
       if (!res.ok) throw new Error('Failed to update')
       const data = await res.json()
-      // Apply server response
       const serverTask = data.task
-      const finalTasks = updatedTasks.map((t) => (t.id === id ? { ...t, ...serverTask } : t))
-      setTasks(finalTasks)
-      setGrouped(regroup(finalTasks))
+      setTasks((current) => {
+        const finalTasks = current.map((t) => (t.id === id ? { ...t, ...serverTask } : t))
+        setGrouped(regroup(finalTasks))
+        return finalTasks
+      })
     } catch {
       // Revert on error
       setTasks(prevTasks)
@@ -643,13 +650,17 @@ export default function UpTogetherTracker() {
         return next
       })
     }
-  }, [tasks, grouped])
+  }, [])
 
   const createTask = useCallback(async (section: string, subsection: string | null, title: string) => {
-    const sectionTasks = grouped[section] || []
-    const maxSort = sectionTasks.reduce((max, t) => Math.max(max, t.sort_order), 0)
-
     try {
+      let maxSort = 0
+      setTasks((current) => {
+        const sectionTasks = current.filter((t) => t.section === section)
+        maxSort = sectionTasks.reduce((max, t) => Math.max(max, t.sort_order), 0)
+        return current
+      })
+
       const res = await fetch('/api/projects/uptogether/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -663,13 +674,16 @@ export default function UpTogetherTracker() {
       if (!res.ok) throw new Error('Failed to create task')
       const data = await res.json()
       const newTask = data.task as ProjectTask
-      const updatedTasks = [...tasks, newTask]
-      setTasks(updatedTasks)
-      setGrouped(regroup(updatedTasks))
+      setTasks((current) => {
+        const updatedTasks = [...current, newTask]
+        setGrouped(regroup(updatedTasks))
+        return updatedTasks
+      })
     } catch {
-      // silently fail — user can retry
+      setError('Failed to add task. Please try again.')
+      setTimeout(() => setError(null), 3000)
     }
-  }, [tasks, grouped])
+  }, [])
 
   function toggleNotes(id: string) {
     setNotesOpenId((prev) => (prev === id ? null : id))
@@ -698,22 +712,34 @@ export default function UpTogetherTracker() {
     )
   }
 
-  if (error) {
+  if (error && tasks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-32 gap-3">
         <AlertTriangle className="w-6 h-6 text-red-500" />
         <p className="text-sm text-muted-foreground">{error}</p>
+        <button
+          onClick={() => { setError(null); setLoading(true); fetchTasks() }}
+          className="text-xs font-medium text-teal-700 bg-teal-50 px-3 py-1.5 rounded-md hover:bg-teal-100 transition-colors"
+        >
+          Retry
+        </button>
       </div>
     )
   }
 
   return (
     <div className="space-y-8 pb-16">
+      {/* ── Error toast ───────────────────────────────────────────── */}
+      {error && tasks.length > 0 && (
+        <div className="fixed top-4 right-4 z-50 bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-2 rounded-lg shadow-md animate-in fade-in slide-in-from-top-2">
+          {error}
+        </div>
+      )}
       {/* ── Header ────────────────────────────────────────────────── */}
       <header className="space-y-6">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <h1 className="font-['var(--font-dm-serif)'] text-3xl font-bold tracking-tight text-foreground" style={{ fontFamily: 'var(--font-dm-serif)' }}>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground" style={{ fontFamily: 'var(--font-dm-serif)' }}>
               UpTogether × True Steele
             </h1>
             <p className="text-muted-foreground text-sm mt-1">
@@ -816,7 +842,13 @@ export default function UpTogetherTracker() {
       {SECTION_ORDER.map((sectionKey) => {
         const sectionTasks = grouped[sectionKey] || []
         const subs = getSubsections(sectionKey)
-        const subsKeys = Object.keys(subs).sort()
+        const subsKeys = Object.keys(subs).sort((a, b) => {
+          if (a === '_default') return -1
+          if (b === '_default') return 1
+          const aMin = Math.min(...(subs[a]?.map((t) => t.sort_order) || [0]))
+          const bMin = Math.min(...(subs[b]?.map((t) => t.sort_order) || [0]))
+          return aMin - bMin
+        })
         const hasSubsections = subsKeys.length > 1 || (subsKeys.length === 1 && subsKeys[0] !== '_default')
 
         return (

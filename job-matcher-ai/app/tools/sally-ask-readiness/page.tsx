@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { ContactDetailSheet } from '@/components/contact-detail-sheet';
 import { cn } from '@/lib/utils';
 import {
   Select,
@@ -214,6 +215,8 @@ export default function SallyAskReadinessPage() {
   const [sortBy, setSortBy] = useState<SortField>('score');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [selectedContactId, setSelectedContactId] = useState<number | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const loadContacts = useCallback(async (opts?: { silent?: boolean }) => {
     if (!opts?.silent) {
@@ -359,6 +362,9 @@ export default function SallyAskReadinessPage() {
           break;
         case 'capacity':
           cmp = (a.ai_capacity_score ?? -1) - (b.ai_capacity_score ?? -1);
+          break;
+        case 'ask_range':
+          cmp = (a.suggested_ask_range || '').localeCompare(b.suggested_ask_range || '');
           break;
         case 'tier': {
           const order = { ready_now: 4, cultivate_first: 3, long_term: 2, not_a_fit: 1 };
@@ -689,9 +695,15 @@ export default function SallyAskReadinessPage() {
 
                       {/* Name */}
                       <td className="p-2">
-                        <span className="font-medium">
+                        <button
+                          className="font-medium text-left hover:text-primary hover:underline underline-offset-2 transition-colors"
+                          onClick={() => {
+                            setSelectedContactId(contact.id);
+                            setSheetOpen(true);
+                          }}
+                        >
                           {contact.first_name} {contact.last_name}
-                        </span>
+                        </button>
                         {contact.headline && (
                           <div className="text-xs text-muted-foreground truncate max-w-[200px]">
                             {contact.headline}
@@ -865,6 +877,16 @@ export default function SallyAskReadinessPage() {
           </ScrollArea>
         </Card>
       </div>
+
+      <ContactDetailSheet
+        contactId={selectedContactId}
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        apiPrefix="/api/network-intel/sally"
+        onUpdated={() => {
+          void loadContacts({ silent: true });
+        }}
+      />
     </main>
   );
 }

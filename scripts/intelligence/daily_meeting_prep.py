@@ -515,25 +515,189 @@ def research_person(name: str, email: str, company: str = None, model: str = "so
         return f"[Perplexity research failed: {e}]"
 
 
+def research_organization(name: str, domain: str = "", model: str = "sonar-pro") -> str:
+    """Research an organization using Perplexity sonar-pro."""
+    api_key = os.environ.get("PERPLEXITY_APIKEY")
+    if not api_key:
+        return ""
+
+    query = f"What is {name}?"
+    if domain:
+        query += f" ({domain})"
+    query += " Mission, size, key programs, recent news, notable partnerships. Keep to 300 words."
+
+    try:
+        resp = requests.post(
+            "https://api.perplexity.ai/chat/completions",
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            json={
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": "You are a research assistant. Provide a concise organizational profile in under 300 words."},
+                    {"role": "user", "content": query},
+                ],
+                "max_tokens": 600,
+            },
+            timeout=45,
+        )
+        resp.raise_for_status()
+        return resp.json()["choices"][0]["message"]["content"]
+    except Exception as e:
+        return f"[Org research failed: {e}]"
+
+
+def search_meeting_origin(conn, attendee_names: List[str], org_name: str = "",
+                          org_domain: str = "") -> str:
+    """Search DB + Gmail for context about how a meeting originated.
+
+    Returns a text summary of any intro emails, LinkedIn notifications, or
+    prior threads that explain how this meeting came about.
+    """
+    results = []
+
+    # ── Source A: DB search ──────────────────────────────────────────────────
+    if conn is not None:
+        search_terms = [n for n in attendee_names if n and len(n) > 2]
+        if org_name and len(org_name) > 2:
+            search_terms.append(org_name)
+
+        for term in search_terms:
+            try:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        SELECT subject, snippet, summary, last_message_date, account_email
+                        FROM contact_email_threads
+                        WHERE (subject ILIKE %s OR snippet ILIKE %s)
+                        ORDER BY last_message_date DESC
+                        LIMIT 3
+                    """, (f"%{term}%", f"%{term}%"))
+                    for row in cur.fetchall():
+                        cols = [d[0] for d in cur.description]
+                        r = dict(zip(cols, row))
+                        results.append(f"[{str(r.get('last_message_date', ''))[:10]}] "
+                                       f"{r.get('account_email', '')}: "
+                                       f"{r.get('subject', '')} — {r.get('snippet', '')[:200]}")
+            except Exception as e:
+                print(f"       [WARN] DB origin search failed for '{term}': {e}")
+
+    # ── Source B: Gmail live search (thread-based) ────────────────────────────
+    # Fetch threads, not individual messages. The original intro (first message
+    # in a thread) contains the introducer's name — the most valuable context.
+    search_queries = []
+    for name in attendee_names:
+        if name and len(name) > 2:
+            search_queries.append(f'"{name}"')
+    if org_name and len(org_name) > 2:
+        search_queries.append(f'"{org_name}"')
+
+    justin_emails_lower = {e.lower() for e in JUSTIN_EMAILS}
+    attendee_emails_lower = {n.lower() for n in attendee_names}
+
+    if search_queries:
+        gmail_query = " OR ".join(search_queries)
+        seen_threads = set()
+        for account in GOOGLE_ACCOUNTS:
+            acct_email = account["email"]
+            try:
+                service = build_service(acct_email, "gmail", "v1")
+                if not service:
+                    continue
+                # Search for matching messages, then get their threads
+                resp = service.users().messages().list(
+                    userId="me", q=gmail_query, maxResults=5
+                ).execute()
+                msg_list = resp.get("messages", [])
+
+                # Collect unique thread IDs
+                thread_ids = []
+                for msg_ref in msg_list:
+                    tid = msg_ref.get("threadId", msg_ref["id"])
+                    if tid not in seen_threads:
+                        seen_threads.add(tid)
+                        thread_ids.append(tid)
+
+                # Fetch each thread and extract the first (original) message
+                for tid in thread_ids[:3]:
+                    try:
+                        thread = service.users().threads().get(
+                            userId="me", id=tid, format="metadata",
+                            metadataHeaders=["Subject", "From", "To", "Date"]
+                        ).execute()
+                        thread_msgs = thread.get("messages", [])
+                        if not thread_msgs:
+                            continue
+
+                        # First message = original intro / conversation starter
+                        first_msg = thread_msgs[0]
+                        first_headers = {h["name"]: h["value"]
+                                         for h in first_msg.get("payload", {}).get("headers", [])}
+                        first_from = first_headers.get("From", "")
+                        first_subject = first_headers.get("Subject", "")
+                        first_date = first_headers.get("Date", "")[:16]
+                        first_snippet = first_msg.get("snippet", "")[:300]
+
+                        # Most recent message for timeline context
+                        last_msg = thread_msgs[-1]
+                        last_headers = {h["name"]: h["value"]
+                                        for h in last_msg.get("payload", {}).get("headers", [])}
+                        last_date = last_headers.get("Date", "")[:16]
+                        msg_count = len(thread_msgs)
+
+                        # Build a rich origin entry
+                        entry = (f"[Thread: {first_subject}] "
+                                 f"Started {first_date} by {first_from} — "
+                                 f"{first_snippet} "
+                                 f"({msg_count} messages, last: {last_date})")
+                        results.append(entry)
+                    except Exception as e:
+                        print(f"       [WARN] Gmail thread fetch failed for {tid}: {e}")
+            except Exception as e:
+                print(f"       [WARN] Gmail origin search failed for {acct_email}: {e}")
+
+    if not results:
+        return ""
+
+    # Deduplicate by thread subject
+    seen = set()
+    unique = []
+    for r in results:
+        # Extract subject from "[Thread: SUBJECT]" prefix
+        key = r.split("]")[0].lower() if "]" in r else r[:60].lower()
+        if key not in seen:
+            seen.add(key)
+            unique.append(r)
+
+    return "\n".join(unique[:8])
+
+
 def guess_name_from_email(email: str, display_name: str = "") -> tuple:
     """Try to extract first/last name from display name or email prefix."""
+    import re
+    def _clean(s: str) -> str:
+        """Strip leading/trailing non-alpha chars (digits, underscores, etc.)."""
+        return re.sub(r'^[^a-zA-Z]+|[^a-zA-Z]+$', '', s)
+
     if display_name and " " in display_name:
         parts = display_name.strip().split()
-        return parts[0], " ".join(parts[1:])
+        return _clean(parts[0]) or parts[0], " ".join(_clean(p) or p for p in parts[1:])
     prefix = email.split("@")[0]
     # Try common patterns: first.last, firstlast, first_last
     for sep in (".", "_", "-"):
         if sep in prefix:
             parts = prefix.split(sep, 1)
-            return parts[0].title(), parts[1].title()
+            first = _clean(parts[0]).title()
+            last = _clean(parts[1]).title()
+            if first:
+                return first, last
     # Single name prefix — use it as first, domain as last placeholder
-    return prefix.title(), ""
+    cleaned = _clean(prefix)
+    return (cleaned or prefix).title(), ""
 
 
 # ── Attendee Research Pipeline ────────────────────────────────────────────────
 
 def research_attendees(event: Dict, config: Dict, conn) -> tuple:
-    """Research all external attendees for a meeting. Returns (profiles, comms_history)."""
+    """Research all external attendees for a meeting. Returns (profiles, comms_history, origin_context, org_research)."""
     external = get_external_attendees(event, config)
     profiles = []
     all_comms = {"emails": [], "meetings": []}
@@ -645,12 +809,39 @@ def research_attendees(event: Dict, config: Dict, conn) -> tuple:
 
         profiles.append(profile)
 
-    return profiles, all_comms
+    # ── Meeting origin context (DB + Gmail) ──────────────────────────────────
+    attendee_names = [p.get("name", "") for p in profiles]
+    org_names = list({p.get("company", "") for p in profiles if p.get("company")})
+    org_domains = list({att["email"].split("@")[1] for att in external
+                        if "@" in att["email"]
+                        and att["email"].split("@")[1] not in
+                        ("gmail.com", "yahoo.com", "hotmail.com", "outlook.com", "icloud.com")})
+    primary_org = org_names[0] if org_names else ""
+
+    print(f"     Searching for meeting origin context...")
+    origin_context = search_meeting_origin(conn, attendee_names, primary_org)
+
+    # ── Organization research (Perplexity) ───────────────────────────────────
+    org_research_results = {}
+    perplexity_model = str(config.get("perplexity_model") or "sonar-pro")
+    for org in org_names:
+        if org and org not in org_research_results:
+            domain = org_domains[0] if org_domains else ""
+            print(f"     Researching organization: {org}...")
+            org_research_results[org] = research_organization(org, domain, perplexity_model)
+            time.sleep(1.5)  # Perplexity rate limit
+
+    org_research_text = "\n\n".join(
+        f"**{org}:** {text}" for org, text in org_research_results.items() if text
+    )
+
+    return profiles, all_comms, origin_context, org_research_text
 
 
 # ── Memo Generation (Claude Sonnet 4.6) ──────────────────────────────────────
 
-def build_memo_prompt(event: Dict, profiles: List[Dict], comms: Dict, entity_key: str) -> str:
+def build_memo_prompt(event: Dict, profiles: List[Dict], comms: Dict, entity_key: str,
+                      origin_context: str = "", org_research: str = "") -> str:
     """Build the prompt for Claude Sonnet to generate a meeting memo."""
     entity_ctx = ORG_CONTEXT.get(entity_key, ORG_CONTEXT["truesteele"])
 
@@ -709,44 +900,37 @@ def build_memo_prompt(event: Dict, profiles: List[Dict], comms: Dict, entity_key
             d = str(m.get("start_time", ""))[:10]
             comms_text += f"  - [{d}] {m.get('summary', '')} ({m.get('duration_minutes', 0)} min)\n"
 
-    return f"""Write a meeting prep memo for Justin Steele following this exact structure:
+    return f"""Write a meeting prep memo for Justin Steele. This will be read on mobile in under 2 minutes before the meeting. Every sentence must earn its place.
 
-## Meeting: [Title]
-**Time:** [time range and duration]
-**Location:** [location or video link]
-**Account:** [entity name]
+Follow this EXACT structure:
+
+## [Meeting Title]
+**{entity_ctx['entity']}** | [time] | [location/link]
 
 ### Attendees
-A markdown table with columns: Name, Title, Organization, Relationship
+Markdown table: Name | Role | Org | How We Connected
 
-### Key Profiles
-For each attendee, 3-5 bullet points covering:
-- Current role and career trajectory
-- Any shared background with Justin (HIGHLIGHT these prominently)
-- Communication history and relationship temperature
+### Who They Are
+For each attendee, 2-3 bullets MAX:
+- Current role + one-line career arc
+- Shared background with Justin (BOLD these — they're conversation gold)
+- Relationship temperature (warm/cold/new) with last touchpoint date if known
 
-### Meeting Purpose & Context
-- What this meeting is about (from description/calendly notes)
-- Organization background (what they do, size, recent news if known)
-- What prompted this meeting
+### Context
+In 3-5 sentences, cover:
+- Why this meeting is happening (use the origin context and description)
+- What their organization does and why it matters (use the org research)
+- Any stated agenda or questions from scheduling emails
 
-### Strategic Angle: [Entity Name]
-- Which of Justin's ventures this connects to and why
-- What Justin can offer them
-- What Justin should explore or ask for
+### Game Plan
+One sentence framing which Justin venture this connects to and why.
+Then 3 numbered probes — specific questions Justin should ask. Not generic. Each probe should:
+- Reference something specific about the attendee or their org
+- Surface information Justin needs to decide next steps
+- Where relevant, include an inline warning: (AVOID: [thing not to say/do])
 
-### Talking Points
-5 numbered, specific, actionable talking points with personalization hooks.
-Reference shared experiences, mutual connections, or recent events.
-Make these SPECIFIC not generic.
-
-### Landmines to Avoid
-2-3 specific things NOT to do or say
-
-### Desired Outcome
-- Best case
-- Minimum acceptable
-- Suggested follow-up action
+### Target Outcome
+2 sentences max: Best realistic outcome + specific next step to propose before the call ends.
 
 ---
 
@@ -770,21 +954,30 @@ CONTEXT FOR THIS MEMO:
 {attendee_text}
 
 **Communication History:**
-{comms_text if comms_text else "No prior communication history found with any attendee."}
+{comms_text if comms_text else "No prior communication history found."}
+
+**Meeting Origin Context (emails, intros, LinkedIn messages that led to this meeting):**
+{origin_context if origin_context else "No origin context found — this may be a cold or self-scheduled meeting."}
+
+**Organization Research:**
+{org_research if org_research else "No organization research available."}
 
 INSTRUCTIONS:
-- Write in a direct, practical style. No fluff.
-- Shared background items (same school, employer, board) are GOLD. Highlight them prominently.
-- Make talking points specific to THIS person and THIS meeting, not generic.
-- If there's a stated agenda or Calendly question, address it directly in the Strategic Angle.
-- Keep the whole memo scannable in under 2 minutes."""
+- Write for a busy founder scanning on mobile. Be direct. No filler.
+- Shared background (same school, employer, board) is GOLD — bold it.
+- Every talking point must be specific to THIS person. If it could apply to any meeting, cut it.
+- Integrate warnings inline in the Game Plan, not as a separate section.
+- Use the origin context to explain HOW this meeting came about — who introduced whom, what was said.
+- Use the org research to give Justin real intel on the organization, not just the person.
+- Total memo should be under 600 words."""
 
 
-def generate_memo(event: Dict, profiles: List[Dict], comms: Dict, entity_key: str, config: Dict) -> str:
+def generate_memo(event: Dict, profiles: List[Dict], comms: Dict, entity_key: str, config: Dict,
+                  origin_context: str = "", org_research: str = "") -> str:
     """Generate a meeting memo using Claude Sonnet 4.6."""
     model = config.get("memo_model", "claude-sonnet-4-6")
     client = anthropic.Anthropic()
-    prompt = build_memo_prompt(event, profiles, comms, entity_key)
+    prompt = build_memo_prompt(event, profiles, comms, entity_key, origin_context, org_research)
 
     response = client.messages.create(
         model=model,
@@ -868,7 +1061,7 @@ def replace_google_doc_text(docs_service, doc_id: str, text: str):
     end_index = body[-1].get("endIndex", 1) if body else 1
 
     requests_body = []
-    if end_index > 1:
+    if end_index > 2:
         requests_body.append(
             {
                 "deleteContentRange": {
@@ -1099,13 +1292,15 @@ def run(target_date: date, dry_run: bool = False, no_gdoc: bool = False):
         meeting_data = []
         for ev in needs_memo:
             print(f"   Meeting: {ev.get('summary', 'Untitled')}")
-            profiles, comms = research_attendees(ev, config, conn)
+            profiles, comms, origin_context, org_research = research_attendees(ev, config, conn)
             entity_key = ENTITY_MAP.get(ev["_account_email"], "truesteele")
             meeting_data.append({
                 "event": ev,
                 "profiles": profiles,
                 "comms": comms,
                 "entity_key": entity_key,
+                "origin_context": origin_context,
+                "org_research": org_research,
             })
 
         # 4. Generate memos
@@ -1119,6 +1314,8 @@ def run(target_date: date, dry_run: bool = False, no_gdoc: bool = False):
                     md["comms"],
                     md["entity_key"],
                     config,
+                    origin_context=md.get("origin_context", ""),
+                    org_research=md.get("org_research", ""),
                 )
                 memos.append({"event": md["event"], "memo_text": memo_text})
                 time.sleep(1)

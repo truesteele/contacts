@@ -41,14 +41,45 @@ data/
 outputs/
 archive/
 
-# Credentials
+# Credentials and session cookies
 docs/credentials/
+.linkedin_cookies.json
+scripts/.linkedin_cookies_justin.json
+*linkedin_cookies*.json
 
-# Lock files
+# Ralph loop artifacts
 .ralph/**/.lock/
+.ralph/**/logs/
 
 # Tool results (large data files)
 tool-results/
 
+# Raw SMS/call data
+docs/Sally/sms*.xml
+docs/Sally/sms_parsed.json
+
+# Contracts (legal/financial docs)
+docs/True_Steele/Contracts/
+
+# Untitled / unknown files
+docs/untitled folder/
+
+# Next.js build outputs (demo apps)
+**/.next/
+
+# Node modules (nested in skills/demos)
+.claude/skills/**/node_modules/
+
+# Supabase temp files
+supabase/.temp/
+
+# Raw data / test output files
+scripts/intelligence/*_raw.json
+scripts/intelligence/test_*_output.json
+
+# Node modules (all nested)
+**/node_modules/
+
 # Vercel
 .vercel
+.cache/

@@ -57,14 +57,17 @@ const LABEL_TO_CATEGORY: Record<string, { category: EmailCategory; reason: strin
 interface FilterRule {
   from?: RegExp;
   subject?: RegExp;
-  category: 'skip' | 'fyi';
+  category: 'action' | 'skip' | 'fyi';
   reason: string;
 }
 
 const FILTER_RULES: FilterRule[] = [
+  // ── ACTION: Inbound sales leads (MUST be before generic notification rules) ──
+  { from: /noreply@blackbaud\.com/i, subject: /Marketplace inquiry/i, category: 'action', reason: 'Blackbaud Marketplace inbound lead' },
+
   // ── SKIP: Error monitors ──
   { from: /notifications@vercel\.com/i, subject: /fail|error/i, category: 'skip', reason: 'Vercel error notification' },
-  { from: /noreply@outdoorithm\.com/i, subject: /\[Error Report\]|\[INCIDENT\]/i, category: 'skip', reason: 'Outdoorithm error monitor' },
+  { from: /noreply@outdoorithm\.com/i, subject: /\[Error Report\]|\[INCIDENT\]|\[UNHEALTHY\]/i, category: 'skip', reason: 'Outdoorithm error monitor' },
   { from: /@kindora\.co$/i, subject: /\[Error Report\]|\[Daily Digest\].*(?:error|issue)/i, category: 'skip', reason: 'Kindora error monitor' },
   { from: /alert@kindora\.co/i, subject: /stuck-task report/i, category: 'skip', reason: 'Kindora stuck-task alert' },
 
@@ -84,7 +87,10 @@ const FILTER_RULES: FilterRule[] = [
   { from: /^info@kindora\.co$/i, subject: /New User Signup/i, category: 'skip', reason: 'Kindora system notification' },
   { from: /notifications@vercel\.com/i, category: 'skip', reason: 'Vercel deploy notification' },
   { from: /noreply@tickets\./i, category: 'skip', reason: 'Ticket confirmation' },
-  { from: /no-?reply@.*amazonses\.com/i, subject: /New User Signup/i, category: 'skip', reason: 'System notification via SES' },
+  { from: /no-?reply@.*amazonses\.com/i, subject: /New User Signup|Welcome to Kindora|organization profile|Intel Brief/i, category: 'skip', reason: 'System notification via SES' },
+  { from: /@kindora\.co$/i, subject: /Your Intel Brief.*is ready/i, category: 'skip', reason: 'Kindora intel brief' },
+  { from: /@kindora\.co$/i, subject: /Welcome to Kindora/i, category: 'skip', reason: 'Kindora welcome email' },
+  { from: /@kindora\.co$/i, subject: /organization profile is ready/i, category: 'skip', reason: 'Kindora profile notification' },
   { from: /billing@.*openai\.com/i, category: 'skip', reason: 'OpenAI billing' },
   { from: /notification@slack\.com/i, category: 'skip', reason: 'Slack notification' },
   { from: /no-reply.*@slack\.com/i, category: 'skip', reason: 'Slack notification' },
@@ -105,6 +111,23 @@ const FILTER_RULES: FilterRule[] = [
   { from: /noreply@blackbaud\.com/i, category: 'skip', reason: 'Blackbaud notification' },
   { from: /drive-shares-dm-noreply@google\.com/i, category: 'skip', reason: 'Google Drive share' },
   { from: /comments-noreply@docs\.google\.com/i, category: 'skip', reason: 'Google Docs comment' },
+  { from: /families-noreply@google\.com/i, category: 'skip', reason: 'Google family notification' },
+  { from: /no-reply-aws@amazon\.com/i, category: 'skip', reason: 'AWS notification' },
+  { from: /notifications@github\.com/i, category: 'skip', reason: 'GitHub notification' },
+  { from: /notifications@taxdome\.com/i, category: 'skip', reason: 'TaxDome notification' },
+  { from: /azure-noreply@microsoft\.com/i, category: 'skip', reason: 'Azure notification' },
+  { from: /no-reply@anveo\.com/i, category: 'skip', reason: 'Anveo VoIP notification' },
+  { from: /no\.reply\.alerts@chase\.com/i, category: 'skip', reason: 'Chase banking alert' },
+  { from: /account-noreply@united\.com/i, category: 'skip', reason: 'United Airlines notification' },
+  { from: /noreply@mail\.smapply\.net/i, category: 'skip', reason: 'SurveyMonkey Apply notification' },
+  { from: /community@theonevalley\.com/i, category: 'skip', reason: 'OneValley notification' },
+  { from: /venmo@venmo\.com/i, category: 'skip', reason: 'Venmo notification' },
+  { from: /alert@phyn\.com/i, category: 'skip', reason: 'Phyn smart water alert' },
+  { from: /no-reply@imagequix\.com/i, category: 'skip', reason: 'School photo notification' },
+  { from: /noreply@amazon\.com/i, category: 'skip', reason: 'Amazon notification' },
+  { from: /help@ridwell\.com/i, category: 'skip', reason: 'Ridwell service notification' },
+  { from: /mailer-daemon@google(mail)?\.com/i, category: 'skip', reason: 'Bounce/delivery notification' },
+  { from: /noreply@api\.data\.gov/i, category: 'skip', reason: 'API key delivery' },
 
   // ── SKIP: Calendar ──
   { subject: /^Accepted:/i, category: 'skip', reason: 'Calendar acceptance' },
@@ -116,6 +139,9 @@ const FILTER_RULES: FilterRule[] = [
   { from: /@mail\.beehiiv\.com$/i, category: 'skip', reason: 'Newsletter platform' },
   { from: /convertkit-mail/i, category: 'skip', reason: 'Newsletter platform' },
   { from: /comms@ellabakercenter\.org/i, category: 'skip', reason: 'Ella Baker Center newsletter' },
+  { from: /@practicalfounders\.com/i, category: 'skip', reason: 'Practical Founders newsletter' },
+  { from: /@.*ccsend\.com$/i, category: 'skip', reason: 'Constant Contact newsletter' },
+  { from: /hello@instrumentl\.com/i, category: 'skip', reason: 'Instrumentl newsletter' },
 
   // ── SKIP: Marketing ──
   { from: /@partnernotification\.capitalone\.com/i, category: 'skip', reason: 'Capital One marketing' },
@@ -127,6 +153,9 @@ const FILTER_RULES: FilterRule[] = [
   { from: /@(useclaritymail|oursprintops|joinforge|prpodpitch|upscalepulselab|boostbnxt|readingbrandlane)\./i, category: 'skip', reason: 'Known cold sales domain' },
   { from: /dataforseo\.com/i, category: 'skip', reason: 'DataForSEO vendor outreach' },
   { from: /trestleiq\.com/i, category: 'skip', reason: 'Trestle vendor outreach' },
+  { from: /tegus\.com/i, category: 'skip', reason: 'Tegus/AlphaSense consulting cold outreach' },
+  { from: /dialecticanet\.com/i, category: 'skip', reason: 'Dialectica expert network cold outreach' },
+  { from: /handwritingocr\.com/i, category: 'skip', reason: 'HandwritingOCR cold outreach' },
 
   // ── SKIP: Generic receipts ──
   { from: /noreply@/i, subject: /Confirmed/i, category: 'skip', reason: 'Confirmation receipt' },
@@ -138,8 +167,14 @@ const FILTER_RULES: FilterRule[] = [
   { from: /no-reply@.*mybrightwheel\.com/i, category: 'fyi', reason: 'School notification (Brightwheel)' },
   { from: /mailer@email\.naviance\.com/i, category: 'fyi', reason: 'School notification (Naviance)' },
   { from: /@leiya\.com$/i, category: 'fyi', reason: 'School notification (Leiya)' },
+  { from: /no-reply@documents\.powerschool\.com/i, category: 'fyi', reason: 'School notification (PowerSchool)' },
   { from: /^info@outdoorithm\.com$/i, subject: /available|campsite/i, category: 'fyi', reason: 'Campsite availability alert' },
   { from: /txt\.voice\.google\.com/i, category: 'fyi', reason: 'Google Voice text' },
+  { from: /voice-noreply@google\.com/i, category: 'fyi', reason: 'Google Voice voicemail' },
+  { from: /@hnhsoakland\.org$/i, category: 'fyi', reason: 'School notification (Holy Names)' },
+  { from: /@fsenrollment\.com$/i, category: 'fyi', reason: 'School enrollment notification' },
+  { from: /@parentsquare\.com$/i, category: 'fyi', reason: 'School notification (ParentSquare)' },
+  { from: /Do_NotReply@.*dmvonline\.ca\.gov/i, category: 'fyi', reason: 'CA DMV notification' },
 ];
 
 function applyRuleFilters(msg: EmailMessage, labelNames: string[]): EmailMessage {

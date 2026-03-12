@@ -13,7 +13,12 @@ Usage:
   python scripts/intelligence/write_personal_outreach.py --force             # re-write already written
   python scripts/intelligence/write_personal_outreach.py --contact-id 1234   # specific contact
   python scripts/intelligence/write_personal_outreach.py --workers 5         # custom concurrency
+  python scripts/intelligence/write_personal_outreach.py --no-rewrite        # skip rewrite pass
   python scripts/intelligence/write_personal_outreach.py                     # full run (~25)
+
+After writing, automatically runs rewrite_outreach_opus.py to enforce stricter
+voice rules (campaign facts, no em dashes, under 200 words, Justin's persona doc).
+Use --no-rewrite to skip the rewrite pass.
 """
 
 import os
@@ -21,6 +26,7 @@ import sys
 import json
 import time
 import argparse
+import subprocess
 from datetime import datetime, timezone
 from typing import Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -610,13 +616,16 @@ def build_contact_context(contact: dict) -> str:
 class PersonalOutreachWriter:
     MODEL = "claude-opus-4-6"
 
-    def __init__(self, test_mode=False, force=False, contact_id=None, workers=3):
+    def __init__(self, test_mode=False, force=False, contact_id=None, workers=3,
+                 no_rewrite=False):
         self.test_mode = test_mode
         self.force = force
         self.contact_id = contact_id
         self.workers = workers
+        self.no_rewrite = no_rewrite
         self.supabase: Optional[Client] = None
         self.anthropic: Optional[anthropic.Anthropic] = None
+        self.written_ids: list[int] = []  # Track IDs for rewrite pass
         self.stats = {
             "processed": 0,
             "by_channel": {"email": 0, "text": 0},
@@ -843,6 +852,7 @@ class PersonalOutreachWriter:
         existing_c2026 = parse_jsonb(contact.get("campaign_2026"))
         if self.save_outreach(contact_id, existing_c2026, result):
             self.stats["processed"] += 1
+            self.written_ids.append(contact_id)
             channel = result.get("channel", "email")
             if channel in self.stats["by_channel"]:
                 self.stats["by_channel"][channel] += 1
@@ -931,11 +941,58 @@ class PersonalOutreachWriter:
         elapsed = time.time() - start_time
         self.print_summary(elapsed)
 
+        # Run rewrite pass (enforces stricter voice rules)
+        if not self.no_rewrite and self.written_ids:
+            self.run_rewrite_pass()
+
         # Print all messages for review
         if not self.test_mode:
             self.print_all_messages()
 
         return self.stats["errors"] < max(total * 0.1, 1)
+
+    def run_rewrite_pass(self):
+        """Run rewrite_outreach_opus.py on all contacts that were just written."""
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        rewrite_script = os.path.join(script_dir, "rewrite_outreach_opus.py")
+
+        if not os.path.exists(rewrite_script):
+            print("\nWARNING: rewrite_outreach_opus.py not found, skipping rewrite pass")
+            return
+
+        print(f"\n{'=' * 60}")
+        print(f"REWRITE PASS — {len(self.written_ids)} contacts")
+        print(f"{'=' * 60}")
+        print("Running rewrite_outreach_opus.py for voice consistency...\n")
+
+        rewrite_ok = 0
+        rewrite_err = 0
+
+        for cid in self.written_ids:
+            try:
+                result = subprocess.run(
+                    [sys.executable, "-u", rewrite_script, "--contact-id", str(cid)],
+                    capture_output=True, text=True, timeout=120,
+                    env={**os.environ},
+                )
+                # Extract key info from output
+                for line in result.stdout.splitlines():
+                    if "Subject:" in line or "Words:" in line or "SAVED" in line or "WARNING" in line:
+                        print(f"  [{cid}] {line.strip()}")
+                if result.returncode == 0:
+                    rewrite_ok += 1
+                else:
+                    rewrite_err += 1
+                    stderr_preview = result.stderr[:200] if result.stderr else ""
+                    print(f"  [{cid}] REWRITE ERROR: exit {result.returncode} {stderr_preview}")
+            except subprocess.TimeoutExpired:
+                rewrite_err += 1
+                print(f"  [{cid}] REWRITE TIMEOUT (120s)")
+            except Exception as e:
+                rewrite_err += 1
+                print(f"  [{cid}] REWRITE ERROR: {e}")
+
+        print(f"\nRewrite pass: {rewrite_ok} ok, {rewrite_err} errors")
 
     def print_all_messages(self):
         """Print all written messages for review."""
@@ -1038,6 +1095,8 @@ def main():
                         help="Write outreach for a specific contact by ID")
     parser.add_argument("--workers", "-w", type=int, default=3,
                         help="Number of concurrent workers (default: 3)")
+    parser.add_argument("--no-rewrite", action="store_true",
+                        help="Skip the rewrite pass (voice enforcement)")
     args = parser.parse_args()
 
     writer = PersonalOutreachWriter(
@@ -1045,6 +1104,7 @@ def main():
         force=args.force,
         contact_id=args.contact_id,
         workers=args.workers,
+        no_rewrite=args.no_rewrite,
     )
     success = writer.run()
     sys.exit(0 if success else 1)

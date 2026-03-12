@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kindora x LinkedIn for Nonprofits — Partnership Proposal</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --brand-teal: #0B7B7A;
+      --brand-teal-light: #1A9B99;
+      --brand-teal-dark: #065656;
+      --accent-coral: #E5736A;
+      --gray-900: #1a1a1a;
+      --gray-700: #404040;
+      --gray-600: #525252;
+      --gray-500: #6b6b6b;
+      --gray-400: #8c8c8c;
+      --gray-200: #d9d9d9;
+      --gray-100: #f0f0f0;
+      --gray-50: #fafafa;
+      --white: #ffffff;
+    }
+
+    @page {
+      size: 8.5in 11in;
+      margin: 0;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 10.5pt;
+      color: var(--gray-900);
+      background: var(--white);
+      width: 8.5in;
+      height: 11in;
+      margin: 0 auto;
+      overflow: hidden;
+    }
+
+    .page {
+      width: 8.5in;
+      height: 11in;
+      padding: 0.4in 0.5in 0.35in 0.5in;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ===== HEADER ===== */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 6pt;
+      border-bottom: 2.5px solid var(--brand-teal);
+      margin-bottom: 8pt;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12pt;
+    }
+
+    .header-logo { height: 28pt; width: auto; }
+
+    .header-divider { width: 1px; height: 20pt; background: var(--gray-200); }
+
+    .header-partner {
+      font-size: 9.5pt;
+      color: var(--gray-600);
+      font-weight: 500;
+    }
+
+    .header-right { text-align: right; }
+
+    .header-title {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 14pt;
+      color: var(--brand-teal);
+      line-height: 1.2;
+    }
+
+    .header-subtitle {
+      font-size: 8.5pt;
+      color: var(--gray-500);
+      margin-top: 1pt;
+    }
+
+    /* ===== SECTION TITLES ===== */
+    .section-title {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 11pt;
+      color: var(--brand-teal);
+      margin-bottom: 4pt;
+    }
+
+    .section-title::after {
+      content: '';
+      display: block;
+      width: 24pt;
+      height: 1.5px;
+      background: var(--brand-teal);
+      margin-top: 2pt;
+      opacity: 0.4;
+    }
+
+    /* ===== OPPORTUNITY ===== */
+    .opportunity {
+      margin-bottom: 8pt;
+    }
+
+    .opportunity p {
+      font-size: 10pt;
+      line-height: 1.5;
+      color: var(--gray-700);
+    }
+
+    .opportunity strong { color: var(--gray-900); }
+
+    /* ===== TWO-COLUMN CARDS ===== */
+    .two-col {
+      display: flex;
+      gap: 10pt;
+      margin-bottom: 8pt;
+    }
+
+    .col-card {
+      flex: 1;
+      background: var(--gray-50);
+      border-radius: 6pt;
+      padding: 7pt 10pt 6pt;
+      border: 1px solid var(--gray-100);
+    }
+
+    .col-card-title {
+      font-size: 9pt;
+      font-weight: 700;
+      color: var(--brand-teal);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 4pt;
+    }
+
+    .col-card p {
+      font-size: 9pt;
+      line-height: 1.45;
+      color: var(--gray-700);
+      margin-bottom: 5pt;
+    }
+
+    .stat-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3pt 12pt;
+    }
+
+    .stat-item {
+      font-size: 8.5pt;
+      color: var(--gray-600);
+    }
+
+    .stat-item strong {
+      color: var(--brand-teal-dark);
+      font-weight: 700;
+      font-size: 9pt;
+    }
+
+    .content-schedule {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 2pt;
+      margin-top: 3pt;
+    }
+
+    .schedule-day {
+      text-align: center;
+      font-size: 6.5pt;
+      background: var(--white);
+      border-radius: 2pt;
+      padding: 2pt 1pt;
+      border: 1px solid var(--gray-200);
+    }
+
+    .schedule-day .day-name {
+      font-weight: 700;
+      color: var(--brand-teal);
+      display: block;
+      margin-bottom: 0.5pt;
+    }
+
+    .schedule-day .day-theme { color: var(--gray-600); line-height: 1.2; }
+
+    /* ===== ANTHROPIC ===== */
+    .anthropic { margin-bottom: 8pt; }
+
+    .anthropic-box {
+      background: linear-gradient(135deg, #f0f7f7 0%, #e8f4f4 100%);
+      border-radius: 6pt;
+      padding: 6pt 10pt;
+      border-left: 3px solid var(--brand-teal);
+    }
+
+    .anthropic-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8pt;
+      margin-bottom: 4pt;
+    }
+
+    .workstream {
+      font-size: 8.5pt;
+      color: var(--gray-700);
+      line-height: 1.35;
+    }
+
+    .workstream strong {
+      display: block;
+      font-size: 9pt;
+      color: var(--gray-900);
+      margin-bottom: 1pt;
+    }
+
+    .anthropic-quote {
+      font-size: 9.5pt;
+      font-style: italic;
+      color: var(--gray-600);
+      border-top: 1px solid rgba(11, 123, 122, 0.15);
+      padding-top: 4pt;
+    }
+
+    .anthropic-quote cite {
+      font-style: normal;
+      font-weight: 600;
+      color: var(--gray-700);
+    }
+
+    /* ===== PARTNERSHIP FRAMEWORK ===== */
+    .framework { margin-bottom: 8pt; }
+
+    .tiers {
+      display: flex;
+      gap: 8pt;
+    }
+
+    .tier {
+      flex: 1;
+      border-radius: 6pt;
+      padding: 6pt 9pt 5pt;
+    }
+
+    .tier-good { background: #f0f7f0; border: 1px solid #d4e8d4; }
+    .tier-better { background: #eef5f9; border: 1px solid #cce0ef; }
+    .tier-best { background: #f5f0f9; border: 1px solid #e0d0ef; }
+
+    .tier-label {
+      font-size: 9pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 4pt;
+    }
+
+    .tier-good .tier-label { color: #2d7a2d; }
+    .tier-better .tier-label { color: #2a6496; }
+    .tier-best .tier-label { color: #6b4fcf; }
+
+    .tier ul { list-style: none; padding: 0; }
+
+    .tier li {
+      font-size: 8.5pt;
+      color: var(--gray-700);
+      padding: 1.5pt 0;
+      padding-left: 9pt;
+      position: relative;
+      line-height: 1.35;
+    }
+
+    .tier li::before {
+      content: '\2022';
+      position: absolute;
+      left: 0;
+      color: var(--gray-400);
+    }
+
+    .tier-note {
+      font-size: 7.5pt;
+      color: var(--gray-500);
+      font-style: italic;
+      margin-top: 3pt;
+      padding-top: 2pt;
+      border-top: 1px solid rgba(0,0,0,0.06);
+    }
+
+    /* ===== WHY LINKEDIN ===== */
+    .why-linkedin { margin-bottom: 6pt; }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8pt;
+    }
+
+    .metric {
+      text-align: center;
+      padding: 5pt 5pt;
+      background: var(--gray-50);
+      border-radius: 5pt;
+      border: 1px solid var(--gray-100);
+    }
+
+    .metric-value {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 16pt;
+      color: var(--brand-teal);
+      line-height: 1;
+      margin-bottom: 2pt;
+    }
+
+    .metric-value.coral { color: var(--accent-coral); }
+
+    .metric-label {
+      font-size: 7.5pt;
+      color: var(--gray-600);
+      line-height: 1.25;
+    }
+
+    /* ===== FOOTER ===== */
+    .footer {
+      margin-top: auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding-top: 6pt;
+      border-top: 1.5px solid var(--gray-200);
+    }
+
+    .footer-left {
+      display: flex;
+      align-items: center;
+      gap: 10pt;
+    }
+
+    .footer-photo {
+      width: 38pt;
+      height: 38pt;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1.5px solid var(--brand-teal);
+    }
+
+    .footer-info { font-size: 8.5pt; line-height: 1.45; }
+    .footer-name { font-weight: 700; font-size: 9.5pt; color: var(--gray-900); }
+    .footer-role { color: var(--gray-600); }
+    .footer-contact { color: var(--brand-teal); font-weight: 500; }
+
+    .footer-right {
+      display: flex;
+      align-items: center;
+      gap: 12pt;
+    }
+
+    .accel-logo {
+      height: 16pt;
+      width: auto;
+      opacity: 0.55;
+      filter: grayscale(100%);
+    }
+
+    .footer-pbc {
+      font-size: 7pt;
+      color: var(--gray-400);
+      text-align: right;
+    }
+
+    /* ===== PRINT ===== */
+    @media print {
+      body {
+        width: 8.5in;
+        height: 11in;
+        margin: 0;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .page { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <!-- HEADER -->
+    <div class="header">
+      <div class="header-left">
+        <img src="assets/Kindora_Logo.png" alt="Kindora" class="header-logo">
+        <div class="header-divider"></div>
+        <span class="header-partner">LinkedIn for Nonprofits</span>
+      </div>
+      <div class="header-right">
+        <div class="header-title">Content Partnership Proposal</div>
+        <div class="header-subtitle">March 2026</div>
+      </div>
+    </div>
+
+    <!-- THE OPPORTUNITY -->
+    <div class="opportunity">
+      <div class="section-title">The Opportunity</div>
+      <p>
+        <strong>Kindora seeks a content partnership with LinkedIn for Nonprofits and Global Impact Marketing</strong>
+        to provide daily, high-value grant intelligence content that gives nonprofit professionals a reason to visit LinkedIn every day.
+        Kindora produces the content. LinkedIn gets increased daily member value (DMV), nonprofit engagement, and a pipeline to LinkedIn Talent Solutions and Sales Navigator adoption.
+      </p>
+    </div>
+
+    <!-- TWO COLUMNS: KINDORA + GRANT BRIEF -->
+    <div class="two-col">
+      <div class="col-card">
+        <div class="col-card-title">What is Kindora</div>
+        <p>
+          AI-powered grant intelligence platform that helps nonprofits find the right funders, write stronger grants, and practice their pitch. Founded by a former Google.org Americas lead who directed $698M in philanthropic investments. Public Benefit Corporation.
+        </p>
+        <div class="stat-row">
+          <div class="stat-item"><strong>175K+</strong> US foundations</div>
+          <div class="stat-item"><strong>6.7M</strong> grant records</div>
+          <div class="stat-item"><strong>258</strong> nonprofits on platform</div>
+          <div class="stat-item"><strong>$25/mo</strong> paid tier, free tier available</div>
+        </div>
+      </div>
+
+      <div class="col-card">
+        <div class="col-card-title">The Grant Brief — Content Engine</div>
+        <p>
+          Automated content system that scans 80,000+ grant programs and publishes daily LinkedIn posts and a weekly philanthropy newsletter synthesizing 96 sector voices. Human-reviewed. Ready to publish.
+        </p>
+        <div class="content-schedule">
+          <div class="schedule-day"><span class="day-name">M</span><span class="day-theme">Edu</span></div>
+          <div class="schedule-day"><span class="day-name">T</span><span class="day-theme">Health</span></div>
+          <div class="schedule-day"><span class="day-name">W</span><span class="day-theme">Funder</span></div>
+          <div class="schedule-day"><span class="day-name">Th</span><span class="day-theme">Sector</span></div>
+          <div class="schedule-day"><span class="day-name">F</span><span class="day-theme">Tech</span></div>
+          <div class="schedule-day"><span class="day-name">Sa</span><span class="day-theme">Pulse</span></div>
+          <div class="schedule-day"><span class="day-name">Su</span><span class="day-theme">Deadlines</span></div>
+        </div>
+        <div style="margin-top: 4pt;">
+          <div class="stat-row">
+            <div class="stat-item"><strong>7</strong> posts/week</div>
+            <div class="stat-item"><strong>96</strong> philanthropy voices monitored</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANTHROPIC PARTNERSHIP -->
+    <div class="anthropic">
+      <div class="section-title">Anthropic Partnership — Proof of Model</div>
+      <div class="anthropic-box">
+        <div class="anthropic-grid">
+          <div class="workstream">
+            <strong>Customer Story</strong>
+            Head of Customer Stories developing a feature on Kindora
+          </div>
+          <div class="workstream">
+            <strong>In-Kind Product</strong>
+            Claude Max licenses delivered, in active daily use
+          </div>
+          <div class="workstream">
+            <strong>Speaking</strong>
+            Co-presented with Head of Beneficial Deployments at AWS accelerator
+          </div>
+          <div class="workstream">
+            <strong>Integration</strong>
+            MCP connector submitted to Anthropic connector directory
+          </div>
+        </div>
+        <div class="anthropic-quote">
+          "This is the coolest Claude Code story I have ever heard." — <cite>Bridget Sauer, Head of Customer Stories, Anthropic</cite>
+        </div>
+      </div>
+    </div>
+
+    <!-- PARTNERSHIP FRAMEWORK -->
+    <div class="framework">
+      <div class="section-title">Partnership Framework</div>
+      <div class="tiers">
+        <div class="tier tier-good">
+          <div class="tier-label">Good</div>
+          <ul>
+            <li>Resolve Community Management API access (current blocker)</li>
+            <li>Kindora publishes 7 posts/week of grant content</li>
+            <li>LI4NP occasional reposts and amplification</li>
+          </ul>
+          <div class="tier-note">Low lift. Free content for LI4NP.</div>
+        </div>
+
+        <div class="tier tier-better">
+          <div class="tier-label">Better</div>
+          <ul>
+            <li>Everything in Good</li>
+            <li>"Philanthropy Pulse" co-branded on LI4NP newsletter</li>
+            <li>Ad Grants ($50K-$200K in LinkedIn ads)</li>
+            <li>Case study or Better Together feature</li>
+            <li>Intro to Heather Combs / GMI</li>
+          </ul>
+          <div class="tier-note">Medium lift. Easy win for GMI.</div>
+        </div>
+
+        <div class="tier tier-best">
+          <div class="tier-label">Best</div>
+          <ul>
+            <li>Everything in Better</li>
+            <li>Future of Work Fund ($200K-$300K)</li>
+            <li>Resource Hub contributions</li>
+            <li>Event programming + advisory role</li>
+          </ul>
+          <div class="tier-note">Higher lift. Signature partnership.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WHY THIS WORKS FOR LINKEDIN -->
+    <div class="why-linkedin">
+      <div class="section-title">Why This Works for LinkedIn</div>
+      <div class="metrics-grid">
+        <div class="metric">
+          <div class="metric-value">DMV</div>
+          <div class="metric-label">Daily grant content gives nonprofit pros a reason to visit LinkedIn every day</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value coral">58K</div>
+          <div class="metric-label">Monthly searches for grant-related terms that this content captures</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value">$0</div>
+          <div class="metric-label">Cost to LinkedIn. Kindora produces, funds, and maintains all content</div>
+        </div>
+        <div class="metric">
+          <div class="metric-value coral">LTS</div>
+          <div class="metric-label">Nonprofit engagement drives Sales Navigator + Recruiter adoption</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer">
+      <div class="footer-left">
+        <img src="assets/Justin Headshot.jpeg" alt="Justin Steele" class="footer-photo">
+        <div class="footer-info">
+          <div class="footer-name">Justin Steele</div>
+          <div class="footer-role">Co-Founder & CEO, Kindora</div>
+          <div class="footer-role">Former Google.org Americas Lead ($698M)</div>
+          <div class="footer-contact">justin@kindora.co &nbsp;|&nbsp; kindora.co</div>
+        </div>
+      </div>
+      <div class="footer-right">
+        <img src="assets/Camelback_logo.png" alt="Camelback Ventures" class="accel-logo">
+        <img src="assets/Blackbaud_Logo.png" alt="Blackbaud" class="accel-logo">
+        <img src="assets/Amazon_Web_Services-Logo.wine (1).svg" alt="AWS" class="accel-logo" style="height: 20pt;">
+        <div class="footer-pbc">Public Benefit<br>Corporation</div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

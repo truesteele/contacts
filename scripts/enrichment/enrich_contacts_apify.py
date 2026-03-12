@@ -36,13 +36,14 @@ load_dotenv()
 class ContactsEnricher:
     PROFILE_ACTOR = "harvestapi/linkedin-profile-scraper"
 
-    def __init__(self, test_mode=False, batch_size=None, start_from=None, force=False):
+    def __init__(self, test_mode=False, batch_size=None, start_from=None, force=False, ids=None):
         self.supabase: Optional[Client] = None
         self.apify: Optional[ApifyClient] = None
         self.test_mode = test_mode
         self.batch_size = batch_size
         self.start_from = start_from
         self.force = force
+        self.ids = ids
         self.stats = {
             "profiles_enriched": 0,
             "profiles_failed": 0,
@@ -82,6 +83,9 @@ class ContactsEnricher:
                 .order("id")
                 .range(offset, offset + page_size - 1)
             )
+
+            if self.ids:
+                query = query.in_("id", self.ids)
 
             if self.start_from:
                 query = query.gte("id", self.start_from)
@@ -591,13 +595,18 @@ def main():
     parser.add_argument("--start-from", "-s", type=int, help="Start from contact id >= N")
     parser.add_argument("--force", "-f", action="store_true",
                         help="Re-enrich contacts already enriched by Apify")
+    parser.add_argument("--ids", type=str, default=None,
+                        help="Comma-separated contact IDs to process")
     args = parser.parse_args()
+
+    ids = [int(x.strip()) for x in args.ids.split(",")] if args.ids else None
 
     enricher = ContactsEnricher(
         test_mode=args.test,
         batch_size=args.batch,
         start_from=args.start_from,
-        force=args.force,
+        force=args.force or bool(ids),
+        ids=ids,
     )
     success = enricher.run()
     sys.exit(0 if success else 1)

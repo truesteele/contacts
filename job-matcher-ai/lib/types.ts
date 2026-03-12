@@ -19,6 +19,10 @@ export interface FilterState {
   sort_by?: 'proximity' | 'capacity' | 'name' | 'company' | 'familiarity' | 'comms_recency' | 'ask_readiness';
   sort_order?: 'asc' | 'desc';
   limit?: number;
+  // Enrichment-based filters
+  title_keyword?: string;
+  skill_keyword?: string;
+  school_keyword?: string;
 }
 
 export interface ProspectList {

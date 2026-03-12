@@ -12,7 +12,7 @@ Build an editable, visually appealing project tracker landing page for the UpTog
 - **Database:** Supabase project `hjuvqpxvfrzwmlqzkpxh` (separate from main contacts DB)
   - URL: `https://hjuvqpxvfrzwmlqzkpxh.supabase.co`
   - Anon key: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqdXZxcHh2ZnJ6d21scXprcHhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzNTUyMjUsImV4cCI6MjA3MTkzMTIyNX0.1ouwATKHkAUPNvs9uDUjy79nqAd1KF__WzK4AWceyOA`
-  - Service role key: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqdXZxcHh2ZnJ6d21scXprcHhoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjM1NTIyNSwiZXhwIjoyMDcxOTMxMjI1fQ.AOYbPJPCITnRuGaYbQsbaJy_8fCGkmFL81DzM7h2NdM`
+  - Service role key: (stored in .env.local — do not commit)
 - **Auth:** Supabase Auth with Google OAuth, allowlist in `lib/auth-config.ts`. Middleware at `lib/supabase/middleware.ts` redirects unauthenticated users. `/projects` path must be excluded from auth.
 - **Deploy:** `cd job-matcher-ai && npx vercel --prod --yes` to `steele-contacts.vercel.app`
 - **Vercel account:** `justin-outdoorithm`, team `true-steele`
@@ -178,7 +178,7 @@ Add interactive editing capabilities to the tracker page. All changes should per
 
 ### US-008: Seed Data and Deploy
 **Priority:** 8
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Create a seed script to populate all tasks from the Google Doc tracker, add Vercel env vars, and deploy.

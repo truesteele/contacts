@@ -88,6 +88,24 @@ const TOOLS = [
     iconColor: 'text-orange-600',
   },
   {
+    title: "Sally's Ask Readiness",
+    description:
+      "Sally's 850-contact network scored for Outdoorithm fundraising readiness. Same AI pipeline, separate network.",
+    href: '/tools/sally-ask-readiness',
+    icon: Heart,
+    accent: 'from-pink-500/10 to-rose-500/5',
+    iconColor: 'text-pink-600',
+  },
+  {
+    title: "Sally's Campaign",
+    description:
+      "Come Alive 2026 campaign contacts from Sally's network. 28 contacts across 4 lists with personas, ask amounts, and A-list personal outreach.",
+    href: '/tools/sally-campaign',
+    icon: Megaphone,
+    accent: 'from-pink-500/10 to-fuchsia-500/5',
+    iconColor: 'text-pink-600',
+  },
+  {
     title: 'Email Triage',
     description:
       'AI-assisted email triage across all 5 Gmail accounts. Read, draft responses in your style, and send or save to drafts.',

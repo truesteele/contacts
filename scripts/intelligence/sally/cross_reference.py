@@ -40,7 +40,7 @@ def main():
 
     sb = create_client(
         os.environ["SUPABASE_URL"],
-        os.environ.get("SUPABASE_SERVICE_KEY") or os.environ["SUPABASE_KEY"],
+        os.environ["SUPABASE_SERVICE_KEY"],
     )
 
     # Optionally clear existing cross-references
@@ -105,7 +105,8 @@ def main():
     print(f"Justin contacts with LinkedIn: {len(justin_contacts)}")
     print(f"Shared connections:            {len(matches)}")
     print(f"Sally-only contacts:           {len(sally_contacts) - len(matches)}")
-    print(f"Overlap rate:                  {len(matches)/len(sally_contacts)*100:.1f}%")
+    overlap_pct = (len(matches) / len(sally_contacts) * 100) if sally_contacts else 0.0
+    print(f"Overlap rate:                  {overlap_pct:.1f}%")
 
     if not matches:
         print("\nNo shared connections found.")

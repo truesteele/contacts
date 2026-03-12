@@ -1,0 +1,613 @@
+Unknown Speaker  0:04  
+Okay, so algorithm and how do we focus in the product on one thing to a lighter strategy, but also better marketing and branding, I'm assuming. Yeah, yeah, when
+
+Speaker 1  0:25  
+I was looking at that Y Combinator application, I'm not going to do the Y Combinator, but I was watching some of their videos, and then it prompted me to, like, look at their application. So I looked at it again.
+
+Unknown Speaker  0:42  
+I they have a pretty, like, obsessive focus on, they call it the wedge. Like, what's your wedge?
+
+Unknown Speaker  0:51  
+It's like, your budget to the market or,
+
+Unknown Speaker  0:54  
+yeah, like,
+
+Speaker 1  0:59  
+I think their overall motto is something like, build things. Build something that people want, or build something that people like, or something like that, where it said, build something people want, but not something people like, no one or the other. Of those, I can't remember what the framing is. It was something around that like, you know, their whole thing is just like, I
+
+Speaker 1  1:29  
+guess you have to keep in mind that they're venture capitalists, right? So they're like, they're looking for something that's gonna like, that's gonna grow potentially be like $100 million or more company. Yeah. And if you're gonna have that kind of explosive growth potential, like on the front end, you better have found something that is so incredibly valuable for people that they're like, beating the path to your door. It also kind of is related to, like, Clay Christensen's like jobs to be done. Theory of, like, what are people hiring you to do? Like, what is the job that they're coming to your company to get done? And just being really, really clear on them. And I think for kendora, you know, I, for myself, I've kind of like anchored in, like, real time brand intelligence as the primary thing. Like, like, what's the thing that's going to really get people there? Like, right now Lee Andrew is like, pumping up and pushing out onto LinkedIn, like, we can take your EIN number and get you, like, $8 million of matches in seconds, or something like that. Like most platforms, it's volume. Like most platforms, do keyword searches. You know, we take your EIN give you intelligent matches for X amount of money. That money number is like a phantom number. I mean, what does it even mean to have like, $8 million dollars of matches. Like, if the Gates Foundation comes back and their average grand size is 5 million, does that mean that that adds 5 million to your total potential grant number, even though you have no shot at it. But their thing was more like, you know, let me get you lots of matches. And I think mine is a little bit more specific in that, like, Well, when I can take you through the whole pipeline, but I don't think people will come to kendora for the whole pipeline. Like, I don't think that that's the thing that meets a path to your door is like, Oh, these guys can do everything for you. I think it's probably, if I sign up for kindera, they're gonna deliver every single week to my inbox grants that I should be applying for right now. And if I'm disciplined enough, I can just apply to a few of those every week, and I'll start to get more money in the door. And so I'm really investing right now, and like, trying to build out a LinkedIn automatic posting function so that every day of the week I have, like, a different theme, yeah, and I'm constantly putting out interesting brand opportunities. I have a newsletter that people have started signing up for that will also put out interesting grant opportunities. Are those customized to people,
+
+Unknown Speaker  4:52  
+or you send them a list, kind of fast forward to
+
+Speaker 1  4:54  
+this, like a fast forward like it's going to be less about tailored in for that, and more. Out, like, Oh, wow. These are really interesting opportunities. And there's going to be, hopefully, a list of ones that are, like, interesting to most people. And then they're like, Wow, this is really interesting. I would like to see more of these. But for me, specifically, in the
+
+Unknown Speaker  5:17  
+weekly emails, those are targeted. Those are targeted.
+
+Speaker 1  5:19  
+Those are very specific to you, but that's kind of like my hypothesis is, like, that's the thing that's going to bring people back, that's the thing that's going to hook people in, and then from there, I have, like, all these other offerings that I hope that people, over time, will start to grow into. Like, you should evaluate all your matches, and you should generate Intel briefs, and you should consider doing pitch practice, and you should consider letting kendora Write the draft of your applications for you all the things. But I think my wedge is that real time intelligence, and it's a hard wedge to replicate, because leandrew and his team can just download the 990 tax filings and then run some structured data kind of enrichments, and then do vector embedding search or whatever. And I don't know how good they're doing it, but if, if they're decent engineers, they'll be able to get you like thematic matches from a funder perspective. But that's not telling you what grants are actually available. It's just telling you what funders might be interesting. What you really need is that real time, actionable intelligence, and like this grant is you can apply
+
+Speaker 2  6:38  
+for this right now, right? And I do think that there's something that you've started to build around, like the LinkedIn and the board immigration a lot, because we know that grants are much more successful if there
+
+Speaker 1  6:55  
+is a relationship. Yes. And I think, like, I think that's a great talking point for kendora, because it's like, we're not just trying to, like, throw some matches your way. It's relational. And I think for people who do fundraising like they know it's relational. And so the platform comes along and it's just like, let me just robotically pump out a bunch of matches. They're gonna probably be like, you know, but you start talking about relational, not being and networking. But I think you have to earn the right to do that for people. Because for that, I need, like, I need your information, your LinkedIn profile. I need you to, like, look through a bunch of other people. It's like, it's, it's a little bit more labor intensive, and from a privacy perspective, it requires you to take the risk, yeah, hand me some sensitive information. If you hand it to me, I can give you, you know. So I don't think it's the thing that necessarily, people will come to kind of off the first path, yeah? So anyways, like, I think that's the kind of exercise I've been trying to go through. My coaches have been kind of supporting me at Camelback, you know, to kind of work through that. So,
+
+Speaker 1  8:18  
+yeah, I think so when I think about algorithm, I think it's time to, like, come up with a similar thing. One of the as I was doing this for kendora, and thinking about, kind of like, how to think about it, and why it's important to do this, and just saying that investors are going to be really wary of a company that's like, built out a bunch of features, but doesn't seem to have a clear idea which of those features is actually going to drive the most value, because then it suggests that they don't really have product market fit. Yeah, they're kind of all over the place. And I think that's where we are with Dr rhythm, at least the way we frame the offering right now is like, you know, and I think legitimately, like, I don't know that we've going into this really new like, what people, what are people gonna engage with the most? And I'm not sure if we have, I mean, we should probably develop more analytics on the site to be able to like, follow users and follow intent, to figure out like what they're engaging with. Maybe we have some of that through Google Analytics itself. But again, my time is really, like, pressed, and I don't want to go develop a bunch of analytics, if you're not gonna, like, look at them. So you can tell me if you want me to go do that, but like, I'm not gonna do that, what kind of analytics you find, just like, what pages are people clicking on, and how are they interacting with things and whatever? Like. Like, just to get a sense for, like, what are the features that people are coming for? We have some of this data. We still some of like, some of it, we've got some signals about, and then some of it, the data might actually exist. We just haven't gone and pulled it like Karibu installed the mix panel for kendora, and he hasn't really shown me, like summary, like views or anything yet, but from my understanding, is that, like, he's basically tracking everybody's movements through the platform. He can figure out where they're going, right? I because then
+
+Speaker 2  10:45  
+that would tell us what people are using it the most for. Yeah, I should do that, because I the thing that feels like the having two thoughts per usual, I was
+
+Speaker 2  11:01  
+gonna say the thing that feels like the differentiator is just the amount of campground information we have and public land specifically. And then my other thought is that I don't think people know the sector well enough, and I think people's immediate things for people who aren't campers on it, but just like hear things we
+
+Unknown Speaker  11:28  
+kind of found, like a lot of people in the outdoor industry, or like the folks in the black Ed group thing, maybe not like a seizure.
+
+Speaker 2  11:41  
+I don't like a seizure of the other folks, there's just really not understanding of how camping works, and so it's simple for them to be like, Oh, but, you know, the dirt can't already do that. They realize that they don't. So part of me is like, Cape
+
+Speaker 1  12:10  
+ground map is clearly like the main product, and it's our differentiator, but I think the map itself, I mean, the data is the asset. Yes, not, well, that's how people access the data pages, and then on the campground pages, is
+
+Unknown Speaker  12:27  
+also like the weather, right? But I think, I think most people won't interact
+
+Unknown Speaker  12:35  
+with it in a map form, yeah? So I think most people do. People type
+
+Unknown Speaker  12:44  
+in either an exact campground or they go to the camps
+
+Speaker 1  12:48  
+age, or they land there from Google search when they search them
+
+Unknown Speaker  12:52  
+on Google, so then they land on
+
+Speaker 1  12:54  
+a campground page, yeah. So when they land directly on a campground page, but I think what you're saying is, like, the asset is the data, right? I think the challenge is like, well, what product do you
+
+Unknown Speaker  13:06  
+build on top of that data?
+
+Speaker 1  13:08  
+A map is one product that you build on top of the data. But I don't think that that's going to be the thing that drives people to the site. I mean, I think there's some people who are very like map oriented, like me that are like, well, this is great, because now I can like, I know the general areas that I want to go, I know how to read a map, and then I can fly around and look at visually be kind of prompted around, like, which campgrounds exist and what their ratings are, and I can use filters. And it's great. And I don't think I'm the
+
+Speaker 2  13:47  
+average person, but that's how we navigate a lot of the world, like Google Maps and Yelp and all of that. We're used to looking for things in an area and looking at different options, seeing a branding and then choosing something, yeah.
+
+Speaker 1  14:05  
+I mean, I would be curious for you to talk to actual users and see but like, how many people use Google Maps like that, where they're like, Oh, let me look at Oakland filter for restaurants, and then like, kind of fly around the map, versus like, Oh, I'm searching for this specific thing. Then I land on Google Maps, and I click the mic on I read about it, and then I
+
+Speaker 2  14:32  
+just it's because we camp so much, so often in the areas I don't know. And so I type in, like, Mexican food search area, and people
+
+Speaker 2  14:48  
+it's like word about like somebody told about bombera versus being like Latin food, bombera, La Hacienda taco place. And then they choose. I do,
+
+Speaker 1  15:00  
+I think it's probably mostly word of mouth or marketing, where people read an article about it, or hear about like, oh, you get invited to go there with somebody. Just kind of fuzziness about it. My guess is that? I mean, my Yeah, my guess is most people are not going on Google Maps and being like, best Mexican food in Oakland, and then looking around the map, and then, oh, what is this over here? You know might be my guess.
+
+Unknown Speaker  15:38  
+Okay, don't feel like I hear about things ever. So you also are not
+
+Unknown Speaker  15:43  
+the one that really plans out our outings, yeah,
+
+Unknown Speaker  15:52  
+but like when we're going to a new place, you don't search map and search best Mexican food and have nothing
+
+Speaker 1  16:10  
+expected. I mean, these days I go on to, like, gently, have it do a deep research or an agent thing, and I tell it like, exactly the type of thing that I'm interested in, and the agents go out and find it, which, honestly, I think is going to be how people do search from here on out. Like, why would you ever go through the manual effort going through lots and lots of options?
+
+Unknown Speaker  16:33  
+I think campgrounds are a little bit different in that, you know, there's so many options, and if you know, like there's a specific natural area that you want to go to, if you're visual,
+
+Speaker 1  16:49  
+being able to see all the pins on the map and have it be visual indicators of what's high quality. I do feel like that is still valuable. But I think for the average person, they're probably going to do an agent just going to be like, hey, I want to go to campus. You know, I'd love to go visit Big Sur. I'd love to camp. Like, what?
+
+Unknown Speaker  17:10  
+What are the places for? Yeah, I think I told you a couple of
+
+Unknown Speaker  17:20  
+Facebook groups with families camping, and I've just started taking their prompts and talking them into camp. Sage, that's really good.
+
+Speaker 1  17:30  
+It's really good. I think part of the challenge is that it's really good, and over time, like chatgpt and Claude are going to be able to approximate that pretty well, like one, they've already scraped all of our data, probably right, so they have whatever data that we show publicly. They probably not that they're storing it right, like not that they're storing on their servers, but that they their models have been trained on it, and if their models have been trained on it, then, you know, it might not be able to necessarily give you, like, a super long list, give you every detail, because that requires, like, a lot of stored context. But it can give you, you know, if you're like, hey, I want to go camp and make Sur, I bet you if you did a search right now, Claude or chat GPT, they surface the options pretty well. You know. Now, do they know? You know whether Big Sur camp grant has showers? Or, you know, do they know whether Pfeiffer Julia Pfeiffer campsite, to like, walk in sites, or, you know, like, and being able to then, like, smartly filter down. Like, my guess is it can't do that, because what it's doing is just relying on its context knowledge to give you high level but we actually have the data right. So we can not only use context, but we can use filters. And we can be like, Hey, we can search through hazards and be like, Well, don't recommend to a family any campgrounds that are like, overwhelmed with poison oak, right? Or like, Kirk Creek is like, on a cliff and has poison oaks, like, and there's no water and there's no water. So like, maybe not the best for families, yeah, but it's an amazing campground. So like, my guess is that the current llms Probably would recommend it, but it's not a great one for families, unless you really experience a comfortable, you know, camping in that kind of environment with your kids, but I think we have to be conscious of, like, yeah, like, where is agentic AI going, and what is going to be a durable advantage, and what's not what? I mean, I think things like the green book, no one else can have that the cultural heritage markers. Can we just use the term green book? I
+
+Speaker 1  20:20  
+mean, I don't know. I guess you could look it up and see if it's trademarked. I'd see it feels a little bit like, I'd be surprised if somebody has a trademark on, like, green book. It's just a feature, not the name of our company,
+
+Speaker 2  20:36  
+but, yeah, no, but it used to be an actual book. I wonder if they ever trademarked it, like
+
+Unknown Speaker  20:40  
+their family or something. It's also officially called, like the Negro Motorist Green Book, blah, blah, blah. But, I mean, I guess worth looking into, but I'm not too worried about it, right?
+
+Speaker 2  20:56  
+Seriously, keep camps. AGI is going to be like, not as special. I are
+
+Speaker 1  21:01  
+not as special, so not building, not having that bigger main product. Well, I don't know. I mean, I think, like it could be the main product, but I think it has to do more than what it's capable of doing right now, because I think that chatgpt And Claude, with these new models that they have, I guess, is that they can do, they can produce a similar type of output at this point as us. Now, again, I wouldn't trust it as much, because models hallucinate, right? So we actually have the real data. So if you're gonna bring your family on a royal camping trip and take them out and outdoors, I mean, that might be one durable advantage is that this is not like going to a restaurant, you know, where you're like, Oh, you show up and you're like, oh, chatgpt got it wrong. Like, people don't like the seafood here. Overall, the restaurant's good, but I wanted seafood or something. You know, it's like, not a big deal. Whereas, like, if you messed up and you're now at Kirk Creek Campground and your kids are, like, playing close to a cliff and they're falling in poison oak and there's no water shoot. You know, this is like, the stakes are higher. The stakes are higher and so but like, where are people going to start their search? They're probably going to start their search on judgment. It's just like, I mean, these days, if any family is like, especially one that doesn't know about them, I mean, and we both know that the dirt and hip camp are not good sites for public I would never go and start my search there, like, I just wouldn't like, it's not they're not good enough. Now, if I started narrowing in on a specific campground, I might go to the dirt these days to look at it, like, look at the reviews, or something. Probably not. I mean, those sites are gonna go away. I feel like,
+
+Unknown Speaker  23:07  
+which sites dirt?
+
+Speaker 1  23:08  
+I mean, maybe hip camp survives because the model is different. You're like anchoring on public or private land, renting out private lands, although they gotta be getting squeezed by Airbnb to some degree.
+
+Unknown Speaker  23:25  
+But is Airbnb doing private camping?
+
+Speaker 1  23:29  
+Yeah, I don't know if they're doing full on camping, but they're definitely doing like experiences.
+
+Speaker 2  23:33  
+Yeah, I think all these companies are
+
+Speaker 1  23:37  
+starting to, like, get into the experiences thing like
+
+Speaker 2  23:42  
+you interesting, because, I guess they have to trade like a vacation, like, do this in blue book hotel stay, because when Rei was trying to do like, those are guided experiences, but they couldn't make it sustainable. But I guess if you're just running out of place, it's different. I
+
+Unknown Speaker  24:01  
+don't know, like the Marriott. We used Marriott points to go
+
+Speaker 1  24:10  
+get that Palm Springs reservation. But I tried to revise it a couple days ago, and I realized it's not even in the Marriott system, like there's some other company managing it. So now I have to go through them and try to, like, trim a day off of it. So I don't know. It's like companies are getting into all kinds of different things that I'm just not sure. Like, if I don't see where the dirt has a durable advantage, like, their platform feels like built for the 2010s user generated content, lots of reviews, but the reviews are getting outdated, and like fewer and fewer people are probably starting their searches there. More and more people are probably using AI and full. Cool, Google Maps has more reviews than the nerd does. So I'm just like, if llms are out scraping the internet, like what we did, just train our llms. Like they don't need dirt. They just need so, I
+
+Unknown Speaker  25:19  
+think, but I
+
+Speaker 1  25:27  
+like our agentic tool could do a lot more than just tell people where to go, right, and I think that's one, one thing to consider is like, almost like a camping companion. I
+
+Speaker 1  25:47  
+Canyon. I mean, that's it. I mean, I can riff. It's just like a completion that gets to know you right, like, it really starts to understand you and your family and your preferences. If you're somebody who's worried about safety, it's gonna, like, access the Green Book and help you, you know, kind of analyze what that's about. Like, if you have little kids, it's gonna look at the hazard to make sure it's not sending you to a campground that has, like, sneaker waves, where you can't actually go to the beach, because Wright's Beach is kind of a dangerous beach kids play
+
+Unknown Speaker  26:30  
+on, you know, yeah. Like,
+
+Speaker 1  26:32  
+in culturally, like, you know, if it feels like, you know, you need a little bit of encouragement from another family, like, you know, maybe it has a bank of, you know, other families or videos or things like that, that kind of, like, encourage you like, if you're unsure about what to bring, then, you know, maybe then surfaces, like, recommendations for gear and equipment. Like, if you don't know how to set it up, maybe there's a partnership with Friday outdoors, although they seem like hella proprietary with their stuff, even though they shouldn't be, because they don't have a good business model, you know, and IT services their
+
+Unknown Speaker  27:10  
+videos and things you know, like
+
+Speaker 1  27:12  
+like a camping companion app, basically, like People would have to be comfortable enough to share the share it's not there right now. Like, for sure, it's not there. Like, I don't think that people
+
+Unknown Speaker  27:30  
+really want to talk to an
+
+Speaker 1  27:34  
+AI agent right now. I don't we would be, if we built that, we'd be out ahead of the curve, and we would be out ahead of consumption, like, right, but like, where is it? Where is it headed? Right? And we're like, straddling the line between these two, this transition from, like, traditional Search, Maps, keyword, whatever, 10,000 public campground pages like sitting out on the internet that people find and then look at to like, custom LLM agentic tool that, like, deeply understands who you are and then coaches you through every aspect of the camping experience. And honestly, like, I don't know how we want to navigate this as the as these tools get better and better. But like, I mean, I'm starting to research and build a tool to get us reservations. And I don't know how we feel about that, what the temperature is going to be. But like, these llms can log in as you, and they can navigate the website as you and like right now, I'm testing candora's functionality by giving the browser login information and letting Claude log in and click around as me. Now, Pandora doesn't have a bunch of CAPTCHA, you know, like security protocols that try to prevent bots from being able to, like, click around. But, you know, I don't know. I feel like those, how durable are those gonna be anyway? Like llms can approximate human like, both knowledge and behavior. I just don't you know, and you can imagine like an agentic companion, a camp a camping companion that, like, does the reservations and stuff for you. I
+
+Speaker 2  29:59  
+realize how. Was falling asleep. I was still having a conversation with you in my head,
+
+Unknown Speaker  30:03  
+and then I realized I don't think I've been getting enough sleep.
+
+Unknown Speaker  30:18  
+Do you feel like repeating the last thing you said?
+
+Speaker 1  30:22  
+Think I was talking about agent agents being able to, like, log in on your behalf and make reservations for you. Oh, yeah, I did hear
+
+Speaker 2  30:33  
+that part. You said that you're building that now, and you didn't know how we felt about it.
+
+Speaker 1  30:39  
+Yeah, it's controversial, but I'm also kind of
+
+Speaker 2  30:43  
+like, I don't keep up with AI usually. Is it controversial in the ways that it's always been controversial, the reservation system with the parks and, you know, allowing businesses access to it, that sort of thing. Or do you mean something
+
+Speaker 1  30:58  
+beyond that? Yeah, no, just that. I mean, like, 2017 2018 Right? Like everybody realizes that bots are the ones scooping up all the campgrounds, and they're such big no, that was true. I mean, I don't know if they were scooping up all of them, like, I don't know what percentage, but it's definitely true that, like, smart people in Silicon Valley were using bots to make
+
+Unknown Speaker  31:19  
+their reservations for them, and like,
+
+Unknown Speaker  31:23  
+the bots did a much better job than humans about,
+
+Unknown Speaker  31:26  
+like, going and getting the reservation.
+
+Unknown Speaker  31:29  
+They click fast and they're in there right at the right
+
+Unknown Speaker  31:31  
+time and, like, whatever. So that back.
+
+Speaker 1  31:48  
+I mean, I think we're entering into another era where, like the companies, the defenses that they put in place to stop that in 2019, largely stopped it. And now AI is here, and those same defenses are gonna fall down. They probably have already fallen down. It's just we don't I haven't seen a lot of articles or talk about it, but like, you know, I mean, I'm gonna go build the tool now and see what I can how far I can get. But like, I mean, I would love to get to a point where, like, I don't have to get up at 7am like, I have a bot swarm that's, like, ready to go and click around. And honestly, it's gonna force these public websites to get off of this, like, lottery or not lottery, but like, click based thing, and get on to more of a lottery based thing, you know, like the sort of, like, hey, the curtain drops at like, seven o'clock, and everybody just has to, you know, and like, people who, people get pissed that bots could be the one doing it, doing it. But, like, same thing with people with, means, yeah, just, shifts, just shifts the advantage. Yeah, I know that, like, coding knowledge and technology is maybe less spread out across the population, so it shifts the advantage to a smaller relative, like population of people, but like they're still built in advantages the way it's done now. And I just kind of feel like, I mean, I would be really supportive of a system that's, like 100% lottery
+
+Unknown Speaker  33:27  
+for, like,
+
+Speaker 1  33:30  
+signing up for the like, the rope drop moment, you know, like, if you want to book this, as soon as it becomes available, you can apply for a lottery, and then the lottery gives you a time slot to log in. And so, you know, each like, it's like the North pines campground, Yosemite, right? Like they did the thing where it was like you won the lottery. Here's your time to log in. The end. You log in during your slot.
+
+Unknown Speaker  34:02  
+Then you go book your stuff,
+
+Speaker 1  34:04  
+yeah, and then, like, there'll be lots of cancelations, so, you know, whatever. Then people
+
+Unknown Speaker  34:07  
+pick up pick up cancelations.
+
+Speaker 1  34:11  
+I think that that would be a much more equitable system, but it's it. But you know, government's not going to get there forever.
+
+Speaker 2  34:16  
+Like, it's him. It took them two months to get back to me about my questions, right? And then they said it was like
+
+Unknown Speaker  34:26  
+six eight months or eight to five months.
+
+Speaker 1  34:32  
+So then my question is like, do you? Does the does the companion that we build? Help people
+
+Unknown Speaker  34:40  
+book their seconds help
+
+Unknown Speaker  34:42  
+people what book their science is it
+
+Speaker 1  34:53  
+allowed? I don't know. Like we would not. Again, we would not I. I don't know. Like, I don't, I don't, I don't know. I would have to read the title. But like, I, you know, like, is it illegal for me to use a bot to go book my own campsite? It's probably illegal for outdoor rhythm to book the sites and then sell them back to people. But if we have, like, an agent that people use for themselves to go book their own sites in their own accounts,
+
+Unknown Speaker  35:32  
+right? I mean, yeah, but if they are paying for
+
+Unknown Speaker  35:34  
+that service, what
+
+Speaker 1  35:37  
+if they're not? I don't know. Like, this is where, this is where this how you circumnavigate government? You're like, well, the rule says, you know, that we're not allowed to do this for pay, so we just don't charge for that, you know, but we charge for other things, I'm not sure. But anyways, that's a detail that we we have to work through. But I think the question is really like,
+
+Unknown Speaker  36:00  
+what's the product that we're wedging and
+
+Speaker 1  36:08  
+what's a durable moat that you build around the company, like, something that may I do. The other thing is, like, user generated content can be that thing too, if people, if people, report their relative safety and how they feel at places. But to do that, we would we need an app, because I don't think people are gonna log into a website to report stuff on their phone, right, right? But what we need is like people to share their location to help over them, and then for us to be like, send them a notification like, Hey, are you at Morrow day campgrounds? How safe do you feel sharing your thoughts with other users, you know, yeah, and it gives them everything they need.
+
+Speaker 3  37:02  
+I this
+
+Unknown Speaker  37:13  
+would be an agentic tool
+
+Speaker 2  37:21  
+building. It's the whole package. You the product, the agenda, tool that takes you that helps you
+
+Unknown Speaker  37:35  
+find a campground. Yeah, I mean, I don't have an answer for this, so I'm just
+
+Speaker 2  37:39  
+like, thrown out asking to keep the conversation going.
+
+Speaker 1  37:50  
+Not I would be curious, what you think like, what do you think the product should be like? What's the wedge product that people
+
+Speaker 2  38:00  
+would really like, I mean, I said from the beginning that I thought pages and you were saying this really,
+
+Unknown Speaker  38:22  
+applause. It's the campsite. Continue.
+
+Unknown Speaker  38:40  
+On us, 101, North for 56 miles.
+
+Speaker 2  38:44  
+We think that AI is going to, like, very widespread. There's the reservation
+
+Unknown Speaker  38:49  
+system, which, honestly,
+
+Unknown Speaker  38:53  
+like, you know, people want to crack and
+
+Speaker 3  39:02  
+I don't know.
+
+Speaker 1  39:07  
+I mean, like, you know, in some ways, I can imagine King Dora going a similar route, where all of a sudden, at some point, you have like an agentic, like companion fundraiser who's basically like the Development Director, like, who knows everything about you, but
+
+Unknown Speaker  39:21  
+I just don't know. I mean, I just think it's and I'm not saying this as a let's not do that part.
+
+Speaker 2  39:27  
+But like, if we start allowing people to make reservations, it's gonna definitely put up a bunch of red flags. And we're trying to build into partnerships with national parks and with the
+
+Speaker 1  39:40  
+state parks, right? But also, if we say like, and this is where that document starts to come in, right? Because I think it has some of those frames, like, if, if public land is one of the biggest public health infrastructure investments we have in this whole country, and you have entire swaths of the population that are excluded from it. And. Like, this is the thing, is, there's a level the playing field. Is that, are you really going to come after it? I mean, they had the discretion as to whether they want to come after stuff, right? So it's like, yeah, I'm not sure. Would they come after it? Would they say, like, oh, how dare you level the playing field for underrepresented
+
+Unknown Speaker  40:18  
+people? They might just be like, Hey, this is
+
+Speaker 1  40:22  
+not legal. I mean, it's not illegal, just being against the terms of service of the
+
+Unknown Speaker  40:27  
+providers, just thinking for a second,
+
+Speaker 2  40:42  
+like I thinking for a second, like it's I do want to say that, like, I think that's totally amazing. And I would use it, and I would talk about it so I see the value of it. My questions are less about whether it's valuable, and more about like,
+
+Speaker 3  41:02  
+I can we do that
+
+Unknown Speaker  41:07  
+and keep our relationships
+
+Speaker 1  41:08  
+and make the answers, yes. I mean, do we want those relationships, like, if they're standing but the thing is that, like, I mean, that's when I said that it's running the parks right, but like when I fed that two years of email thread to, you know, Claude. It was like, Oh, hell no.
+
+Unknown Speaker  41:26  
+This is insane.
+
+Speaker 1  41:29  
+Like, like, you guys need to go around this system basically. And it's a little bit like Uber and taxi cabs, you know, it's like, Whoa. That system didn't work well, really, for anybody except the people that make money. Yeah, I mean, tax taxi rides are super inconvenient, hard to get, recalling Central Dispatch, like, you know,
+
+Unknown Speaker  41:56  
+you have to pay cash, you know, the cars. But just like, all of it, just like, sucks.
+
+Speaker 1  42:03  
+I still remember the first time I took a I took an Uber, yeah, and I was, I took it to the National Capital Region. Year Up graduation. You probably were coming, but you probably coming later, and I was
+
+Speaker 2  42:20  
+going early, yeah, I remember you, but I remember you telling me about
+
+Speaker 1  42:27  
+I remember being like, Oh, dude, so how do I how do I pay you? Like, yeah, the app just takes care. I was like, oh
+
+Unknown Speaker  42:35  
+my god, so great. My
+
+Unknown Speaker  42:42  
+question was more great. My question was more around, like,
+
+Speaker 1  42:47  
+safety, like Uber Black to start like, I took a black car that was my first Uber. So it wasn't even a person's car all these crazy lawsuits that says that
+
+Speaker 2  42:57  
+every eight minutes under courts of sexual assault or harassment or
+
+Speaker 1  43:02  
+minutes under points of sexual assault or harassment, yeah. Well, what I've read is that they actually algorithmically add the data to be able to flag when women might be at risk for an assault given the pickup location, the time of night, driver profiles, like, you know, whatever, and they've been ignoring it. Yeah, I agree with me. I didn't hear like that
+
+Speaker 2  43:32  
+exact thing, but that they had when to prevent it and choose
+
+Speaker 4  43:35  
+to not do anything. To
+
+Speaker 1  43:44  
+and they want to treat their drivers like their contract workers, and they're not responsible for their
+
+Speaker 2  43:56  
+behavior. Yeah, you can select. Now, if you're a woman, you can select to only have women drivers. I've switched over to Lyft, but you can also say at night, I only
+
+Unknown Speaker  44:14  
+want women. It makes sense.
+
+Speaker 1  44:18  
+It makes sense that like the people designing those systems, a bunch of tech bros. But anyways, I think Uber, right? Like, they came in and disrupted the taxis and, like, I'm sure that they were pushing the boundaries on, like, regulatory like, Do you need a medallion by the letter of the law, would this person need a medallion in order to be able to pick people
+
+Unknown Speaker  44:48  
+up? Consider a ride share?
+
+Speaker 1  44:51  
+No and then. But basically what happened is like the public was so fed up with taxi system. It. And so happy with the service that they were getting delivered. They were telling their elected officials, don't you dare try to get rid of this, you know. And then public policy kind of followed along. So ultimately, I mean, in a democracy, that's why it should have worked, right? If the public decides this is how, this is what they want, then, like, the laws should follow the public will to some degree.
+
+Speaker 2  45:27  
+Yeah, I think especially when it's public land, so it's being stewarded by the Park Service. But this is the thing, right? And
+
+Speaker 1  45:40  
+again, what's going to happen is, like, there'll be a period of time where, like, people who are using agentic tools are going to be the ones scooping up all the reservations, and it's just gonna it's forced the parks to be, like, we have to move away from this system, which I think will be net positive, kind of force the conversation. It forced the conversation. And I think, like, you know, part of you wants to be part of the technical solution, like, you know, deliver something better.
+
+Speaker 5  46:10  
+So how do we make sure that the people using our tool are
+
+Unknown Speaker  46:16  
+how do we make sure it doesn't just handle increase in equity?
+
+Speaker 1  46:26  
+I mean, we don't like other than we make a really proactive effort to get the tool in the hands of the community, but it's a little bit like Pandora. I mean, right? Where do I spend all of my personal time and engagement to try to get people hyped up. I'm spending it in networks of communities who are most impacted by the social problems nonprofits are solving. And by spending my time there, that's where the buzz and the word of mouth is starting to take root. But I'm not going to stop anybody who wants to sign up for the platform. I think it'd be the same type of type of deal.
+
+Unknown Speaker  47:02  
+But Matt, the question is, like, is, I don't know, like with candora, I think I have a wedge that doesn't
+
+Speaker 1  47:11  
+require the agentic piece. Like I'm building agentic tools. I think some people will start to use them, and then over time I will, they'll probably get better and better and better. I want to be ready to capture that like That's not the thing that people are going to come for.
+
+Speaker 2  47:39  
+So you can do but what it means? What would you can drive a ledge with just offering people really customized options, like real time, granted, the agenda tool would make that even better. Yeah, I
+
+Speaker 1  48:03  
+Yeah, and I'm not sure that people are quite comfortable using it, yeah,
+
+Speaker 2  48:08  
+you know, so, right? But then when people, if they're not comfortable giving you the organizational information, are they then totally giving you the information about their families?
+
+Speaker 1  48:19  
+I mean, I don't think it's a matter of them being comfortable and giving me the information. I just think that people don't really trust it's not just a privacy thing. Just like, will it even be good? Like, it's a waste of my time, basically. I mean, we spent our entire lives talking to robots, and the experience is almost universally frustrating and bad. I mean, I had to call into American Express the other day to keep trying to get the claim for the router, and I was like, God, please help this be an AI driven agent. And it was like, slightly better than maybe it has been in the past, but it was still really frustrating, like it wasn't understanding the context. And like, I only call into customer service when I absolutely have to, so I should be able to tell you what's going on, and you should be able to understand this is something I need to route this guy directly to an agent for because, like, so you know, and like, I think because of that really negative experience, like, people are getting retrained with Claude and chat GPT, but those are new companies that they interact with the first time and they trust. They're like, Oh, wow, this chat experience is really good, but I don't think that that's widespread enough yet. So people see a chat function on a random website. They're not gonna think it's
+
+Unknown Speaker  49:45  
+probably really good. Even with health equity, I was trying to get problem solved.
+
+Unknown Speaker  49:53  
+They're good about routing you to a real person pretty quickly. But like, I've never been helped by. Your thought.
+
+Speaker 1  50:00  
+So I think that's why people are like, not, you know, like, and I think for outdoor rhythm again, I think if we do it and make it the primary thing, we're going to be ahead of our time. And so like, people are not gonna, like mass migrate into it. I don't think right away, but you might be poised to catch the curve. And in the meantime, you're still, you know, Google still index 10,000 of your pages, right? So people are still landing on your pages. Yeah. It's part of the problem is like people landing on our pages isn't really paying the bills right now, right?
+
+Speaker 2  50:51  
+They're not getting any of that advertisements. Yeah, I mean,
+
+Speaker 1  51:02  
+I can go check our advertising, but you know, we were, you know, somewhere between 50 cents and, like $1 a day or something. We're not getting enough clicks on those ads. Maybe it gets better over time, yeah, increased traffic, maybe increase ad quality, maybe Google starts to trust your site more and puts higher paying better ads on there. But I almost just, I feel like you have to think about those 10,000 pages. It's more of a marketing thing, like maybe they drive a tiny bit of revenue, but it's mostly like a funnel. So how do you convert that funnel into something that's paid like this? I mean, I think card, but
+
+Speaker 2  52:00  
+not about this particular kind of thing. And for me, I'm kind of like on the thing. And why is that not the product? I
+
+Speaker 2  52:20  
+do you think there's anything we currently have that is like the
+
+Speaker 2  52:39  
+product, like, should we help finding the gas station sometimes?
+
+Speaker 3  52:42  
+Was just asking if there's anything on our website that you think we can zero in as the product, but I was asking like for stating that maybe like, going through it, looking at the analytics, will be more helpful.
+
+Speaker 1  53:14  
+I mean, I guess it's just like, when you think across all the different things that we're offering, is there anything in there that starts to strike you as
+
+Speaker 1  53:22  
+a stronger wedge than that. Like, you know what? I think we continue to test the advertisements, site traffic, blah, blah, blah, but like, you know, I mean, we didn't know what to expect, right? I mean, I think when I put it in open, AI, it was like, oh, based on your site traffic, you should be able to get $1,000 a month in ADS revenue. And I'm like, Oh, well, that's great. And then we put them up, and I'm like, Yeah, I'm definitely getting like, 50 cents a day. You know, I'm getting like, $15 a month, not 1000 like, I don't maybe I need to plaster the website with ads everywhere or whatever, but I don't like the ads that are being shown on the site. You know, it's like sleep apnea, like somebody drooling or something. It's just like, they're not good
+
+Unknown Speaker  54:16  
+ads. You know, we have like,
+
+Speaker 1  54:20  
+you know, we have the notifications for the camp sites, which is working because I keep getting notifications every day, but then we've had a few people pay to have an opinion for those
+
+Unknown Speaker  54:33  
+but like,
+
+Speaker 1  54:34  
+that hasn't really picked up yet. I mean, I do think it'll be interesting to get through this camping season and see like, do we start to get to more traction on any of these individual tools? But like, campsite notifications doesn't really seem to be a super strong wedge yet. I mean, there's, you know, there's, like, multiple strong competitors out there, and like, Camp flare is free doesn't have as much functionality because you can't choose specific site. Dates, but like, you might be in that for some people, yeah, for the average person, like, whatever. I mean, you have your marketplace, which it sounds like you have not convinced any vendor to sign up for
+
+Unknown Speaker  55:19  
+yet, so I don't know, like it's built.
+
+Unknown Speaker  55:25  
+Your affiliate sales have
+
+Unknown Speaker  55:28  
+just kind of sputtered along, yeah, not super
+
+Unknown Speaker  55:32  
+strong and again, I don't know. You know,
+
+Speaker 1  55:40  
+we build product pages. Are those product pages kind of showing up a couple search results? Sure we started advertising different products on our campground pages, but seems like we're not getting tons and tons of clicks. I seat
+
+Speaker 1  56:14  
+belt. I mean, you've experimented with, like a marketplace where you can list, like custom trip itineraries. But that seems like that market's gonna get amended by AI like, why would you buy a custom itinerary? You
+
+Speaker 3  56:40  
+I, you know, like, what's when
+
+Unknown Speaker  56:46  
+you're showing a ton of stuff on the homepage, so it's overwhelming all the different
+
+Unknown Speaker  57:00  
+things. That's the thing. Like camping, camping is overwhelming, and
+
+Unknown Speaker  57:04  
+it's not like
+
+Speaker 1  57:06  
+nonprofit fundraising, where it's like, Well, hey, it's a little overwhelming. But guess what? That's your job. You are paid to do this thing. So like, you know, overcome the friction, go figure it out. That's what jobs are supposed to be. If it was so easy that everybody would do it, probably wouldn't get paid for it, right? Whereas camping is like, well, I could just go stay at a hotel,
+
+Unknown Speaker  57:30  
+spending this much effort to figure this thing out.
+
+Speaker 1  57:38  
+I don't know. Maybe in that situation, you education, you know, maybe a agentic tool that really purports to do it all for you, not necessarily for you, but like, you know, to really like be your
+
+Unknown Speaker  57:57  
+companion and
+
+Speaker 1  57:59  
+be your camp sage. Like to take it all off your hands, like, help you navigate all the friction points. Maybe that's a maybe that's it. I don't know. But, like, is there any individual products outside of that that you think is like, the thing I I can
+
+Unknown Speaker  58:25  
+see it, and I can see how, you know, like I said, it's the thing that I use almost the most at this
+
+Unknown Speaker  58:30  
+point. But I'm also
+
+Unknown Speaker  58:34  
+trying to, like, feed it to other people, and so I'm taking Other people's trip requests, and popping taking
+
+Speaker 2  59:01  
+other people's classes.
+
+Unknown Speaker  59:20  
+I'm scrolling through the website in my head, we
+
+Speaker 2  59:42  
+will need to wouldn't need to take down all the other stuff, right? Because it's still all built on that data. Because, like, I like that. People can search the map and look at weather pages and the filters the Green Book, also the heritage patches that now people can filter. If they want to be like, you know, I want to take my family, you don't have to take any
+
+Unknown Speaker  1:00:10  
+of that down. But like, how does that? I guess maybe that's, I mean, the
+
+Unknown Speaker  1:00:20  
+I mean, the campground companion, kind of tool would like those would all be tools in its toolbox, you know?
+
+Speaker 1  1:00:32  
+Oh, what I want to show you right now is this campground page, or what I want to show you right now. Is this weather widget, or what I want to show you right now is this green book, like report, you know, it's just deciding like, what it means to show you in the moment. I don't know how the product comes together in terms of like, to what extent do you still just let people, if they want, to just like, scroll through all that stuff on their own, versus how much do you kind of like, force them
+
+Unknown Speaker  1:01:09  
+through an agent. I think what's unique about algorithm
+
+Unknown Speaker  1:01:15  
+is that we had kind of everything because California,
+
+Speaker 1  1:01:19  
+143, but I think the problem that you have right now is that you have all these amazing things, and for somebody to really, truly, like, use them, they have to learn your whole system.
+
+Unknown Speaker  1:01:32  
+Well, I mean, it's like,
+
+Unknown Speaker  1:01:36  
+you know, Microsoft, like office. It's like,
+
+Speaker 1  1:01:40  
+you know, really important back in the day, but you had to learn Word and Excel, PowerPoint, access whatever, like, you had to learn all these things, yeah, and then people would list them on The resume, like, I
+
+Unknown Speaker  1:01:53  
+know how to use Microsoft Word.
+
+Speaker 1  1:02:00  
+Okay? And, yeah, I mean, for from an office productivity standpoint, like, that was huge, like, you needed all these tools. Now it's like, people don't, people don't want to have to learn Microsoft Office in order to figure out outdoor them for how to camp. Now, again, if you're an Office Professional, that's your job. Then you're like, oh my god, office is amazing.
+
+Speaker 5  1:02:35  
+It helps people do the job so much better. I'm willing to spend the time. What do you willing to continue to invest in that?
+
+Speaker 1  1:02:47  
+Do that camping to continue having all the individual pieces available, I need to, like, get, like, a early bird tool, and I need a notification. I notification before the weather widgets and any the campground pages and the Green books. You do need those, but it's just a matter of like, do users need to know all those tools and know how to get to them and activate them?
+
+Unknown Speaker  1:03:18  
+Or do, oh, you work with
+
+Unknown Speaker  1:03:21  
+me? Girls and I stopped here.
+
+Speaker 6  1:03:22  
+I me, the girls and I stopped here at the light, turn right onto Fourth Street. H, del Rosa senior Street, then immediately turn right into the parking lot.
+
+Speaker 7  1:03:33  
+Make a U turn, then turn left onto Fourth Street. H, Delarosa, senior street, I did,
+
+Speaker 3  1:03:41  
+but you're talking onto the recording. So recording,
+
+Speaker 7  1:03:48  
+make a U, turn solid. Ad Valero, then turn left onto Fourth Street. H De La Rosa, senior street. You.
+
+Transcribed by https://otter.ai

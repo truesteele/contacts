@@ -136,7 +136,7 @@ def main():
 
     # Filter to contacts needing rating
     if not args.force and not args.contact_id:
-        contacts = [c for c in contacts if not c.get("familiarity_rating")]
+        contacts = [c for c in contacts if c.get("familiarity_rating") is None]
 
     total = len(contacts)
     if args.test:

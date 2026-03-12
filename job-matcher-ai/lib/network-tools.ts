@@ -8,6 +8,14 @@ const NETWORK_SELECT_COLS =
   'ai_kindora_prospect_score, ai_kindora_prospect_type, ai_outdoorithm_fit, ' +
   'familiarity_rating, comms_last_date, comms_thread_count, ask_readiness';
 
+const CANDIDATE_SELECT_COLS =
+  'id, first_name, last_name, company, position, city, state, email, linkedin_url, headline, summary, ' +
+  'familiarity_rating, comms_last_date, comms_thread_count, comms_closeness, ' +
+  'enrich_current_title, enrich_current_company, enrich_current_since, ' +
+  'enrich_titles_held, enrich_companies_worked, enrich_skills, enrich_schools, ' +
+  'enrich_board_positions, enrich_volunteer_orgs, enrich_total_experience_years, ' +
+  'enrich_employment, enrich_education';
+
 export const networkTools: Anthropic.Tool[] = [
   {
     name: 'search_network',
@@ -69,6 +77,21 @@ export const networkTools: Anthropic.Tool[] = [
         location_state: {
           type: 'string',
           description: 'Filter by state. E.g., "California", "New York"',
+        },
+        title_keyword: {
+          type: 'string',
+          description:
+            'Search for contacts who have held a title containing this keyword (searches enrich_titles_held array and headline). E.g., "marketing", "engineering", "product".',
+        },
+        skill_keyword: {
+          type: 'string',
+          description:
+            'Search for contacts with a specific LinkedIn skill (searches enrich_skills array). E.g., "python", "fundraising", "seo".',
+        },
+        school_keyword: {
+          type: 'string',
+          description:
+            'Search for contacts who attended a specific school (searches enrich_schools array). E.g., "Harvard", "Stanford".',
         },
         sort_by: {
           type: 'string',
@@ -239,14 +262,77 @@ export const networkTools: Anthropic.Tool[] = [
       required: ['contact_ids'],
     },
   },
+  {
+    name: 'job_candidate_search',
+    description:
+      'Find contacts who could be candidates for a specific job role. Searches across enrichment data: career titles (enrich_titles_held), skills (enrich_skills), companies worked (enrich_companies_worked), education (enrich_schools), board positions, volunteer orgs, and LinkedIn summary. Combines semantic profile-embedding search with structured filtering on title keywords, skills, experience years, and location. Use when Justin asks "who in my network would be good for this role?" or "find candidates for X job."',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        job_description: {
+          type: 'string',
+          description:
+            'Natural language description of the role. Used for semantic search against profile embeddings. E.g., "Director of Marketing at a nonprofit focused on worker support, 10+ years experience, multi-channel growth, category creation, Bay Area"',
+        },
+        title_keywords: {
+          type: 'array',
+          items: { type: 'string' },
+          description:
+            'Keywords to match against titles held across their career (enrich_titles_held). E.g., ["marketing", "brand", "growth", "communications"]. Matches partial substrings.',
+        },
+        seniority_keywords: {
+          type: 'array',
+          items: { type: 'string' },
+          description:
+            'Seniority-level keywords that must co-occur with title_keywords. E.g., ["director", "vp", "head", "chief", "senior"]. If omitted, all seniority levels match.',
+        },
+        skill_keywords: {
+          type: 'array',
+          items: { type: 'string' },
+          description:
+            'Keywords to match against LinkedIn skills (enrich_skills). E.g., ["seo", "content strategy", "digital marketing"].',
+        },
+        company_keywords: {
+          type: 'array',
+          items: { type: 'string' },
+          description:
+            'Keywords to match against companies worked at (enrich_companies_worked). E.g., ["google", "facebook", "year up"]. Useful for finding nonprofit or industry experience.',
+        },
+        industry_signals: {
+          type: 'array',
+          items: { type: 'string' },
+          description:
+            'Keywords to search in headline, summary, company names, board positions, and volunteer orgs for industry/sector signals. E.g., ["nonprofit", "social impact", "equity", "mission-driven", "worker"].',
+        },
+        location_states: {
+          type: 'array',
+          items: { type: 'string' },
+          description:
+            'Filter to contacts in these states. E.g., ["California", "New York", "Illinois"]. Leave empty for all locations.',
+        },
+        min_familiarity: {
+          type: 'number',
+          description: 'Minimum familiarity rating (0-4). Default 1 (at least recognizes them).',
+        },
+        match_count: {
+          type: 'number',
+          description: 'Maximum candidates to return (default 30).',
+        },
+      },
+      required: ['job_description'],
+    },
+  },
 ];
 
 // ── Tool Implementations ─────────────────────────────────────────────
 
 async function searchNetwork(input: any): Promise<any> {
+  // Use enriched columns if title/skill/school filters are present
+  const needsEnrichment = input.title_keyword || input.skill_keyword || input.school_keyword;
+  const selectCols = needsEnrichment ? CANDIDATE_SELECT_COLS : NETWORK_SELECT_COLS;
   let query = supabase
     .from('contacts')
-    .select(NETWORK_SELECT_COLS);
+    .select(selectCols);
 
   if (input.familiarity_min != null) {
     query = query.gte('familiarity_rating', input.familiarity_min);
@@ -302,17 +388,50 @@ async function searchNetwork(input: any): Promise<any> {
   })();
 
   const limit = input.limit || 50;
+  // Over-fetch when post-filtering on enrichment arrays, since Supabase limit runs before our filter
+  const fetchLimit = needsEnrichment ? Math.max(limit * 5, 500) : limit;
   query = query
     .order(sortColumn, { ascending: false, nullsFirst: false })
     .order('comms_last_date', { ascending: false, nullsFirst: false })
-    .limit(limit);
+    .limit(fetchLimit);
 
   const { data, error } = await query;
   if (error) throw new Error(`Search failed: ${error.message}`);
 
+  let results = data || [];
+
+  // Post-filter on enrichment array fields (not supported by Supabase JS client)
+  if (input.title_keyword) {
+    const kw = input.title_keyword.toLowerCase();
+    results = results.filter((c: any) => {
+      const titles: string[] = c.enrich_titles_held || [];
+      const headline = (c.headline || '').toLowerCase();
+      return titles.some((t: string) => t.toLowerCase().includes(kw)) || headline.includes(kw);
+    });
+  }
+  if (input.skill_keyword) {
+    const kw = input.skill_keyword.toLowerCase();
+    results = results.filter((c: any) => {
+      const skills: string[] = c.enrich_skills || [];
+      return skills.some((s: string) => s.toLowerCase().includes(kw));
+    });
+  }
+  if (input.school_keyword) {
+    const kw = input.school_keyword.toLowerCase();
+    results = results.filter((c: any) => {
+      const schools: string[] = c.enrich_schools || [];
+      return schools.some((s: string) => s.toLowerCase().includes(kw));
+    });
+  }
+
+  // Trim to requested limit after post-filtering
+  if (results.length > limit) {
+    results = results.slice(0, limit);
+  }
+
   return {
-    count: data?.length || 0,
-    contacts: data || [],
+    count: results.length,
+    contacts: results,
   };
 }
 
@@ -437,7 +556,11 @@ async function getContactDetail(input: any): Promise<any> {
         'ai_proximity_score, ai_proximity_tier, ai_capacity_score, ai_capacity_tier, ' +
         'ai_kindora_prospect_score, ai_kindora_prospect_type, ai_outdoorithm_fit, ai_tags, ' +
         'familiarity_rating, comms_last_date, comms_thread_count, communication_history, ' +
-        'shared_institutions, ask_readiness, fec_donations, real_estate_data'
+        'shared_institutions, ask_readiness, fec_donations, real_estate_data, ' +
+        'enrich_current_title, enrich_current_company, enrich_current_since, ' +
+        'enrich_titles_held, enrich_companies_worked, enrich_skills, enrich_schools, ' +
+        'enrich_board_positions, enrich_volunteer_orgs, enrich_total_experience_years, ' +
+        'comms_closeness, comms_momentum'
     )
     .eq('id', input.contact_id)
     .single();
@@ -468,6 +591,21 @@ async function getContactDetail(input: any): Promise<any> {
     // Communication history summary
     comms_relationship_summary: commsHistory.relationship_summary || null,
     comms_recent_threads: recentThreads,
+    // Career enrichment data
+    career: {
+      current_title: contact.enrich_current_title,
+      current_company: contact.enrich_current_company,
+      current_since: contact.enrich_current_since,
+      total_experience_years: contact.enrich_total_experience_years,
+      titles_held: contact.enrich_titles_held,
+      companies_worked: contact.enrich_companies_worked,
+      skills: contact.enrich_skills,
+      schools: contact.enrich_schools,
+      board_positions: contact.enrich_board_positions,
+      volunteer_orgs: contact.enrich_volunteer_orgs,
+    },
+    comms_closeness: contact.comms_closeness,
+    comms_momentum: contact.comms_momentum,
   };
 }
 
@@ -633,6 +771,193 @@ async function goalSearch(input: any): Promise<any> {
   };
 }
 
+async function jobCandidateSearch(input: any): Promise<any> {
+  const matchCount = input.match_count || 30;
+  const minFamiliarity = input.min_familiarity ?? 1;
+  const titleKeywords = (input.title_keywords || []).map((k: string) => k.toLowerCase());
+  const seniorityKeywords = (input.seniority_keywords || []).map((k: string) => k.toLowerCase());
+  const skillKeywords = (input.skill_keywords || []).map((k: string) => k.toLowerCase());
+  const companyKeywords = (input.company_keywords || []).map((k: string) => k.toLowerCase());
+  const industrySignals = (input.industry_signals || []).map((k: string) => k.toLowerCase());
+  const locationStates = (input.location_states || []).map((s: string) => s.toLowerCase());
+
+  // Step 1: Semantic search on profile embeddings for the job description
+  const queryEmbedding = await generateEmbedding768(input.job_description);
+  const { data: semanticHits, error: semError } = await supabase.rpc('match_contacts_by_profile', {
+    query_embedding: queryEmbedding,
+    match_threshold: 0.25,
+    match_count: Math.max(matchCount * 4, 200), // Over-fetch for post-filtering
+  });
+  if (semError) throw new Error(`Semantic search failed: ${semError.message}`);
+
+  const semanticIds = (semanticHits || []).map((r: any) => r.id);
+  const semanticScoreMap = new Map((semanticHits || []).map((r: any) => [r.id, r.similarity]));
+
+  if (semanticIds.length === 0) {
+    return { job_description: input.job_description, count: 0, candidates: [] };
+  }
+
+  // Step 2: Fetch full enrichment profiles for semantic matches
+  // Supabase .in() has a practical limit, so batch if needed
+  const batchSize = 200;
+  let allProfiles: any[] = [];
+  for (let i = 0; i < semanticIds.length; i += batchSize) {
+    const batch = semanticIds.slice(i, i + batchSize);
+    const { data: profiles, error: profError } = await supabase
+      .from('contacts')
+      .select(CANDIDATE_SELECT_COLS)
+      .in('id', batch)
+      .gte('familiarity_rating', minFamiliarity);
+    if (profError) throw new Error(`Profile fetch failed: ${profError.message}`);
+    allProfiles.push(...(profiles || []));
+  }
+
+  // Step 3: Score each candidate based on structured enrichment data
+  const scored = allProfiles.map((c: any) => {
+    let score = 0;
+    const reasons: string[] = [];
+    const titlesHeld: string[] = (c.enrich_titles_held || []).map((t: string) => t.toLowerCase());
+    const skills: string[] = (c.enrich_skills || []).map((s: string) => s.toLowerCase());
+    const companies: string[] = (c.enrich_companies_worked || []).map((co: string) => co.toLowerCase());
+    const schools: string[] = (c.enrich_schools || []).map((s: string) => s.toLowerCase());
+    const boards: string[] = (c.enrich_board_positions || []).map((b: string) => b.toLowerCase());
+    const volunteerOrgs: string[] = (c.enrich_volunteer_orgs || []).map((v: string) => v.toLowerCase());
+    const headline = (c.headline || '').toLowerCase();
+    const summary = (c.summary || '').toLowerCase();
+
+    // Title matching: find titles that match both title keywords AND seniority keywords
+    const matchingTitles: string[] = [];
+    for (const title of titlesHeld) {
+      const hasTitle = titleKeywords.length === 0 || titleKeywords.some((k: string) => title.includes(k));
+      const hasSeniority = seniorityKeywords.length === 0 || seniorityKeywords.some((k: string) => title.includes(k));
+      if (hasTitle && hasSeniority && titleKeywords.length > 0) {
+        matchingTitles.push(title);
+      }
+    }
+    if (matchingTitles.length > 0) {
+      score += Math.min(matchingTitles.length * 3, 12);
+      reasons.push(`${matchingTitles.length} matching titles`);
+    }
+
+    // Also check headline/current position for title matches
+    if (titleKeywords.some((k: string) => headline.includes(k))) {
+      score += 2;
+      reasons.push('headline match');
+    }
+
+    // Skill matching
+    const matchingSkills = skillKeywords.filter((k: string) => skills.some((s: string) => s.includes(k)));
+    if (matchingSkills.length > 0) {
+      score += Math.min(matchingSkills.length * 2, 8);
+      reasons.push(`${matchingSkills.length} skill matches`);
+    }
+
+    // Company/industry experience matching
+    const matchingCompanies = companyKeywords.filter((k: string) => companies.some((co: string) => co.includes(k)));
+    if (matchingCompanies.length > 0) {
+      score += matchingCompanies.length * 2;
+      reasons.push(`worked at: ${matchingCompanies.join(', ')}`);
+    }
+
+    // Industry signals (search headline, summary, companies, boards, volunteer orgs)
+    const allText = [headline, summary, ...companies, ...boards, ...volunteerOrgs].join(' ');
+    const matchingSignals = industrySignals.filter((k: string) => allText.includes(k));
+    if (matchingSignals.length > 0) {
+      score += Math.min(matchingSignals.length * 2, 8);
+      reasons.push(`industry signals: ${matchingSignals.join(', ')}`);
+    }
+
+    // Board/volunteer involvement (general signal of mission-driven leadership)
+    if (boards.length > 0) {
+      score += 1;
+      reasons.push(`${boards.length} board positions`);
+    }
+    if (volunteerOrgs.length > 0) {
+      score += 1;
+      reasons.push(`${volunteerOrgs.length} volunteer orgs`);
+    }
+
+    // Familiarity bonus (stronger relationship = easier intro)
+    score += c.familiarity_rating;
+
+    // Semantic similarity bonus
+    const semScore: number = (semanticScoreMap.get(c.id) as number) || 0;
+    score += Math.round(semScore * 10);
+
+    // Location filter (if specified)
+    const contactState = (c.state || '').toLowerCase();
+    if (locationStates.length > 0 && contactState && !locationStates.some((s: string) => contactState.includes(s))) {
+      score -= 5; // Penalize but don't exclude — user can see location
+    }
+
+    return {
+      ...c,
+      candidate_score: score,
+      semantic_similarity: Math.round(semScore * 100) / 100,
+      matching_titles: matchingTitles.map((t: string) =>
+        // Re-capitalize from original array
+        (c.enrich_titles_held || []).find((orig: string) => orig.toLowerCase() === t) || t
+      ),
+      matching_skills: matchingSkills,
+      match_reasons: reasons,
+    };
+  });
+
+  // Step 4: Sort by score DESC, filter to top results
+  scored.sort((a: any, b: any) => b.candidate_score - a.candidate_score);
+  const topCandidates = scored.slice(0, matchCount);
+
+  // Step 5: Shape response with relevant enrichment highlights
+  const candidates = topCandidates.map((c: any) => ({
+    id: c.id,
+    first_name: c.first_name,
+    last_name: c.last_name,
+    current_title: c.enrich_current_title || c.position,
+    current_company: c.enrich_current_company || c.company,
+    headline: c.headline,
+    city: c.city,
+    state: c.state,
+    email: c.email,
+    linkedin_url: c.linkedin_url,
+    familiarity_rating: c.familiarity_rating,
+    comms_last_date: c.comms_last_date,
+    comms_thread_count: c.comms_thread_count,
+    comms_closeness: c.comms_closeness,
+    // Enrichment highlights
+    matching_titles: c.matching_titles?.slice(0, 5),
+    total_titles_held: (c.enrich_titles_held || []).length,
+    recent_titles: (c.enrich_titles_held || []).slice(0, 5),
+    companies_worked: (c.enrich_companies_worked || []).slice(0, 8),
+    schools: c.enrich_schools,
+    skills: (c.enrich_skills || []).slice(0, 12),
+    matching_skills: c.matching_skills,
+    board_positions: c.enrich_board_positions,
+    volunteer_orgs: c.enrich_volunteer_orgs,
+    total_experience_years: c.enrich_total_experience_years,
+    // Scoring
+    candidate_score: c.candidate_score,
+    semantic_similarity: c.semantic_similarity,
+    match_reasons: c.match_reasons,
+    // Brief bio excerpt
+    summary_excerpt: c.summary ? c.summary.substring(0, 250) : null,
+  }));
+
+  return {
+    job_description: input.job_description,
+    filters_applied: {
+      title_keywords: input.title_keywords,
+      seniority_keywords: input.seniority_keywords,
+      skill_keywords: input.skill_keywords,
+      company_keywords: input.company_keywords,
+      industry_signals: input.industry_signals,
+      location_states: input.location_states,
+      min_familiarity: minFamiliarity,
+    },
+    count: candidates.length,
+    candidates,
+  };
+}
+
 function escapeCSVValue(val: any): string {
   if (val == null) return '';
   const str = String(val);
@@ -710,6 +1035,8 @@ export async function executeNetworkToolCall(
         return await goalSearch(toolInput);
       case 'export_contacts':
         return await exportContacts(toolInput);
+      case 'job_candidate_search':
+        return await jobCandidateSearch(toolInput);
       default:
         throw new Error(`Unknown network tool: ${toolName}`);
     }

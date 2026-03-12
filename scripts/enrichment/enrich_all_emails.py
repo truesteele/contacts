@@ -1,335 +1,348 @@
 #!/usr/bin/env python3
 """
 Comprehensive Email Enrichment Script
-Uses Enrich Layer API to find both personal and work emails
-Tracks attempts to avoid duplicate lookups
+Uses Tomba API to find emails by name + domain or LinkedIn URL.
+Checks found emails against the invalid_emails blocklist before saving.
+Tracks attempts to avoid duplicate lookups.
+
+Usage:
+  python scripts/enrichment/enrich_all_emails.py --test          # 5 contacts only
+  python scripts/enrichment/enrich_all_emails.py --limit 50      # First 50
+  python scripts/enrichment/enrich_all_emails.py --dry-run       # Don't write to DB
+  python scripts/enrichment/enrich_all_emails.py                 # Full run
 """
 
 import os
 import sys
 import json
 import time
+import re
 import requests
+import argparse
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
+
+import psycopg2
+import psycopg2.extras
 from dotenv import load_dotenv
 from supabase import create_client, Client
-import argparse
 
-# Load environment variables
 load_dotenv()
 
-class ComprehensiveEmailEnricher:
-    def __init__(self, limit: int = None, test_mode: bool = False):
+TOMBA_API_KEY = os.getenv("TOMBA_API_KEY")
+TOMBA_SECRET_KEY = os.getenv("TOMBA_SECRET_KEY")
+
+# Regex to strip common company suffixes for domain guessing
+COMPANY_SUFFIXES = re.compile(
+    r'\b(Inc\.?|LLC|Ltd\.?|Corp\.?|Co\.?|Company|Group|Holdings|International|'
+    r'Incorporated|Limited|Corporation|PLC|LP|LLP|GmbH|AG|SA|SAS|BV|NV|Pty)\b\.?,?\s*',
+    re.IGNORECASE
+)
+
+
+def get_db_conn():
+    """Get a direct PostgreSQL connection for blocklist queries."""
+    return psycopg2.connect(
+        host="db.ypqsrejrsocebnldicke.supabase.co",
+        port=5432,
+        dbname="postgres",
+        user="postgres",
+        password=os.environ["SUPABASE_DB_PASSWORD"],
+    )
+
+
+def load_invalid_emails(conn) -> set:
+    """Load all known-invalid emails from the blocklist table."""
+    cur = conn.cursor()
+    cur.execute("SELECT LOWER(email_address) FROM invalid_emails")
+    return {row[0] for row in cur.fetchall()}
+
+
+def guess_domain(company: str) -> Optional[str]:
+    """Guess a company's email domain from its name."""
+    if not company:
+        return None
+    cleaned = COMPANY_SUFFIXES.sub('', company.lower()).strip().rstrip('.,- ')
+    if not cleaned:
+        return None
+    slug = re.sub(r'[^a-z0-9\s]', '', cleaned).strip().replace(' ', '')
+    return f"{slug}.com" if slug else None
+
+
+class TombaEmailEnricher:
+    def __init__(self, limit: int = None, test_mode: bool = False, dry_run: bool = False):
         self.supabase = None
-        self.api_key = os.environ.get('ENRICH_LAYER_API_KEY')
+        self.db_conn = None
+        self.invalid_emails = set()
         self.limit = limit
         self.test_mode = test_mode
+        self.dry_run = dry_run
         self.stats = {
             'total_processed': 0,
-            'personal_emails_found': 0,
-            'work_emails_found': 0,
-            'both_emails_found': 0,
+            'emails_found': 0,
+            'blocked_invalid': 0,
             'no_emails_found': 0,
             'already_attempted': 0,
-            'failed': 0
+            'failed': 0,
         }
-        
-        if not self.api_key:
-            raise ValueError("ENRICH_LAYER_API_KEY not found in environment variables")
-    
+
+        if not TOMBA_API_KEY or not TOMBA_SECRET_KEY:
+            raise ValueError("TOMBA_API_KEY and TOMBA_SECRET_KEY must be set in environment")
+
     def connect(self):
-        """Connect to Supabase"""
+        """Connect to Supabase and load blocklist."""
         url = os.environ.get("SUPABASE_URL")
         key = os.environ.get("SUPABASE_SERVICE_KEY")
-        
+
         if not url or not key:
-            print("✗ Missing SUPABASE_URL or SUPABASE_SERVICE_KEY")
+            print("ERROR: Missing SUPABASE_URL or SUPABASE_SERVICE_KEY")
             return False
-            
+
         self.supabase = create_client(url, key)
-        print("✓ Connected to Supabase")
+        print("  Database: connected (Supabase)")
+
+        self.db_conn = get_db_conn()
+        self.invalid_emails = load_invalid_emails(self.db_conn)
+        print(f"  Invalid emails blocklist: {len(self.invalid_emails)} entries")
         return True
-    
-    def get_personal_email(self, linkedin_url: str) -> Optional[List[str]]:
-        """Call Enrich Layer Personal Email API"""
-        api_endpoint = 'https://enrichlayer.com/api/v2/contact-api/personal-email'
-        
+
+    def find_email_tomba(self, first_name: str, last_name: str, domain: str) -> Optional[str]:
+        """Call Tomba email-finder API. Returns email if found with good confidence + name match."""
         headers = {
-            'Authorization': f'Bearer {self.api_key}'
+            "X-Tomba-Key": TOMBA_API_KEY,
+            "X-Tomba-Secret": TOMBA_SECRET_KEY,
         }
-        
-        params = {
-            'url': linkedin_url
-        }
-        
+
         try:
-            response = requests.get(api_endpoint, headers=headers, params=params, timeout=30)
-            
-            if response.status_code == 200:
-                data = response.json()
-                if isinstance(data, dict):
-                    emails = data.get('emails', data.get('personal_emails', []))
-                    if emails and isinstance(emails, list):
-                        return emails
-                    if data.get('email'):
-                        return [data['email']]
-                elif isinstance(data, list) and data:
-                    return data
+            resp = requests.get(
+                "https://api.tomba.io/v1/email-finder",
+                params={
+                    "domain": domain,
+                    "first_name": first_name,
+                    "last_name": last_name,
+                },
+                headers=headers,
+                timeout=15,
+            )
+
+            if resp.status_code == 429:
+                print("    Tomba: rate limited / quota exhausted")
                 return None
-            else:
+            if resp.status_code != 200:
                 return None
-                
-        except requests.exceptions.RequestException:
-            return None
-    
-    def get_work_email(self, linkedin_url: str) -> Optional[List[str]]:
-        """Call Enrich Layer Work Email API"""
-        api_endpoint = 'https://enrichlayer.com/api/v2/contact-api/work-email'
-        
-        headers = {
-            'Authorization': f'Bearer {self.api_key}'
-        }
-        
-        params = {
-            'url': linkedin_url
-        }
-        
-        try:
-            response = requests.get(api_endpoint, headers=headers, params=params, timeout=30)
-            
-            if response.status_code == 200:
-                data = response.json()
-                # Debug: print response structure
+
+            data = resp.json().get("data", {})
+            email = data.get("email")
+            score = data.get("score", 0)
+            tomba_first = (data.get("first_name") or "").lower().strip()
+            tomba_last = (data.get("last_name") or "").lower().strip()
+
+            if not email or score < 70:
+                return None
+
+            # Name matching guard
+            first_lower = first_name.lower().strip()
+            last_lower = last_name.lower().strip()
+            first_ok = (tomba_first == first_lower
+                        or first_lower.startswith(tomba_first)
+                        or tomba_first.startswith(first_lower))
+            last_ok = (tomba_last == last_lower
+                       or last_lower.startswith(tomba_last)
+                       or tomba_last.startswith(last_lower))
+
+            if not (first_ok and last_ok):
                 if self.test_mode:
-                    print(f"    Work email response: {data}")
-                if isinstance(data, dict):
-                    emails = data.get('emails', data.get('work_emails', []))
-                    if emails and isinstance(emails, list):
-                        return emails
-                    if data.get('email'):
-                        return [data['email']]
-                elif isinstance(data, list) and data:
-                    return data
+                    print(f"    Tomba: name mismatch — got {tomba_first} {tomba_last}")
                 return None
-            else:
-                if self.test_mode:
-                    print(f"    Work email API error: {response.status_code}")
-                return None
-                
-        except requests.exceptions.RequestException as e:
+
+            return email
+
+        except requests.RequestException as e:
             if self.test_mode:
-                print(f"    Work email request failed: {e}")
+                print(f"    Tomba request error: {e}")
             return None
-    
+
     def get_contacts_without_email(self) -> List[Dict]:
-        """Get contacts that have LinkedIn URL but no email, excluding those already attempted"""
-        # First, get all contacts without email
+        """Get contacts without email, excluding already-attempted."""
         query = self.supabase.table('contacts').select(
             'id, first_name, last_name, linkedin_url, company, position, '
-            'email, work_email, personal_email, enrich_person_from_profile'
-        ).not_.is_('linkedin_url', 'null').neq('linkedin_url', '')
-        
-        # Get contacts with no email addresses at all (all three fields must be empty)
-        query = query.is_('email', 'null').is_('work_email', 'null').is_('personal_email', 'null')
-        
+            'enrich_current_company, email, enrich_person_from_profile'
+        ).is_('email', 'null')
+
         if self.limit:
-            query = query.limit(self.limit * 2)  # Get extra to account for filtering
-        
+            query = query.limit(self.limit * 2)
+
         response = query.execute()
         contacts = response.data
-        
-        # Filter out contacts where we've already attempted email lookup
-        filtered_contacts = []
+
+        filtered = []
         for contact in contacts:
-            # Check if we've already attempted email enrichment
             enrich_data = contact.get('enrich_person_from_profile')
             if enrich_data:
                 try:
                     data = json.loads(enrich_data) if isinstance(enrich_data, str) else enrich_data
-                    # Skip if we've already attempted email lookup
-                    if data.get('email_lookup_attempted'):
+                    if data.get('tomba_lookup_attempted'):
                         self.stats['already_attempted'] += 1
                         continue
-                except:
+                except Exception:
                     pass
-            
-            # Only process if NO email exists
-            if not contact.get('email') and not contact.get('work_email') and not contact.get('personal_email'):
-                filtered_contacts.append(contact)
-                if self.limit and len(filtered_contacts) >= self.limit:
+
+            if not contact.get('email'):
+                filtered.append(contact)
+                if self.limit and len(filtered) >= self.limit:
                     break
-        
-        return filtered_contacts
-    
-    def update_contact_emails(self, contact_id: int, contact: Dict, personal_emails: List[str] = None, work_emails: List[str] = None) -> bool:
-        """Update contact with email addresses and track attempt"""
+
+        return filtered
+
+    def update_contact(self, contact_id: int, contact: Dict, email: Optional[str]) -> bool:
+        """Update contact with found email and track the attempt."""
+        if self.dry_run:
+            return True
+
         try:
             updates = {}
-            
-            # Get existing enrichment data
+
             enrich_data = {}
             if contact.get('enrich_person_from_profile'):
                 try:
-                    enrich_data = json.loads(contact['enrich_person_from_profile']) if isinstance(contact['enrich_person_from_profile'], str) else contact['enrich_person_from_profile']
-                except:
+                    enrich_data = (json.loads(contact['enrich_person_from_profile'])
+                                   if isinstance(contact['enrich_person_from_profile'], str)
+                                   else contact['enrich_person_from_profile'])
+                except Exception:
                     pass
-            
-            # Mark that we've attempted email lookup
-            enrich_data['email_lookup_attempted'] = True
-            enrich_data['email_lookup_date'] = datetime.now().isoformat()
-            
-            # Add personal email if found and not already present
-            if personal_emails and personal_emails[0]:
-                if not contact.get('personal_email'):
-                    updates['personal_email'] = personal_emails[0]
-                    enrich_data['personal_email_found'] = True
-                # Set as primary email if no email exists
-                if not contact.get('email'):
-                    updates['email'] = personal_emails[0]
-                    updates['email_type'] = 'personal'
+
+            enrich_data['tomba_lookup_attempted'] = True
+            enrich_data['tomba_lookup_date'] = datetime.now().isoformat()
+
+            if email:
+                updates['email'] = email
+                enrich_data['tomba_email_found'] = True
             else:
-                enrich_data['personal_email_found'] = False
-            
-            # Add work email if found and not already present
-            if work_emails and work_emails[0]:
-                if not contact.get('work_email'):
-                    updates['work_email'] = work_emails[0]
-                    enrich_data['work_email_found'] = True
-                # Set as primary email if no email exists and no personal email was found
-                if not contact.get('email') and not personal_emails:
-                    updates['email'] = work_emails[0]
-                    updates['email_type'] = 'work'
-            else:
-                enrich_data['work_email_found'] = False
-            
-            # Always update enrichment data to track attempt
+                enrich_data['tomba_email_found'] = False
+
             updates['enrich_person_from_profile'] = json.dumps(enrich_data)
-            
-            response = self.supabase.table('contacts').update(updates).eq('id', contact_id).execute()
+
+            self.supabase.table('contacts').update(updates).eq('id', contact_id).execute()
             return True
         except Exception as e:
-            print(f"  ✗ Failed to update contact {contact_id}: {e}")
+            print(f"    ERROR updating contact {contact_id}: {e}")
             return False
-    
+
     def run(self):
-        """Main enrichment process"""
+        """Main enrichment loop."""
         if not self.connect():
             return False
-        
-        print("\n🔍 Fetching contacts without email addresses...")
+
+        print("\n  Fetching contacts without email...")
         contacts = self.get_contacts_without_email()
-        
+
         if not contacts:
-            print("No contacts need email enrichment (or all have been attempted)")
-            print(f"Skipped {self.stats['already_attempted']} contacts with previous lookup attempts")
+            print("  No contacts need email enrichment.")
+            print(f"  Skipped {self.stats['already_attempted']} with previous Tomba attempts")
             return True
-        
-        print(f"Found {len(contacts)} contacts without email addresses")
-        print(f"Skipped {self.stats['already_attempted']} contacts with previous lookup attempts")
-        
+
+        print(f"  Contacts to process: {len(contacts)}")
+        print(f"  Skipped (already attempted): {self.stats['already_attempted']}")
+        print(f"  Mode: {'DRY-RUN' if self.dry_run else 'LIVE'}")
+
         if self.test_mode:
-            print("⚠️ TEST MODE - Processing first 5 contacts only")
+            print("  TEST MODE — processing first 5 only")
             contacts = contacts[:5]
-        
-        print("\n🚀 Starting comprehensive email enrichment...")
+
+        print("\n" + "=" * 60)
+        print("TOMBA EMAIL ENRICHMENT")
         print("=" * 60)
-        
+
         for i, contact in enumerate(contacts, 1):
             self.stats['total_processed'] += 1
-            
-            print(f"\n[{i}/{len(contacts)}] {contact['first_name']} {contact.get('last_name', '')}")
-            if contact.get('company'):
-                print(f"  Company: {contact['company']}")
-            print(f"  LinkedIn: {contact['linkedin_url']}")
-            
-            # Try to get personal email (this endpoint returns actual email addresses)
-            personal_emails = self.get_personal_email(contact['linkedin_url'])
-            if personal_emails:
-                print(f"  📧 Email found: {personal_emails[0]}")
-                self.stats['personal_emails_found'] += 1
-            
-            # Note: Work email endpoint doesn't exist in the API
-            # The profile endpoint returns work_emails but they're usually empty
-            # So we'll just use the personal email endpoint
-            work_emails = None
-            
-            # Track results
-            if personal_emails and work_emails:
-                self.stats['both_emails_found'] += 1
-            elif not personal_emails and not work_emails:
+            first = contact.get('first_name') or ''
+            last = contact.get('last_name') or ''
+            name = f"{first} {last}".strip()
+            company = contact.get('company') or contact.get('enrich_current_company') or ''
+
+            print(f"\n  [{i}/{len(contacts)}] {name} | {company}")
+
+            # Need at least a name and company to search
+            if not first or not last:
+                print("    Skip: missing first or last name")
                 self.stats['no_emails_found'] += 1
-                print("  ⚠ No emails found")
-            
-            # Update database (always update to track attempt)
-            if self.update_contact_emails(contact['id'], contact, personal_emails, work_emails):
-                if personal_emails or work_emails:
-                    print(f"  ✓ Updated contact")
+                self.update_contact(contact['id'], contact, None)
+                continue
+
+            domain = guess_domain(company) if company else None
+            if not domain:
+                print("    Skip: no domain from company name")
+                self.stats['no_emails_found'] += 1
+                self.update_contact(contact['id'], contact, None)
+                continue
+
+            # Tomba lookup
+            email = self.find_email_tomba(first, last, domain)
+
+            if email:
+                # Check against invalid emails blocklist
+                if email.lower() in self.invalid_emails:
+                    print(f"    Found {email} but it's in invalid blocklist — skipping")
+                    self.stats['blocked_invalid'] += 1
+                    email = None
                 else:
-                    print(f"  ✓ Marked as attempted")
+                    print(f"    Found: {email}")
+                    self.stats['emails_found'] += 1
+            else:
+                self.stats['no_emails_found'] += 1
+
+            if self.update_contact(contact['id'], contact, email):
+                if not email:
+                    pass  # silent for misses
             else:
                 self.stats['failed'] += 1
-            
-            # Rate limiting
-            if not self.test_mode:
-                time.sleep(0.5)  # ~2 requests per second per endpoint
-            
-            # Progress update every 25 contacts
+
+            # Rate limiting (Tomba free tier)
+            time.sleep(1.0)
+
+            # Progress every 25
             if i % 25 == 0 and i < len(contacts):
-                print(f"\n  → Progress: {i}/{len(contacts)} processed...")
-                print(f"     Personal emails: {self.stats['personal_emails_found']}")
-                print(f"     Work emails: {self.stats['work_emails_found']}")
-        
+                print(f"\n  --- Progress: {i}/{len(contacts)} "
+                      f"({self.stats['emails_found']} found) ---")
+
         self.print_summary()
+
+        if self.db_conn:
+            self.db_conn.close()
         return True
-    
+
     def print_summary(self):
-        """Print enrichment summary"""
+        """Print summary."""
         print("\n" + "=" * 60)
-        print("📊 COMPREHENSIVE EMAIL ENRICHMENT SUMMARY")
+        print("TOMBA ENRICHMENT SUMMARY")
         print("=" * 60)
-        print(f"Total processed:        {self.stats['total_processed']:,}")
-        print(f"Personal emails found:  {self.stats['personal_emails_found']:,}")
-        print(f"Work emails found:      {self.stats['work_emails_found']:,}")
-        print(f"Both types found:       {self.stats['both_emails_found']:,}")
-        print(f"No emails found:        {self.stats['no_emails_found']:,}")
-        print(f"Previously attempted:   {self.stats['already_attempted']:,}")
-        print(f"Failed to update:       {self.stats['failed']:,}")
-        print("=" * 60)
-        
-        # Estimate credits (2 per contact - one for personal, one for work)
-        credits_used = self.stats['total_processed'] * 2
-        print(f"\n💳 Estimated credits used: {credits_used} (2 lookups per contact)")
-        
-        # Success rate
+        print(f"  Total processed:      {self.stats['total_processed']}")
+        print(f"  Emails found:         {self.stats['emails_found']}")
+        print(f"  Blocked (invalid):    {self.stats['blocked_invalid']}")
+        print(f"  No email found:       {self.stats['no_emails_found']}")
+        print(f"  Previously attempted: {self.stats['already_attempted']}")
+        print(f"  Failed to update:     {self.stats['failed']}")
         if self.stats['total_processed'] > 0:
-            success_rate = ((self.stats['personal_emails_found'] + self.stats['work_emails_found'] - self.stats['both_emails_found']) / self.stats['total_processed']) * 100
-            print(f"📈 Overall success rate: {success_rate:.1f}%")
+            rate = self.stats['emails_found'] / self.stats['total_processed'] * 100
+            print(f"  Hit rate:             {rate:.1f}%")
+        if self.dry_run:
+            print(f"  Mode:                 DRY-RUN (no DB writes)")
+        print("=" * 60)
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description='Comprehensive email enrichment for contacts'
-    )
-    parser.add_argument(
-        '--limit', '-l',
-        type=int,
-        help='Limit number of contacts to enrich'
-    )
-    parser.add_argument(
-        '--test', '-t',
-        action='store_true',
-        help='Test mode - process only 5 contacts'
-    )
-    
+    parser = argparse.ArgumentParser(description='Tomba email enrichment for contacts')
+    parser.add_argument('--limit', '-l', type=int, help='Limit number of contacts')
+    parser.add_argument('--test', '-t', action='store_true', help='Test mode (5 contacts)')
+    parser.add_argument('--dry-run', '-d', action='store_true', help="Don't write to database")
     args = parser.parse_args()
-    
+
     try:
-        enricher = ComprehensiveEmailEnricher(limit=args.limit, test_mode=args.test)
+        enricher = TombaEmailEnricher(limit=args.limit, test_mode=args.test, dry_run=args.dry_run)
         success = enricher.run()
         sys.exit(0 if success else 1)
     except Exception as e:
-        print(f"✗ Error: {e}")
+        print(f"ERROR: {e}")
         sys.exit(1)
 
 

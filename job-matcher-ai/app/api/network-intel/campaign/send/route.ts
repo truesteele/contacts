@@ -5,6 +5,8 @@ export const runtime = 'edge';
 const FROM_EMAIL = 'Justin Steele <justin@outdoorithmcollective.org>';
 const REPLY_TO = 'justinrsteele@gmail.com';
 
+type SendMethod = 'resend' | 'gmail_draft';
+
 interface ResendEmailResponse {
   id?: string;
   error?: { message?: string };
@@ -51,6 +53,83 @@ async function sendWithResend(params: {
   }
 
   return { id: payload.id ?? null };
+}
+
+// ── Gmail Draft ─────────────────────────────────────────────────────────
+
+async function getGmailAccessToken(): Promise<string> {
+  const clientId = process.env.GMAIL_CLIENT_ID;
+  const clientSecret = process.env.GMAIL_CLIENT_SECRET;
+  const refreshToken = process.env.GMAIL_REFRESH_TOKEN;
+  if (!clientId || !clientSecret || !refreshToken) {
+    throw new Error('Gmail OAuth credentials not configured (GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN)');
+  }
+
+  const response = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken,
+      client_id: clientId,
+      client_secret: clientSecret,
+    }),
+  });
+
+  const data = await response.json() as { access_token?: string; error?: string };
+  if (!response.ok || !data.access_token) {
+    throw new Error(`Gmail token refresh failed: ${data.error || response.status}`);
+  }
+  return data.access_token;
+}
+
+function buildRfc2822Message(params: {
+  toEmail: string;
+  subject: string;
+  textBody: string;
+}): string {
+  const lines = [
+    `To: ${params.toEmail}`,
+    `Subject: ${params.subject}`,
+    'MIME-Version: 1.0',
+    'Content-Type: text/plain; charset=UTF-8',
+    '',
+    params.textBody,
+  ];
+  return lines.join('\r\n');
+}
+
+function base64UrlEncode(str: string): string {
+  const encoder = new TextEncoder();
+  const bytes = encoder.encode(str);
+  let binary = '';
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function createGmailDraft(params: {
+  toEmail: string;
+  subject: string;
+  htmlBody: string;
+  textBody: string;
+}): Promise<{ id: string | null }> {
+  const accessToken = await getGmailAccessToken();
+  const raw = base64UrlEncode(buildRfc2822Message(params));
+
+  const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/drafts', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ message: { raw } }),
+  });
+
+  const data = await response.json() as { id?: string; error?: { message?: string } };
+  if (!response.ok) {
+    throw new Error(`Gmail draft failed: ${data.error?.message || response.status}`);
+  }
+  return { id: data.id ?? null };
 }
 
 function textToHtml(body: string): string {
@@ -144,18 +223,22 @@ Justin`;
 interface SendResult {
   contact_id: number;
   contact_name: string;
-  status: 'sent' | 'failed' | 'skipped';
+  status: 'sent' | 'drafted' | 'failed' | 'skipped';
   resend_id?: string;
+  gmail_draft_id?: string;
+  method?: SendMethod;
   error?: string;
 }
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { contact_ids, email_type } = body as {
+    const { contact_ids, email_type, send_method } = body as {
       contact_ids?: number[];
       email_type?: string;
+      send_method?: SendMethod;
     };
+    const method: SendMethod = send_method === 'gmail_draft' ? 'gmail_draft' : 'resend';
 
     if (!contact_ids || contact_ids.length === 0) {
       return Response.json(
@@ -267,20 +350,53 @@ export async function POST(req: Request) {
       try {
         const htmlBody = textToHtml(messageBody);
 
-        const sendData = await sendWithResend({
-          toEmail,
-          subject,
-          htmlBody,
-          textBody: messageBody,
-        });
+        let statusEntry: Record<string, unknown>;
+        let resultEntry: SendResult;
+
+        if (method === 'gmail_draft') {
+          const draftData = await createGmailDraft({
+            toEmail,
+            subject,
+            htmlBody,
+            textBody: messageBody,
+          });
+          statusEntry = {
+            drafted_at: new Date().toISOString(),
+            gmail_draft_id: draftData.id || null,
+            method: 'gmail_draft',
+          };
+          resultEntry = {
+            contact_id: c.id,
+            contact_name: contactName,
+            status: 'drafted',
+            gmail_draft_id: draftData.id || undefined,
+            method: 'gmail_draft',
+          };
+        } else {
+          const sendData = await sendWithResend({
+            toEmail,
+            subject,
+            htmlBody,
+            textBody: messageBody,
+          });
+          statusEntry = {
+            sent_at: new Date().toISOString(),
+            resend_id: sendData.id || null,
+            method: 'resend',
+          };
+          resultEntry = {
+            contact_id: c.id,
+            contact_name: contactName,
+            status: 'sent',
+            resend_id: sendData.id || undefined,
+            method: 'resend',
+          };
+        }
 
         // Update send_status in campaign_2026
         const updatedSendStatus = {
           ...sendStatus,
-          [email_type]: {
-            sent_at: new Date().toISOString(),
-            resend_id: sendData?.id || null,
-          },
+          [email_type]: statusEntry,
         };
         const updatedCampaign = { ...campaign, send_status: updatedSendStatus };
 
@@ -289,14 +405,10 @@ export async function POST(req: Request) {
           .update({ campaign_2026: updatedCampaign })
           .eq('id', c.id);
 
-        results.push({
-          contact_id: c.id,
-          contact_name: contactName,
-          status: 'sent',
-          resend_id: sendData.id || undefined,
-        });
+        results.push(resultEntry);
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Send failed';
+        console.error(`[Campaign Send] Failed for ${contactName} (${c.id}):`, message);
         results.push({
           contact_id: c.id,
           contact_name: contactName,
@@ -306,13 +418,15 @@ export async function POST(req: Request) {
       }
     }
 
-    const totalSent = results.filter((r) => r.status === 'sent').length;
+    const totalSent = results.filter((r) => r.status === 'sent' || r.status === 'drafted').length;
     const totalFailed = results.filter((r) => r.status === 'failed').length;
     const totalSkipped = results.filter((r) => r.status === 'skipped').length;
+    const totalDrafted = results.filter((r) => r.status === 'drafted').length;
 
     return Response.json({
       results,
       total_sent: totalSent,
+      total_drafted: totalDrafted,
       total_failed: totalFailed,
       total_skipped: totalSkipped,
     });

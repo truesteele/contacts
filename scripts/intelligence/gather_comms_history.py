@@ -12,6 +12,7 @@ Usage:
   python scripts/intelligence/gather_comms_history.py --min-proximity 40  # Warm+ contacts
   python scripts/intelligence/gather_comms_history.py                   # Full run
   python scripts/intelligence/gather_comms_history.py --force           # Re-collect already gathered
+  python scripts/intelligence/gather_comms_history.py --recent-days 3   # Only threads from last 3 days
 """
 
 import os
@@ -21,7 +22,7 @@ import time
 import base64
 import argparse
 import email.utils
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -184,7 +185,8 @@ class CommsHistoryGatherer:
 
     def __init__(self, test_mode=False, test_count=5, force=False,
                  collect_only=False, summarize_only=False,
-                 min_proximity=0, workers=10, ids_file=None):
+                 min_proximity=0, workers=10, ids_file=None,
+                 recent_days=None, ids=None):
         self.test_mode = test_mode
         self.test_count = test_count
         self.force = force
@@ -193,6 +195,8 @@ class CommsHistoryGatherer:
         self.min_proximity = min_proximity
         self.workers = workers
         self.ids_file = ids_file
+        self.ids = ids
+        self.recent_days = recent_days  # None = all time
         self.supabase: Optional[Client] = None
         self.openai: Optional[OpenAI] = None
         self.gmail_services: dict = {}
@@ -246,11 +250,13 @@ class CommsHistoryGatherer:
 
     def get_contacts(self) -> list[dict]:
         """Fetch contacts with email addresses, ordered by proximity score."""
-        # If --ids-file is provided, only fetch those specific contacts
-        if self.ids_file:
+        # If --ids or --ids-file is provided, only fetch those specific contacts
+        target_ids = self.ids
+        if not target_ids and self.ids_file:
             import json as _json
             with open(self.ids_file) as f:
                 target_ids = _json.load(f)
+        if target_ids:
             all_contacts = []
             for i in range(0, len(target_ids), 100):
                 batch = target_ids[i:i + 100]
@@ -283,7 +289,7 @@ class CommsHistoryGatherer:
             if self.min_proximity > 0:
                 query = query.gte("ai_proximity_score", self.min_proximity)
 
-            if not self.force and not self.summarize_only:
+            if not self.force and not self.summarize_only and not self.recent_days:
                 query = query.is_("comms_last_gathered_at", "null")
 
             response = query.execute()
@@ -360,6 +366,11 @@ class CommsHistoryGatherer:
         for em in contact_emails:
             email_queries.append(f"from:{em} OR to:{em}")
         query = " OR ".join(f"({q})" for q in email_queries)
+
+        # Restrict to recent threads if --recent-days is set
+        if self.recent_days:
+            cutoff = (datetime.now() - timedelta(days=self.recent_days)).strftime("%Y/%m/%d")
+            query = f"({query}) after:{cutoff}"
 
         threads = []
         try:
@@ -817,17 +828,25 @@ def main():
                         help="Concurrent workers (default: 10)")
     parser.add_argument("--ids-file", type=str, default=None,
                         help="JSON file with list of contact IDs to process")
+    parser.add_argument("--ids", type=str, default=None,
+                        help="Comma-separated contact IDs to process")
+    parser.add_argument("--recent-days", type=int, default=None,
+                        help="Only find threads from the last N days (default: all time)")
     args = parser.parse_args()
+
+    ids = [int(x.strip()) for x in args.ids.split(",")] if args.ids else None
 
     gatherer = CommsHistoryGatherer(
         test_mode=args.test,
         test_count=args.count,
-        force=args.force,
+        force=args.force or bool(ids),
         collect_only=args.collect_only,
         summarize_only=args.summarize_only,
         min_proximity=args.min_proximity,
         workers=args.workers,
         ids_file=args.ids_file,
+        recent_days=args.recent_days,
+        ids=ids,
     )
     success = gatherer.run()
     sys.exit(0 if success else 1)

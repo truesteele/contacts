@@ -2,10 +2,17 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
+import { MessageDetailSheet } from '@/components/campaign/message-detail-sheet';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import {
   Select,
@@ -15,6 +22,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
 import {
   ArrowLeft,
   ArrowUp,
@@ -29,8 +38,12 @@ import {
   Search,
   Filter,
   X,
-  Clock,
+  Send,
+  SendHorizonal,
   MessageSquare,
+  Clock,
+  Plus,
+  Check,
   AlertTriangle,
   ChevronDown,
   ChevronRight,
@@ -45,6 +58,7 @@ interface CampaignContact {
   company: string | null;
   position: string | null;
   email: string | null;
+  email_2: string | null;
   list: string | null;
   persona: string | null;
   ask_amount: number | null;
@@ -55,7 +69,7 @@ interface CampaignContact {
   subject: string | null;
   has_outreach: boolean;
   has_copy: boolean;
-  send_status: Record<string, { sent_at?: string; drafted_at?: string }> | null;
+  send_status: Record<string, { sent_at?: string; drafted_at?: string; resend_id?: string; gmail_draft_id?: string; method?: string }> | null;
   donation: { amount: number; donated_at: string; source: string } | null;
   responded_at: string | null;
   sidelined_reason: string | null;
@@ -73,6 +87,7 @@ interface CampaignStats {
 
 // ── Constants ──────────────────────────────────────────────────────────
 
+const API_PREFIX = '/api/network-intel/sally';
 const GOAL = 100_000;
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string }> = {
@@ -105,6 +120,14 @@ const LIFECYCLE_LABELS: Record<string, string> = {
 
 type BcdSortField = 'name' | 'list' | 'ask_amount' | 'persona';
 
+const SOURCE_OPTIONS = [
+  { value: 'personal_outreach', label: 'Personal Outreach' },
+  { value: 'email_1', label: 'Email 1' },
+  { value: 'email_2', label: 'Email 2' },
+  { value: 'email_3', label: 'Email 3' },
+  { value: 'other', label: 'Other' },
+];
+
 // ── Helpers ────────────────────────────────────────────────────────────
 
 function getContactStatus(c: CampaignContact): string {
@@ -112,7 +135,7 @@ function getContactStatus(c: CampaignContact): string {
   if (c.responded_at) return 'responded';
   if (c.send_status && Object.keys(c.send_status).length > 0) {
     const entries = Object.values(c.send_status);
-    const allGmailDrafts = entries.every((e: any) => e.method === 'gmail_draft');
+    const allGmailDrafts = entries.every((e) => e.method === 'gmail_draft');
     if (allGmailDrafts) return 'gmail_draft';
     return 'sent';
   }
@@ -122,6 +145,10 @@ function getContactStatus(c: CampaignContact): string {
 function formatCurrency(amount: number): string {
   if (amount >= 1000) return `$${(amount / 1000).toFixed(amount % 1000 === 0 ? 0 : 1)}K`;
   return `$${amount.toLocaleString()}`;
+}
+
+function resolveEmail(c: CampaignContact): string | null {
+  return c.email || c.email_2 || null;
 }
 
 // ── Activity types ────────────────────────────────────────────────────
@@ -210,6 +237,8 @@ export default function SallyCampaignPage() {
   const [stats, setStats] = useState<CampaignStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedContactId, setSelectedContactId] = useState<number | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   // Lists B-D filter state
   const [bcdSearch, setBcdSearch] = useState('');
@@ -220,9 +249,26 @@ export default function SallyCampaignPage() {
   const [bcdSortBy, setBcdSortBy] = useState<BcdSortField>('ask_amount');
   const [bcdSortOrder, setBcdSortOrder] = useState<'asc' | 'desc'>('desc');
 
+  // Send state
+  const [sendMethod, setSendMethod] = useState<'resend' | 'gmail_draft'>('gmail_draft');
+  const [sendingIds, setSendingIds] = useState<Set<number>>(new Set());
+  const [sendingAllA, setSendingAllA] = useState(false);
+  const [sendingPreEmail, setSendingPreEmail] = useState(false);
+  const [sendingEmail1, setSendingEmail1] = useState(false);
+
+  // Activity tab state
+  const [donationContactSearch, setDonationContactSearch] = useState('');
+  const [donationContactId, setDonationContactId] = useState<number | null>(null);
+  const [donationAmount, setDonationAmount] = useState('');
+  const [donationDate, setDonationDate] = useState(new Date().toISOString().split('T')[0]);
+  const [donationSource, setDonationSource] = useState('personal_outreach');
+  const [recordingDonation, setRecordingDonation] = useState(false);
+  const [donationSuccess, setDonationSuccess] = useState(false);
+  const [respondingIds, setRespondingIds] = useState<Set<number>>(new Set());
+
   const loadData = useCallback(async () => {
     try {
-      const res = await fetch('/api/network-intel/sally/campaign');
+      const res = await fetch(`${API_PREFIX}/campaign`);
       if (!res.ok) throw new Error('Failed to load Sally campaign data');
       const data = await res.json();
       setContacts(data.contacts || []);
@@ -334,9 +380,213 @@ export default function SallyCampaignPage() {
     setBcdSearch('');
   }, []);
 
+  // ── Send handlers ──────────────────────────────────────────────────
+
+  const sendCampaignEmails = useCallback(async (
+    contactIds: number[],
+    emailType: string,
+  ): Promise<{ total_sent: number; total_failed: number; total_skipped: number; errors: string[] }> => {
+    const BATCH_SIZE = 20;
+    let total_sent = 0;
+    let total_failed = 0;
+    let total_skipped = 0;
+    const errors: string[] = [];
+
+    for (let i = 0; i < contactIds.length; i += BATCH_SIZE) {
+      const batch = contactIds.slice(i, i + BATCH_SIZE);
+      const res = await fetch(`${API_PREFIX}/campaign/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contact_ids: batch, email_type: emailType, send_method: sendMethod }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Send failed (${res.status})`);
+      }
+      const result = await res.json();
+      console.log('[Sally Campaign Send] batch result:', result);
+      total_sent += (result.total_sent || 0) + (result.total_drafted || 0);
+      total_failed += result.total_failed || 0;
+      total_skipped += result.total_skipped || 0;
+      for (const r of result.results || []) {
+        if (r.status === 'failed' && r.error) errors.push(`${r.contact_name}: ${r.error}`);
+      }
+    }
+
+    return { total_sent, total_failed, total_skipped, errors };
+  }, [sendMethod]);
+
+  const handleSendOne = useCallback(async (contact: CampaignContact) => {
+    const email = resolveEmail(contact);
+    if (!email) return;
+    const name = `${contact.first_name} ${contact.last_name}`.trim();
+    const action = sendMethod === 'gmail_draft' ? 'Create Gmail draft for' : 'Send to';
+    if (!window.confirm(`${action} ${name} at ${email}?`)) return;
+
+    setSendingIds((prev) => new Set(prev).add(contact.id));
+    try {
+      const result = await sendCampaignEmails([contact.id], 'personal_outreach');
+      if (result.total_failed > 0) {
+        alert(`Failed: ${result.errors.join('; ') || 'Unknown error'}`);
+      }
+      await loadData();
+    } catch (err) {
+      alert(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setSendingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(contact.id);
+        return next;
+      });
+    }
+  }, [sendMethod, sendCampaignEmails, loadData]);
+
+  const handleSendAllA = useCallback(async () => {
+    const unsent = listAContacts.filter((c) => {
+      const status = getContactStatus(c);
+      return status === 'draft' && c.channel === 'email' && resolveEmail(c);
+    });
+    if (unsent.length === 0) return;
+    const action = sendMethod === 'gmail_draft' ? 'Create Gmail drafts for' : 'Send personal outreach to';
+    if (!window.confirm(`${action} ${unsent.length} unsent List A contacts?`)) return;
+
+    setSendingAllA(true);
+    try {
+      await sendCampaignEmails(unsent.map((c) => c.id), 'personal_outreach');
+      await loadData();
+    } catch {
+      // loadData will show current state regardless
+    } finally {
+      setSendingAllA(false);
+    }
+  }, [listAContacts, sendCampaignEmails, loadData, sendMethod]);
+
+  const handleSendPreEmail = useCallback(async () => {
+    const eligible = bcdAllContacts.filter((c) => {
+      const status = getContactStatus(c);
+      const hasSent = c.send_status && c.send_status['pre_email_note'];
+      return !hasSent && status !== 'donated' && (c.lifecycle === 'prior_donor' || c.lifecycle === 'lapsed') && resolveEmail(c);
+    });
+    if (eligible.length === 0) return;
+    if (!window.confirm(`Send pre-email notes to ${eligible.length} prior donor/lapsed contacts?`)) return;
+
+    setSendingPreEmail(true);
+    try {
+      await sendCampaignEmails(eligible.map((c) => c.id), 'pre_email_note');
+      await loadData();
+    } catch {
+      // loadData will show current state regardless
+    } finally {
+      setSendingPreEmail(false);
+    }
+  }, [bcdAllContacts, sendCampaignEmails, loadData]);
+
+  const handleSendEmail1 = useCallback(async () => {
+    const eligible = bcdAllContacts.filter((c) => {
+      const hasSent = c.send_status && c.send_status['email_1'];
+      return !hasSent && resolveEmail(c);
+    });
+    if (eligible.length === 0) return;
+    if (!window.confirm(`Send Email 1 to ${eligible.length} contacts in Lists B-D?`)) return;
+
+    setSendingEmail1(true);
+    try {
+      await sendCampaignEmails(eligible.map((c) => c.id), 'email_1');
+      await loadData();
+    } catch {
+      // loadData will show current state regardless
+    } finally {
+      setSendingEmail1(false);
+    }
+  }, [bcdAllContacts, sendCampaignEmails, loadData]);
+
   // ── Activity feed ────────────────────────────────────────────────────
 
   const activityEvents = useMemo(() => buildActivityFeed(contacts), [contacts]);
+
+  // Contacts matching donation search (for autocomplete)
+  const donationSearchResults = useMemo(() => {
+    if (!donationContactSearch || donationContactSearch.length < 2) return [];
+    const term = donationContactSearch.toLowerCase();
+    return contacts
+      .filter((c) =>
+        `${c.first_name} ${c.last_name}`.toLowerCase().includes(term) ||
+        (c.company || '').toLowerCase().includes(term)
+      )
+      .slice(0, 8);
+  }, [contacts, donationContactSearch]);
+
+  const selectedDonationContact = useMemo(
+    () => (donationContactId ? contacts.find((c) => c.id === donationContactId) : null),
+    [contacts, donationContactId]
+  );
+
+  // Auto-fill ask amount when contact selected
+  useEffect(() => {
+    if (selectedDonationContact?.ask_amount && !donationAmount) {
+      setDonationAmount(String(selectedDonationContact.ask_amount));
+    }
+  }, [selectedDonationContact, donationAmount]);
+
+  const handleRecordDonation = useCallback(async () => {
+    if (!donationContactId || !donationAmount) return;
+    setRecordingDonation(true);
+    try {
+      const res = await fetch(`${API_PREFIX}/campaign/${donationContactId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          section: 'donation',
+          value: {
+            amount: Number(donationAmount),
+            donated_at: donationDate,
+            source: donationSource,
+          },
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to record donation');
+      setDonationSuccess(true);
+      setTimeout(() => setDonationSuccess(false), 2000);
+      // Reset form
+      setDonationContactSearch('');
+      setDonationContactId(null);
+      setDonationAmount('');
+      setDonationDate(new Date().toISOString().split('T')[0]);
+      setDonationSource('personal_outreach');
+      await loadData();
+    } catch {
+      // loadData shows current state
+    } finally {
+      setRecordingDonation(false);
+    }
+  }, [donationContactId, donationAmount, donationDate, donationSource, loadData]);
+
+  const handleMarkResponded = useCallback(async (contact: CampaignContact) => {
+    const name = `${contact.first_name} ${contact.last_name}`.trim();
+    if (!window.confirm(`Mark ${name} as responded?`)) return;
+
+    setRespondingIds((prev) => new Set(prev).add(contact.id));
+    try {
+      const res = await fetch(`${API_PREFIX}/campaign/${contact.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          section: 'responded_at',
+          value: new Date().toISOString(),
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to record response');
+      await loadData();
+    } catch {
+      // loadData shows current state
+    } finally {
+      setRespondingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(contact.id);
+        return next;
+      });
+    }
+  }, [loadData]);
 
   function getBcdSortIcon(field: BcdSortField) {
     if (bcdSortBy !== field) return <ArrowUpDown className="w-3 h-3 ml-1 opacity-40" />;
@@ -355,7 +605,6 @@ export default function SallyCampaignPage() {
       (c) => c.send_status && Object.keys(c.send_status).length > 0
     ).length;
 
-    // Determine campaign phase based on current date
     const now = new Date();
     const phases = [
       { name: 'Personal Outreach', start: '2026-03-02', end: '2026-03-09' },
@@ -604,7 +853,11 @@ export default function SallyCampaignPage() {
                       {sidelinedContacts.map((c) => (
                         <div
                           key={c.id}
-                          className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-muted/30 transition-colors text-sm"
+                          className="flex items-center gap-3 px-2 py-1.5 rounded-md hover:bg-muted/30 cursor-pointer transition-colors text-sm"
+                          onClick={() => {
+                            setSelectedContactId(c.id);
+                            setSheetOpen(true);
+                          }}
                         >
                           <span className="font-medium">
                             {c.first_name} {c.last_name}
@@ -628,11 +881,57 @@ export default function SallyCampaignPage() {
 
           {/* ── List A Tab ── */}
           <TabsContent value="list-a">
+            <TooltipProvider delayDuration={300}>
             <div className="mt-2">
+              <div className={cn(
+                'rounded-lg px-3 py-2 mb-3 text-xs flex items-center gap-2',
+                sendMethod === 'gmail_draft'
+                  ? 'bg-amber-50 border border-amber-200 text-amber-800'
+                  : 'bg-blue-50 border border-blue-200 text-blue-800'
+              )}>
+                <span className="font-medium">Send via:</span>
+                <select
+                  value={sendMethod}
+                  onChange={(e) => setSendMethod(e.target.value as 'resend' | 'gmail_draft')}
+                  className="text-xs font-medium border rounded px-2 py-1 bg-white"
+                >
+                  <option value="gmail_draft">Gmail Draft &rarr; sally.steele@gmail.com</option>
+                  <option value="resend">Resend &rarr; sally@outdoorithmcollective.org</option>
+                </select>
+                <span className="text-[10px] opacity-70">
+                  {sendMethod === 'gmail_draft' ? 'Creates drafts you send manually' : 'Sends immediately via Resend'}
+                </span>
+              </div>
               <div className="flex items-center justify-between mb-3">
                 <div className="text-xs text-muted-foreground">
                   {listAContacts.length} personal outreach contacts &mdash; sorted by ask amount
                 </div>
+                {(() => {
+                  const unsentCount = listAContacts.filter((c) =>
+                    getContactStatus(c) === 'draft' && c.channel === 'email' && resolveEmail(c)
+                  ).length;
+                  if (unsentCount === 0) return null;
+                  return (
+                    <Button
+                      size="sm"
+                      onClick={handleSendAllA}
+                      disabled={sendingAllA || sendingIds.size > 0}
+                      className="gap-1.5"
+                    >
+                      {sendingAllA ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          {sendMethod === 'gmail_draft' ? 'Drafting...' : 'Sending...'}
+                        </>
+                      ) : (
+                        <>
+                          <SendHorizonal className="w-3.5 h-3.5" />
+                          {sendMethod === 'gmail_draft' ? `Draft All Unsent (${unsentCount})` : `Send All Unsent (${unsentCount})`}
+                        </>
+                      )}
+                    </Button>
+                  );
+                })()}
               </div>
 
               {/* Table */}
@@ -647,16 +946,25 @@ export default function SallyCampaignPage() {
                         <th className="text-right px-3 py-2 font-medium text-xs text-muted-foreground">Ask</th>
                         <th className="text-center px-3 py-2 font-medium text-xs text-muted-foreground hidden md:table-cell">Channel</th>
                         <th className="text-center px-3 py-2 font-medium text-xs text-muted-foreground w-20">Status</th>
+                        <th className="text-center px-3 py-2 font-medium text-xs text-muted-foreground w-16"></th>
                       </tr>
                     </thead>
                     <tbody>
                       {listAContacts.map((c, idx) => {
                         const status = getContactStatus(c);
                         const config = STATUS_CONFIG[status];
+                        const isEmail = c.channel === 'email';
+                        const hasEmail = !!resolveEmail(c);
+                        const isSending = sendingIds.has(c.id);
+                        const canSend = isEmail && hasEmail && status === 'draft' && !sendingAllA && !sendingIds.has(c.id);
                         return (
                           <tr
                             key={c.id}
-                            className="border-b last:border-b-0 hover:bg-muted/30 transition-colors"
+                            className="border-b last:border-b-0 hover:bg-muted/30 cursor-pointer transition-colors"
+                            onClick={() => {
+                              setSelectedContactId(c.id);
+                              setSheetOpen(true);
+                            }}
                           >
                             <td className="px-3 py-2.5 text-xs text-muted-foreground font-mono">{idx + 1}</td>
                             <td className="px-3 py-2.5">
@@ -680,26 +988,110 @@ export default function SallyCampaignPage() {
                                 <span className="text-xs">{config.label}</span>
                               </div>
                             </td>
+                            <td className="px-3 py-2.5 text-center">
+                              {canSend && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-7 w-7 p-0"
+                                      disabled={isSending}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleSendOne(c);
+                                      }}
+                                    >
+                                      {isSending ? (
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                      ) : (
+                                        <Send className="w-3.5 h-3.5" />
+                                      )}
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>{sendMethod === 'gmail_draft' ? 'Create Gmail draft' : 'Send email now'}</TooltipContent>
+                                </Tooltip>
+                              )}
+                              {status === 'sent' && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-7 w-7 p-0 text-yellow-600 hover:text-yellow-700"
+                                      disabled={respondingIds.has(c.id)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleMarkResponded(c);
+                                      }}
+                                    >
+                                      {respondingIds.has(c.id) ? (
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                      ) : (
+                                        <MessageSquare className="w-3.5 h-3.5" />
+                                      )}
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Mark as responded</TooltipContent>
+                                </Tooltip>
+                              )}
+                            </td>
                           </tr>
                         );
                       })}
-                      {listAContacts.length === 0 && (
-                        <tr>
-                          <td colSpan={6} className="px-3 py-8 text-center text-sm text-muted-foreground">
-                            No List A contacts yet
-                          </td>
-                        </tr>
-                      )}
                     </tbody>
                   </table>
                 </div>
               </div>
             </div>
+            </TooltipProvider>
           </TabsContent>
 
           {/* ── Lists B-D Tab ── */}
           <TabsContent value="lists-bcd">
+            <TooltipProvider delayDuration={300}>
             <div className="mt-2">
+              {/* Bulk send buttons */}
+              <div className="flex items-center gap-2 mb-3 flex-wrap">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleSendPreEmail}
+                  disabled={sendingPreEmail || sendingEmail1}
+                  className="gap-1.5"
+                >
+                  {sendingPreEmail ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="w-3.5 h-3.5" />
+                      Send Pre-Email Notes
+                    </>
+                  )}
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSendEmail1}
+                  disabled={sendingEmail1 || sendingPreEmail}
+                  className="gap-1.5"
+                >
+                  {sendingEmail1 ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <SendHorizonal className="w-3.5 h-3.5" />
+                      Send Email 1
+                    </>
+                  )}
+                </Button>
+              </div>
+
               {/* Search + count */}
               <div className="flex items-center gap-3 mb-2">
                 <div className="relative flex-1 max-w-sm">
@@ -825,6 +1217,7 @@ export default function SallyCampaignPage() {
                             Status
                           </span>
                         </th>
+                        <th className="text-center px-3 py-2 w-[50px]"></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -834,7 +1227,11 @@ export default function SallyCampaignPage() {
                         return (
                           <tr
                             key={c.id}
-                            className="border-b last:border-b-0 hover:bg-muted/30 transition-colors"
+                            className="border-b last:border-b-0 hover:bg-muted/30 cursor-pointer transition-colors"
+                            onClick={() => {
+                              setSelectedContactId(c.id);
+                              setSheetOpen(true);
+                            }}
                           >
                             <td className="px-3 py-2.5">
                               <div className="font-medium">{c.first_name} {c.last_name}</div>
@@ -868,12 +1265,37 @@ export default function SallyCampaignPage() {
                                 <span className="text-xs">{config.label}</span>
                               </div>
                             </td>
+                            <td className="px-3 py-2.5 text-center">
+                              {status === 'sent' && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-7 w-7 p-0 text-yellow-600 hover:text-yellow-700"
+                                      disabled={respondingIds.has(c.id)}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleMarkResponded(c);
+                                      }}
+                                    >
+                                      {respondingIds.has(c.id) ? (
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                      ) : (
+                                        <MessageSquare className="w-3.5 h-3.5" />
+                                      )}
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Mark as responded</TooltipContent>
+                                </Tooltip>
+                              )}
+                            </td>
                           </tr>
                         );
                       })}
                       {bcdFiltered.length === 0 && (
                         <tr>
-                          <td colSpan={6} className="px-3 py-8 text-center text-sm text-muted-foreground">
+                          <td colSpan={7} className="px-3 py-8 text-center text-sm text-muted-foreground">
                             No contacts match the current filters
                           </td>
                         </tr>
@@ -883,11 +1305,149 @@ export default function SallyCampaignPage() {
                 </ScrollArea>
               </Card>
             </div>
+            </TooltipProvider>
           </TabsContent>
 
           {/* ── Activity Tab ── */}
           <TabsContent value="activity">
             <div className="mt-2 space-y-4">
+              {/* Record Donation form */}
+              <Card className="p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <Plus className="w-4 h-4 text-green-600" />
+                  <span className="text-sm font-medium">Record Donation</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Contact search */}
+                  <div className="relative sm:col-span-2">
+                    <label className="text-xs text-muted-foreground mb-1 block">Contact</label>
+                    {selectedDonationContact ? (
+                      <div className="flex items-center gap-2 h-9 rounded-md border px-3 bg-muted/30">
+                        <span className="text-sm font-medium">
+                          {selectedDonationContact.first_name} {selectedDonationContact.last_name}
+                        </span>
+                        {selectedDonationContact.company && (
+                          <span className="text-xs text-muted-foreground">
+                            &mdash; {selectedDonationContact.company}
+                          </span>
+                        )}
+                        <button
+                          onClick={() => {
+                            setDonationContactId(null);
+                            setDonationContactSearch('');
+                            setDonationAmount('');
+                          }}
+                          className="ml-auto text-muted-foreground hover:text-foreground"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search by name..."
+                          value={donationContactSearch}
+                          onChange={(e) => setDonationContactSearch(e.target.value)}
+                          className="pl-9"
+                        />
+                        {donationSearchResults.length > 0 && (
+                          <div className="absolute z-20 top-full mt-1 w-full bg-popover border rounded-md shadow-md max-h-48 overflow-y-auto">
+                            {donationSearchResults.map((c) => (
+                              <button
+                                key={c.id}
+                                className="w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors"
+                                onClick={() => {
+                                  setDonationContactId(c.id);
+                                  setDonationContactSearch('');
+                                  if (c.ask_amount) setDonationAmount(String(c.ask_amount));
+                                }}
+                              >
+                                <span className="font-medium">{c.first_name} {c.last_name}</span>
+                                {c.company && (
+                                  <span className="text-muted-foreground ml-1">&mdash; {c.company}</span>
+                                )}
+                                {c.ask_amount && (
+                                  <span className="text-muted-foreground ml-1 font-mono text-xs">
+                                    ({formatCurrency(c.ask_amount)} ask)
+                                  </span>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Amount */}
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Amount ($)</label>
+                    <Input
+                      type="number"
+                      placeholder="5000"
+                      value={donationAmount}
+                      onChange={(e) => setDonationAmount(e.target.value)}
+                    />
+                  </div>
+
+                  {/* Date */}
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Date</label>
+                    <Input
+                      type="date"
+                      value={donationDate}
+                      onChange={(e) => setDonationDate(e.target.value)}
+                    />
+                  </div>
+
+                  {/* Source */}
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Source</label>
+                    <Select value={donationSource} onValueChange={setDonationSource}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SOURCE_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Record button */}
+                  <div className="flex items-end">
+                    <Button
+                      onClick={handleRecordDonation}
+                      disabled={!donationContactId || !donationAmount || recordingDonation}
+                      className="gap-1.5 w-full"
+                    >
+                      {recordingDonation ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Recording...
+                        </>
+                      ) : donationSuccess ? (
+                        <>
+                          <Check className="w-4 h-4" />
+                          Recorded!
+                        </>
+                      ) : (
+                        <>
+                          <DollarSign className="w-4 h-4" />
+                          Record Donation
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+
+              <Separator />
+
               {/* Activity feed */}
               <div>
                 <div className="flex items-center gap-2 mb-3">
@@ -900,15 +1460,19 @@ export default function SallyCampaignPage() {
 
                 {activityEvents.length === 0 ? (
                   <div className="flex items-center justify-center h-32 text-sm text-muted-foreground">
-                    No activity yet &mdash; campaign data will appear here once pipeline runs
+                    No activity yet &mdash; send some emails to get started
                   </div>
                 ) : (
-                  <ScrollArea className="h-[calc(100vh-320px)] min-h-[300px]">
+                  <ScrollArea className="h-[calc(100vh-480px)] min-h-[300px]">
                     <div className="space-y-1">
                       {activityEvents.map((event, idx) => (
                         <div
                           key={`${event.contactId}-${event.type}-${event.timestamp}-${idx}`}
-                          className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted/30 transition-colors"
+                          className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted/30 transition-colors cursor-pointer"
+                          onClick={() => {
+                            setSelectedContactId(event.contactId);
+                            setSheetOpen(true);
+                          }}
                         >
                           {/* Icon */}
                           <div className={cn(
@@ -952,6 +1516,15 @@ export default function SallyCampaignPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Message detail sheet — uses Sally's API routes */}
+      <MessageDetailSheet
+        contactId={selectedContactId}
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        onUpdated={loadData}
+        apiPrefix={API_PREFIX}
+      />
     </main>
   );
 }

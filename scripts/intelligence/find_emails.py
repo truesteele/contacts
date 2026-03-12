@@ -31,6 +31,9 @@ from pydantic import BaseModel, Field
 
 load_dotenv()
 
+TOMBA_API_KEY = os.getenv("TOMBA_API_KEY")
+TOMBA_SECRET_KEY = os.getenv("TOMBA_SECRET_KEY")
+
 
 # ── Pydantic Schema ──────────────────────────────────────────────────
 
@@ -386,6 +389,9 @@ CATCH_ALL_DOMAINS = {
 # Track credit usage across the session
 _credits_used = 0
 
+# Proxy config (set via --proxy flag or auto-detected from env)
+_proxy_config = None  # Set to {"https": "http://user:pass@host:port"} when enabled
+
 
 def check_zerobounce_credits() -> int:
     """Check remaining ZeroBounce credit balance."""
@@ -393,7 +399,8 @@ def check_zerobounce_credits() -> int:
     if not api_key:
         raise ValueError("ZEROBOUNCE_API_KEY not set in environment")
 
-    resp = requests.get(f"{ZEROBOUNCE_BASE}/getcredits", params={"api_key": api_key}, timeout=10)
+    resp = requests.get(f"{ZEROBOUNCE_BASE}/getcredits", params={"api_key": api_key},
+                        timeout=10, proxies=_proxy_config)
     resp.raise_for_status()
     data = resp.json()
     return int(data.get("Credits", 0))
@@ -416,14 +423,25 @@ def verify_email(email_addr: str, max_retries: int = 2) -> dict | None:
                 f"{ZEROBOUNCE_BASE}/validate",
                 params={"api_key": api_key, "email": email_addr, "ip_address": ""},
                 timeout=30,
+                proxies=_proxy_config,
             )
 
-            # Rate limit: ZeroBounce returns 429 if >80K/10sec, triggers 1-min block
+            # Rate limit or IP block
             if resp.status_code == 429:
                 wait = 65  # 1-min block + buffer
                 print(f"    ZeroBounce rate limited, waiting {wait}s...")
                 time.sleep(wait)
                 continue
+
+            # Credit exhaustion or auth errors — stop immediately, don't retry
+            if resp.status_code in (401, 402, 403):
+                print(f"    ZeroBounce auth/credit error (HTTP {resp.status_code}). Credits may be exhausted.")
+                return None
+
+            # Cloudflare block (error code 1015) — stop
+            if "error code: 1015" in resp.text:
+                print(f"    ZeroBounce IP blocked by Cloudflare. Wait ~1 hour before retrying.")
+                return None
 
             resp.raise_for_status()
             data = resp.json()
@@ -811,7 +829,7 @@ def test_verify():
         return
 
     if credits < 3:
-        print("  ERROR: Need at least 3 credits for test (have {credits})")
+        print(f"  ERROR: Need at least 3 credits for test (have {credits})")
         return
 
     # Test 3 emails: one likely valid, one invalid, one catch-all domain
@@ -995,7 +1013,29 @@ def main():
                         help="Minimum confidence to accept (default: 70)")
     parser.add_argument("--workers", type=int, default=50,
                         help="ZeroBounce concurrent workers (default: 50)")
+    parser.add_argument("--offset", type=int, default=0,
+                        help="Skip first N contacts (for resuming after credit refill)")
+    parser.add_argument("--proxy", action="store_true",
+                        help="Route ZeroBounce requests through SmartProxy (from env vars)")
+    parser.add_argument("--ids", type=str, default=None,
+                        help="Comma-separated contact IDs to process")
+    parser.add_argument("--skip-tomba", action="store_true",
+                        help="Skip Tomba email-finder lookup (conserve 25/month free quota)")
     args = parser.parse_args()
+
+    # Set up proxy if requested
+    global _proxy_config
+    if args.proxy:
+        p_user = os.environ.get("PROXY_USERNAME", "")
+        p_pass = os.environ.get("PROXY_PASSWORD", "")
+        p_host = os.environ.get("PROXY_HOSTNAME", "")
+        p_port = os.environ.get("PROXY_PORT", "")
+        if p_user and p_host:
+            proxy_url = f"http://{p_user}:{p_pass}@{p_host}:{p_port}"
+            _proxy_config = {"http": proxy_url, "https": proxy_url}
+            print(f"  Proxy: {p_host}:{p_port} (enabled)")
+        else:
+            print("  WARNING: --proxy requested but PROXY_* env vars not set, running direct")
 
     if args.test_domains:
         test_domains()
@@ -1017,10 +1057,24 @@ def main():
 
 # ── Pipeline ─────────────────────────────────────────────────────────
 
-def fetch_contacts(conn, limit=None):
+def fetch_contacts(conn, limit=None, offset=0, ids=None):
     """Fetch contacts missing email, ordered by ai_proximity_score DESC."""
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    cur.execute("""
+    if ids:
+        query = """
+            SELECT id, first_name, last_name, company, enrich_current_company,
+                   enrich_current_title, position, linkedin_url,
+                   ai_proximity_score, ai_proximity_tier
+            FROM contacts
+            WHERE id = ANY(%s)
+            AND (email IS NULL OR email = '')
+            AND first_name IS NOT NULL AND first_name != ''
+            AND last_name IS NOT NULL AND last_name != ''
+            ORDER BY COALESCE(ai_proximity_score, 0) DESC
+        """
+        cur.execute(query, (ids,))
+        return cur.fetchall()
+    query = """
         SELECT id, first_name, last_name, company, enrich_current_company,
                enrich_current_title, position, linkedin_url,
                ai_proximity_score, ai_proximity_tier
@@ -1029,19 +1083,135 @@ def fetch_contacts(conn, limit=None):
         AND first_name IS NOT NULL AND first_name != ''
         AND last_name IS NOT NULL AND last_name != ''
         ORDER BY COALESCE(ai_proximity_score, 0) DESC
-    """)
-    contacts = cur.fetchall()
+    """
+    if offset > 0:
+        query += f" OFFSET {int(offset)}"
     if limit:
-        contacts = contacts[:limit]
-    return contacts
+        query += f" LIMIT {int(limit)}"
+    cur.execute(query)
+    return cur.fetchall()
 
 
-def process_contact(contact, openai_client, zb_workers, min_confidence, dry_run):
+def load_invalid_emails(conn) -> set[str]:
+    """Load all known-invalid emails from the invalid_emails table."""
+    cur = conn.cursor()
+    cur.execute("SELECT LOWER(email_address) FROM invalid_emails")
+    return {row[0] for row in cur.fetchall()}
+
+
+def save_invalid_emails(conn, contact_id: int, invalid_results: list[tuple[str, dict]], dry_run: bool = False):
+    """
+    Save ZeroBounce-confirmed invalid emails to invalid_emails table.
+    Only saves emails with status='invalid' (confirmed bad mailboxes).
+    """
+    if dry_run or not invalid_results:
+        return 0
+    cur = conn.cursor()
+    saved = 0
+    for email_addr, zb in invalid_results:
+        email_lower = email_addr.lower()
+        sub = zb.get("sub_status", "unknown")
+        reason = f"mailbox_not_found" if sub == "mailbox_not_found" else f"zb_{zb.get('status', 'invalid')}_{sub}"
+        try:
+            # Check for existing entry first (no unique constraint on table)
+            cur.execute(
+                "SELECT 1 FROM invalid_emails WHERE contact_id = %s AND LOWER(email_address) = %s",
+                (contact_id, email_lower)
+            )
+            if cur.fetchone():
+                continue
+            cur.execute(
+                """INSERT INTO invalid_emails (contact_id, email_address, reason, source, verified_at)
+                   VALUES (%s, %s, %s, 'zerobounce_find', NOW())""",
+                (contact_id, email_lower, reason)
+            )
+            saved += 1
+        except Exception:
+            conn.rollback()
+    if saved:
+        conn.commit()
+    return saved
+
+
+# ── Tomba Email Finder ────────────────────────────────────────────────
+
+def try_tomba(first: str, last: str, domains: list[str]) -> str | None:
+    """
+    Try Tomba's email-finder API to look up a known email for this person.
+
+    Tries each domain in order. Returns the email address if found with
+    score >= 70 and the name matches, otherwise None.
+    """
+    if not TOMBA_API_KEY or not TOMBA_SECRET_KEY:
+        return None
+    if not first or not last or not domains:
+        return None
+
+    headers = {
+        "X-Tomba-Key": TOMBA_API_KEY,
+        "X-Tomba-Secret": TOMBA_SECRET_KEY,
+    }
+
+    first_lower = first.lower().strip()
+    last_lower = last.lower().strip()
+
+    for domain in domains:
+        try:
+            resp = requests.get(
+                "https://api.tomba.io/v1/email-finder",
+                params={
+                    "domain": domain,
+                    "first_name": first,
+                    "last_name": last,
+                },
+                headers=headers,
+                timeout=15,
+            )
+
+            if resp.status_code == 429:
+                print("    Tomba: rate limited / quota exhausted, skipping")
+                return None
+            if resp.status_code != 200:
+                continue
+
+            data = resp.json().get("data", {})
+            email = data.get("email")
+            score = data.get("score", 0)
+            tomba_first = (data.get("first_name") or "").lower().strip()
+            tomba_last = (data.get("last_name") or "").lower().strip()
+
+            if not email or score < 70:
+                continue
+
+            # Name matching guard: make sure Tomba found the right person
+            first_ok = (tomba_first == first_lower
+                        or first_lower.startswith(tomba_first)
+                        or tomba_first.startswith(first_lower))
+            last_ok = (tomba_last == last_lower
+                       or last_lower.startswith(tomba_last)
+                       or tomba_last.startswith(last_lower))
+
+            if not (first_ok and last_ok):
+                print(f"    Tomba: name mismatch — got {tomba_first} {tomba_last}, "
+                      f"expected {first_lower} {last_lower}, skipping")
+                continue
+
+            print(f"    Tomba: found {email} (score={score})")
+            return email
+
+        except requests.RequestException as e:
+            print(f"    Tomba: request error for {domain}: {e}")
+            continue
+
+    return None
+
+
+def process_contact(contact, openai_client, zb_workers, min_confidence, dry_run, invalid_emails=None, skip_tomba=False):
     """
     Run the full pipeline for a single contact:
     domain discovery → permutations → ZeroBounce verify → pick best → LLM validate.
 
-    Returns dict with keys: status, email, confidence, reasoning, credits_before
+    Returns dict with keys: status, email, confidence, reasoning
     Status is one of: found, no_domain, no_perms, no_verified, rejected, error
     """
     cid = contact["id"]
@@ -1054,18 +1224,73 @@ def process_contact(contact, openai_client, zb_workers, min_confidence, dry_run)
     if not domains:
         return {"status": "no_domain", "email": None, "confidence": 0, "reasoning": "No domain found"}
 
+    # Step 0 (Tomba): Try Tomba email-finder before brute-force permutations
+    if not skip_tomba:
+        tomba_email = try_tomba(first, last, domains)
+        if tomba_email:
+            # Check against invalid emails blocklist first (saves a ZB credit)
+            if invalid_emails and tomba_email.lower() in invalid_emails:
+                print(f"    Tomba email {tomba_email} is in invalid blocklist, skipping")
+                tomba_email = None
+        if tomba_email:
+            # Verify with ZeroBounce (1 credit instead of 3-10)
+            zb_result = verify_email(tomba_email)
+            if zb_result and zb_result.get("status") == "valid":
+                return {
+                    "status": "found",
+                    "email": tomba_email,
+                    "confidence": 95,
+                    "reasoning": f"Tomba email-finder + ZeroBounce valid",
+                    "zb_status": "valid",
+                    "source": "tomba",
+                    "invalid_tested": [],
+                }
+            elif zb_result and zb_result.get("status") == "catch-all":
+                # Catch-all: still usable, validate with LLM
+                if is_obvious_match(dict(contact), tomba_email, zb_result):
+                    return {
+                        "status": "found",
+                        "email": tomba_email,
+                        "confidence": 90,
+                        "reasoning": "Tomba + catch-all domain, obvious name match",
+                        "zb_status": "catch-all",
+                        "source": "tomba",
+                        "invalid_tested": [],
+                    }
+                verification = validate_with_llm(openai_client, dict(contact), tomba_email, zb_result)
+                if verification and verification.is_match and verification.confidence >= min_confidence:
+                    return {
+                        "status": "found",
+                        "email": tomba_email,
+                        "confidence": verification.confidence,
+                        "reasoning": f"Tomba + LLM validated: {verification.reasoning}",
+                        "zb_status": "catch-all",
+                        "source": "tomba",
+                        "invalid_tested": [],
+                    }
+            # Tomba email didn't verify — fall through to permutation pipeline
+            print(f"    Tomba email {tomba_email} didn't verify, falling back to permutations")
+
     # Step 2: Generate permutations for all domains
     all_perms = []
     for domain in domains:
         perms = generate_permutations(first, last, domain)
         all_perms.extend(perms)
 
+    # Filter out known-invalid emails before verification (saves ZeroBounce credits)
+    if invalid_emails:
+        before = len(all_perms)
+        all_perms = [p for p in all_perms if p.lower() not in invalid_emails]
+        if before > len(all_perms):
+            skipped = before - len(all_perms)
+
     if not all_perms:
-        return {"status": "no_perms", "email": None, "confidence": 0, "reasoning": "No permutations generated"}
+        return {"status": "no_perms", "email": None, "confidence": 0, "reasoning": "No permutations generated (or all known-invalid)"}
 
     # Step 3: Smart ZeroBounce verification — stop early on valid, skip bad domains
     # For catch-all domains, only test top 3 permutations
     results = {}
+    invalid_tested = []  # track ZB-confirmed invalid emails for saving to blocklist
     tested_domains = set()
     bad_domains = set()  # domains where first test was invalid
 
@@ -1080,9 +1305,10 @@ def process_contact(contact, openai_client, zb_workers, min_confidence, dry_run)
         if domain in bad_domains:
             continue
 
-        # For catch-all domains, limit to 3 permutations per domain
+        # Limit permutations per domain to conserve credits
         domain_results = [r for addr, r in results.items() if addr.split("@")[1] == domain]
-        if domain in CATCH_ALL_DOMAINS and len(domain_results) >= 3:
+        max_perms = 3 if domain in CATCH_ALL_DOMAINS else 5
+        if len(domain_results) >= max_perms:
             continue
 
         result = verify_email(perm_email)
@@ -1091,19 +1317,32 @@ def process_contact(contact, openai_client, zb_workers, min_confidence, dry_run)
 
         results[perm_email] = result
 
-        # If first test on this domain is invalid and domain not in known list, mark it bad
+        # Track ZB-confirmed invalid emails for blocklist
+        if result["status"] == "invalid":
+            invalid_tested.append((perm_email, result))
+
+        # If first test on this domain is invalid with domain-level failure, mark it bad
+        # Only skip remaining perms for DOMAIN failures (no mail server, no DNS)
+        # NOT for mailbox failures (mailbox_not_found = domain is fine, try other perms)
         if domain not in tested_domains:
             tested_domains.add(domain)
-            if result["status"] == "invalid" and domain not in CATCH_ALL_DOMAINS:
+            if (result["status"] == "invalid"
+                    and domain not in CATCH_ALL_DOMAINS
+                    and result.get("sub_status", "") in (
+                        "does_not_accept_mail", "no_dns_entries",
+                        "failed_smtp_connection", "possible_typo",
+                    )):
                 bad_domains.add(domain)
 
     if not results:
-        return {"status": "no_verified", "email": None, "confidence": 0, "reasoning": "All verifications failed"}
+        return {"status": "no_verified", "email": None, "confidence": 0, "reasoning": "All verifications failed",
+                "invalid_tested": invalid_tested}
 
     # Step 4: Pick best result
     best = pick_best_result(results)
     if not best:
-        return {"status": "no_verified", "email": None, "confidence": 0, "reasoning": "No valid or catch-all results"}
+        return {"status": "no_verified", "email": None, "confidence": 0, "reasoning": "No valid or catch-all results",
+                "invalid_tested": invalid_tested}
 
     best_email, best_zb = best
 
@@ -1115,11 +1354,13 @@ def process_contact(contact, openai_client, zb_workers, min_confidence, dry_run)
             "confidence": 95,
             "reasoning": "Obvious match: name in email + domain matches company",
             "zb_status": best_zb["status"],
+            "invalid_tested": invalid_tested,
         }
 
     verification = validate_with_llm(openai_client, dict(contact), best_email, best_zb)
     if not verification:
-        return {"status": "error", "email": None, "confidence": 0, "reasoning": "LLM validation error"}
+        return {"status": "error", "email": None, "confidence": 0, "reasoning": "LLM validation error",
+                "invalid_tested": invalid_tested}
 
     if verification.is_match and verification.confidence >= min_confidence:
         return {
@@ -1129,6 +1370,7 @@ def process_contact(contact, openai_client, zb_workers, min_confidence, dry_run)
             "reasoning": verification.reasoning,
             "zb_status": best_zb["status"],
             "email_type": verification.email_type,
+            "invalid_tested": invalid_tested,
         }
     else:
         return {
@@ -1136,6 +1378,7 @@ def process_contact(contact, openai_client, zb_workers, min_confidence, dry_run)
             "email": best_email,
             "confidence": verification.confidence,
             "reasoning": verification.reasoning,
+            "invalid_tested": invalid_tested,
         }
 
 
@@ -1175,13 +1418,20 @@ def run_pipeline(args):
     print(f"  Database: connected")
     print(f"  OpenAI: connected")
 
+    # Load invalid emails blocklist
+    invalid_emails = load_invalid_emails(conn)
+    print(f"  Invalid emails blocklist: {len(invalid_emails)} entries")
+
     # Fetch contacts
-    contacts = fetch_contacts(conn, limit=args.limit)
+    ids = [int(x.strip()) for x in args.ids.split(",")] if args.ids else None
+    contacts = fetch_contacts(conn, limit=args.limit, offset=args.offset, ids=ids)
     total = len(contacts)
     print(f"  Contacts to process: {total}")
     print(f"  Mode: {'DRY-RUN' if args.dry_run else 'LIVE (will save to DB)'}")
     print(f"  Min confidence: {args.min_confidence}")
     print(f"  ZeroBounce workers: {args.workers}")
+    tomba_enabled = bool(TOMBA_API_KEY and TOMBA_SECRET_KEY and not args.skip_tomba)
+    print(f"  Tomba: {'enabled' if tomba_enabled else 'disabled'}")
     print("=" * 60 + "\n")
 
     if total == 0:
@@ -1198,14 +1448,29 @@ def run_pipeline(args):
         "rejected": 0,
         "error": 0,
     }
+    tomba_stats = {"found": 0, "miss": 0}
     found_emails = []
+    invalid_saved_count = 0
     start_time = time.time()
     cur = conn.cursor()
+
+    last_credit_check = start_time
 
     for i, contact in enumerate(contacts):
         if interrupted:
             print(f"\n  Stopping early at contact {i}/{total} due to interrupt.")
             break
+
+        # Periodic credit check every 5 minutes
+        if time.time() - last_credit_check > 300:
+            try:
+                remaining = check_zerobounce_credits()
+                if remaining < 5:
+                    print(f"\n  WARNING: Only {remaining} ZeroBounce credits remaining. Stopping.")
+                    break
+            except Exception:
+                pass
+            last_credit_check = time.time()
 
         cid = contact["id"]
         first = contact["first_name"] or ""
@@ -1214,9 +1479,23 @@ def run_pipeline(args):
         company = contact["company"] or contact["enrich_current_company"] or ""
         prox = contact["ai_proximity_score"] or "?"
 
-        result = process_contact(contact, openai_client, args.workers, args.min_confidence, args.dry_run)
+        result = process_contact(contact, openai_client, args.workers, args.min_confidence, args.dry_run, invalid_emails, skip_tomba=args.skip_tomba)
         status = result["status"]
         stats[status] = stats.get(status, 0) + 1
+
+        # Track Tomba stats
+        if result.get("source") == "tomba":
+            tomba_stats["found"] += 1
+        elif not args.skip_tomba and status != "no_domain":
+            tomba_stats["miss"] += 1
+
+        # Save ZB-confirmed invalid emails to blocklist (prevents re-testing on future runs)
+        inv = result.get("invalid_tested", [])
+        if inv:
+            invalid_saved_count += save_invalid_emails(conn, cid, inv, dry_run=args.dry_run)
+            # Also add to in-memory set so remaining contacts in this run benefit
+            for email_addr_inv, _ in inv:
+                invalid_emails.add(email_addr_inv.lower())
 
         if status == "found":
             email_addr = result["email"]
@@ -1225,8 +1504,9 @@ def run_pipeline(args):
             zb_status = result.get("zb_status", "?")
             marker = "[DRY-RUN] " if args.dry_run else ""
 
+            source = result.get("source", "perms")
             print(f"  {marker}[{cid}] {name:30s} | {company:25s} | {email_addr} "
-                  f"(conf={conf}, zb={zb_status})")
+                  f"(conf={conf}, zb={zb_status}, src={source})")
 
             found_emails.append({"id": cid, "email": email_addr, "confidence": conf})
 
@@ -1265,12 +1545,17 @@ def run_pipeline(args):
     print("=" * 60)
     print(f"  Contacts processed:  {processed}/{total}")
     print(f"  Emails found:        {stats['found']}")
+    if tomba_stats["found"] or tomba_stats["miss"]:
+        print(f"    via Tomba:         {tomba_stats['found']}")
+        print(f"    via permutations:  {stats['found'] - tomba_stats['found']}")
+        print(f"    Tomba misses:      {tomba_stats['miss']}")
     print(f"  Rejected (low conf): {stats['rejected']}")
     print(f"  No domain:           {stats['no_domain']}")
     print(f"  No verified:         {stats['no_verified']}")
     print(f"  No permutations:     {stats['no_perms']}")
     print(f"  Errors:              {stats['error']}")
     print(f"  ZeroBounce credits:  {zb_credits} used")
+    print(f"  Invalid blocklisted: {invalid_saved_count} new entries")
     print(f"  Time elapsed:        {elapsed:.1f}s")
     if args.dry_run:
         print(f"  Mode:                DRY-RUN (no DB writes)")

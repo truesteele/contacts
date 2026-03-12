@@ -8,7 +8,9 @@ const NETWORK_SELECT_COLS =
   'id, first_name, last_name, company, position, city, state, email, linkedin_url, headline, ' +
   'ai_proximity_score, ai_proximity_tier, ai_capacity_score, ai_capacity_tier, ' +
   'ai_kindora_prospect_score, ai_kindora_prospect_type, ai_outdoorithm_fit, ' +
-  'familiarity_rating, comms_last_date, comms_thread_count, ask_readiness';
+  'familiarity_rating, comms_last_date, comms_thread_count, comms_closeness, ask_readiness, ' +
+  'enrich_current_title, enrich_current_company, enrich_titles_held, enrich_skills, ' +
+  'enrich_companies_worked, enrich_schools, enrich_board_positions, enrich_volunteer_orgs';
 
 /**
  * Execute a structured search using searchNetwork logic.

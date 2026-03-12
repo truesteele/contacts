@@ -1,7 +1,48 @@
 # Come Alive 2026 — Campaign Execution Plan
 
-**Last updated:** February 23, 2026
+**Last updated:** March 2, 2026
 **Data source:** Supabase `campaign_2026` column (live pipeline data)
+
+---
+
+## Justin's Next Steps
+
+The data pipeline is done. 317 contacts are scaffolded, 25 personal messages are written, 292 campaign copy variants are generated. Everything lives in Supabase. The campaign UI and kanban pipeline are built and ready.
+
+### Tonight (March 2)
+
+- [ ] **Send all 25 List A personal outreach messages.** Review, edit, and send via the campaign UI (`/tools/campaign` → List A tab). Go highest capacity first.
+- [ ] **Move sent contacts** to "Outreach Sent" on the kanban (`/tools/pipeline?pipeline=oc-come-alive-2026`)
+
+### This Week (March 3-8)
+
+- [ ] **Text follow-up to List A non-responders** (3-5 days after send). Messages are in `personal_outreach.follow_up_text`.
+- [ ] **Get social proof.** Ask early "yes" replies for permission to reference them ("12 people have already stepped up").
+- [ ] **Finalize Email 1 copy.** Insert real progress numbers into the template in `COME_ALIVE_2026_Campaign.md`.
+
+### Open Decisions
+
+These need answers before March 10:
+
+| Decision | Options | Notes |
+|:--|:--|:--|
+| **Mass email tool** | Gmail BCC? Mailchimp? Loops? Campaign UI send button? | You need to send to 317 people. Plain text, personal email address. Gmail BCC caps at ~500/day — works but no tracking. Campaign UI has a "Send Email 1" button that sends via Gmail API. |
+| **Open/click tracking** | Email tool analytics vs. honor system | Needed to trigger text follow-ups ("openers who didn't act"). Without tracking, send follow-ups to everyone who hasn't donated. |
+| **Text follow-up delivery** | Manual copy-paste? Community.com? | 50-80 texts in Days 2-5, 200+ in Days 10-14. Manual is fine for 50 — not for 200. |
+| **$20K matching donor** | Confirmed? | This is referenced in the campaign emails. |
+
+### What's Already Built
+
+| Asset | Status | Where |
+|:--|:--|:--|
+| 25 personal outreach messages (Opus 4.6) | Ready to send | `campaign_2026.personal_outreach` |
+| 292 text follow-ups + thank-yous (GPT-5 mini) | Ready to send | `campaign_2026.campaign_copy` |
+| 25 pre-email notes (prior donors/lapsed) | Ready to send | `campaign_2026.campaign_copy.pre_email_note` |
+| Email 1/2/3 templates | Need real numbers inserted | `COME_ALIVE_2026_Campaign.md` |
+| Scaffold data (persona, ask, motivation) | Complete | `campaign_2026.scaffold` |
+| Campaign execution plan (this doc) | Complete | You're reading it |
+| Campaign UI (review/edit/send) | Complete | `/tools/campaign` |
+| Kanban pipeline (track progress) | Seeded with 317 deals | `/tools/pipeline?pipeline=oc-come-alive-2026` |
 
 ---
 
@@ -86,7 +127,7 @@
 | 7 | Mitch Kapor | Kapor Capital | email | quick thing — outdoorithm | mission_alignment |
 | 8 | Erin Teague | Disney | email | quick thing | mission_alignment |
 | 9 | Freada Kapor Klein | SMASH | email | quick thing — wanted you to hear this first | mission_alignment |
-| 10 | Jon Huggett | Catherine Hamlin Foundation | email | quick thing — and a ask | relationship |
+| 10 | Jon Huggett | Catherine Hamlin Foundation | email | quick thing — and an ask | relationship |
 | 11 | Lo Toney | Plexo Capital | email | quick thing | mission_alignment |
 | 12 | Sergio Garcia | UC Berkeley | email | quick thing — before I go wide | relationship |
 | 13 | Karibu Nyaggah | Kindora | email | quick thing — outside of Kindora | mission_alignment |
@@ -114,77 +155,76 @@
 
 ## Day-by-Day Execution Timeline
 
-All dates are 2026. Campaign launches February 26 and closes approximately March 17.
+All dates are 2026. Campaign launches March 10 and closes approximately March 28. Joshua Tree is March 30.
 
-### Pre-Campaign: February 13-25
+### Pre-Campaign: March 2-9
 
-| Date | Action | Who | Details |
+| Date | Day | Action | Details |
 |:--|:--|:--|:--|
-| Feb 13-20 | Confirm $20K match | Justin | Lock in matching donor commitment |
-| Feb 13-20 | Begin personal outreach | Justin | Send first wave of List A messages (highest capacity first) |
-| Feb 20-25 | Complete List A outreach | Justin | All 25 contacts messaged. Target: $15K-$25K committed |
-| Feb 20-25 | Get social proof | Justin | Ask early commitments for permission to reference them |
-| Feb 25 | Finalize Email 1 | Justin | Insert real progress numbers into email copy |
+| **Mar 2** | **Mon** | **Send all 25 List A personal outreach** | Review, edit, send via campaign UI. Highest capacity first. |
+| Mar 3-4 | Tue-Wed | Reply to early responses | Follow up on conversations |
+| Mar 5-6 | Thu-Fri | Text follow-up to List A non-responders | 3-4 days after send. Messages in `personal_outreach.follow_up_text` |
+| Mar 7-8 | Weekend | Tally early commitments | Get social proof permission. Finalize Email 1 with real numbers. |
 
-**Quiet phase target:** 50-60% of $100K committed ($50K-$60K) = $35K grants + $15K-$25K personal outreach.
+**Quiet phase target:** $15K-$25K committed from personal outreach + $45K grants = $60K-$70K (50-58% of $120K).
 
-### Week 1: February 26 — March 4
+### Week 1: March 10-16
 
-| Date | Action | Audience | Count |
-|:--|:--|:--|--:|
-| **Feb 26** | **Email 1: The Invitation** | All Lists A-D | 317 |
-| Feb 26 | Pre-email notes sent first | Prior donors + lapsed (B-D) | 25 |
-| Feb 27-Mar 1 | Reply to any responses | Responders | — |
-| **Mar 1-4** | **Text follow-up (opener)** | Email openers who didn't act | Est. 50-80 |
+| Date | Day | Action | Audience | Count |
+|:--|:--|:--|:--|--:|
+| **Mar 10** | **Tue** | **Email 1: The Invitation** | All Lists A-D | 317 |
+| Mar 10 | Tue | Pre-email notes sent first | Prior donors + lapsed (B-D) | 25 |
+| Mar 11-13 | Wed-Fri | Reply to responses | Responders | — |
+| **Mar 12-14** | **Thu-Sat** | **Text follow-up (opener)** | Email openers who didn't act | Est. 50-80 |
 
-**Email 1 subject options:** *10 trips this year | a personal ask | come alive*
+**Email 1 subject options:** *8 trips this year | a personal ask | come alive*
 **Story:** Valencia — fear to freedom. Daughter running barefoot. "No fear. Just joy."
 
-### Week 2: March 5-13
+### Week 2: March 17-23
 
-| Date | Action | Audience | Count |
-|:--|:--|:--|--:|
-| **Mar 5-7** | **Email 2: Momentum Update** | Non-donors only (all lists) | Est. 250-280 |
-| Mar 7-13 | Continue conversations | Repliers | — |
-| **Mar 10-14** | **Text follow-up (milestone)** | Non-donors | Est. 200-250 |
+| Date | Day | Action | Audience | Count |
+|:--|:--|:--|:--|--:|
+| **Mar 17** | **Tue** | **Email 2: Momentum Update** | Non-donors only (all lists) | Est. 250-280 |
+| Mar 18-21 | Wed-Sat | Continue conversations | Repliers | — |
+| **Mar 19-21** | **Thu-Sat** | **Text follow-up (milestone)** | Non-donors | Est. 200-250 |
 
 **Email 2 subject options:** *[X] people are in | quick update | halfway there*
 **Story:** The 8-year-old who wanted to "go home to the campfire."
 **Include:** Real progress numbers, social proof count, employer matching mention.
 
-### Week 3: March 14-17
+### Week 3: March 24-29
 
-| Date | Action | Audience | Count |
-|:--|:--|:--|--:|
-| **Mar 14-17** | **Email 3: Final Push** | Non-donors only | Est. 200-250 |
+| Date | Day | Action | Audience | Count |
+|:--|:--|:--|:--|--:|
+| **Mar 24** | **Tue** | **Email 3: Final Push** | Non-donors only | Est. 200-250 |
 
-**Email 3 subject options:** *two weeks to Joshua Tree | before the season starts | close*
-**No new story.** The trip is the story. Joshua Tree is March 30. Genuine urgency.
+**Email 3 subject options:** *6 days to Joshua Tree | before the season starts | close*
+**No new story.** The trip is the story. Joshua Tree is March 30. Genuine urgency is sharper than the original "two weeks."
 **~55 words.** Entire email visible on phone without scrolling.
 
-### Post-Campaign: March 18-April 5
+### Post-Campaign: March 30-April 5
 
-| Date | Action | Details |
-|:--|:--|:--|
-| Mar 18-29 | Personal thank-yous | Within 24 hours of each gift. Text or email per thank-you workflow. |
-| **Mar 30** | Joshua Tree launches | One-line note to donors: "We're here. 40 people. Thank you." |
-| Apr 2-5 | Post-trip photo update | One photo + one line to all campaign donors |
+| Date | Day | Action | Details |
+|:--|:--|:--|:--|
+| Mar 25-29 | | Personal thank-yous | Within 24 hours of each gift. Text or email per thank-you workflow. |
+| **Mar 30** | **Mon** | Joshua Tree launches | One-line note to donors: "We're here. 40 people. Thank you." |
+| Apr 2-5 | | Post-trip photo update | One photo + one line to all campaign donors |
 
 ---
 
 ## Email Audience Rules
 
-### Email 1: The Invitation (Feb 26)
+### Email 1: The Invitation (Mar 10)
 - **Sent to:** All 317 campaign contacts (Lists A-D)
 - **Pre-email note:** 25 contacts with prior_donor or lapsed lifecycle stage receive a brief personal note before Email 1 (already generated in campaign_copy)
 - **Format:** Plain text from Justin's personal email. No HTML, no logos.
 
-### Email 2: Momentum Update (Mar 5-7)
+### Email 2: Momentum Update (Mar 17)
 - **Sent to:** Non-donors only (exclude anyone who gave after Email 1)
-- **Insert real numbers:** "[X] people have stepped up" and "We're at $[X] toward our $100K goal"
+- **Insert real numbers:** "[X] people have stepped up" and "We're at $[X] toward our $120K goal"
 - **Employer matching:** Mention Benevity (Google, Meta, Salesforce, Microsoft, Apple, Amazon)
 
-### Email 3: Final Push (Mar 14-17)
+### Email 3: Final Push (Mar 24)
 - **Sent to:** Non-donors only
 - **No story.** Trip math only. Joshua Tree countdown creates genuine urgency.
 - **Short.** ~55 words. Phone-screen visible.
@@ -197,8 +237,8 @@ All dates are 2026. Campaign launches February 26 and closes approximately March
 
 | Timing | Trigger | Who | Message Source |
 |:--|:--|:--|:--|
-| Days 2-5 (Mar 1-4) | Opened Email 1, didn't act | Email openers | `campaign_copy.text_followup_opener` |
-| Days 10-14 (Mar 10-14) | Still haven't donated | Non-donors | `campaign_copy.text_followup_milestone` |
+| Days 2-4 (Mar 12-14) | Opened Email 1, didn't act | Email openers | `campaign_copy.text_followup_opener` |
+| Days 7-11 (Mar 19-21) | Still haven't donated | Non-donors | `campaign_copy.text_followup_milestone` |
 | Within 24 hours of gift | Donation received | All donors | `campaign_copy.thank_you_message` or `personal_outreach.thank_you_message` |
 
 **List A follow-ups** are in `personal_outreach.follow_up_text` — personalized by Opus, not GPT-5 mini.

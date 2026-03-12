@@ -132,18 +132,28 @@ class ContactIntelligence(BaseModel):
 
 
 # ── Sally's Anchor Profile ────────────────────────────────────────────
-# TODO: Update SALLY_ANCHOR_PROFILE after running enrich_apify.py on Sally's LinkedIn profile
-# to include her full career timeline, schools, boards, and dates from enrichment data.
 
 SALLY_ANCHOR_PROFILE = """ANCHOR PERSON (Sally Steele):
-- Current roles: Co-Founder at Outdoorithm Collective (outdoor equity nonprofit, Jan 2024-present), Co-Founder at Outdoorithm (outdoor recreation app, Feb 2023-present)
-- Previous employers: (To be filled after Apify enrichment — Sally's full career history will be extracted from LinkedIn)
-- Schools: (To be filled after Apify enrichment)
-- Boards: Outdoorithm Collective (Board of Directors, 2024-present)
-- Key interests/topics: Outdoor equity & nature access, Community building, Nonprofit leadership, Family outdoor recreation, Social impact, Environmental justice
+- Current roles:
+  * CEO and Co-Founder, Outdoorithm (outdoor recreation social enterprise, Feb 2023-present, 3+ yrs)
+  * Co-Founder and Board Chair, Outdoorithm Collective (outdoor equity nonprofit 501c3, Jan 2024-present, 2+ yrs)
+  * Pastoral Study Project Grant Recipient, Louisville Institute (ecotheology research, 2025-present)
+  * REI Embark Fellow (2024, equity-free funding for outdoor entrepreneurs of color)
+- Previous employers:
+  * City Hope San Francisco — Director of Operations → Deputy Director → Co Executive Director (~7.5 yrs total). Co-led $1.9M nonprofit running community center and transitional home in the Tenderloin.
+  * The National Presbyterian Church, Washington DC — Director of Local Mission (2 yrs 11 mos). Community outreach for 1,500-member church.
+  * Grace Mosaic Presbyterian Church, Washington DC — Director of Operations and Ministry Development (3 mos). Urban church plant.
+  * Emmanuel Gospel Center, Boston — Intercultural Ministries Associate + Community Liaison (1 yr 6 mos total). Faith-based nonprofit for urban church vitality.
+  * San Francisco Maritime National Park Association — Special Projects Associate (10 mos). Board relations and donor events.
+  * Peachtree Presbyterian Church, Atlanta — Ministry Intern, Community Outreach (1 yr). Urban mission for 8,000+ member congregation.
+- Education:
+  * University of Virginia — BA in Foreign Affairs and French Language and Literature
+  * Gordon-Conwell Theological Seminary — Master of Divinity (MDiv), Concentration in Urban Communities
+- Boards: Outdoorithm Collective (Board Chair, 2024-present)
+- Key interests/topics: Outdoor equity & nature access, ecotheology, community building, nonprofit leadership, family outdoor recreation, social impact, environmental justice, womanist theology, urban ministry, racial justice, belonging in nature
 - LinkedIn: https://www.linkedin.com/in/steelesally/
-- Location: San Francisco Bay Area
-- Note: Sally is co-founder with Justin Steele of both Outdoorithm and Outdoorithm Collective. They share many professional connections."""
+- Location: Oakland / San Francisco Bay Area
+- Note: Sally is co-founder with Justin Steele of both Outdoorithm and Outdoorithm Collective. They share many professional connections. Sally's background is in ministry, nonprofit operations, and theology — distinct from Justin's tech/consulting background."""
 
 
 SYSTEM_PROMPT = """You are a network intelligence analyst. Given an anchor person's profile and a target contact's LinkedIn data, produce a structured analysis.
@@ -417,9 +427,20 @@ class ContactTagger:
 
         return None
 
+    @staticmethod
+    def _strip_null_bytes(obj):
+        """Recursively remove null bytes from strings for PostgreSQL JSONB compatibility."""
+        if isinstance(obj, str):
+            return obj.replace("\u0000", "")
+        if isinstance(obj, dict):
+            return {k: ContactTagger._strip_null_bytes(v) for k, v in obj.items()}
+        if isinstance(obj, list):
+            return [ContactTagger._strip_null_bytes(v) for v in obj]
+        return obj
+
     def save_tags(self, contact_id: int, result: ContactIntelligence) -> bool:
         """Save the LLM output to sally_contacts."""
-        tags_json = result.model_dump(mode="json")
+        tags_json = self._strip_null_bytes(result.model_dump(mode="json"))
         # sally_contacts doesn't have ai_kindora_prospect_score, ai_kindora_prospect_type,
         # ai_tags_generated_at, or ai_tags_model columns — store metadata in ai_tags JSONB
         tags_json["_generated_at"] = datetime.now(timezone.utc).isoformat()

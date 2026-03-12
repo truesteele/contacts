@@ -241,11 +241,12 @@ def build_interests_text(contact: dict) -> str:
 
 class EmbeddingGenerator:
 
-    def __init__(self, test_mode=False, dry_run=False, force=False, test_count=10):
+    def __init__(self, test_mode=False, dry_run=False, force=False, test_count=10, ids=None):
         self.test_mode = test_mode
         self.dry_run = dry_run
         self.force = force
         self.test_count = test_count
+        self.ids = ids
         self.supabase: Optional[Client] = None
         self.openai: Optional[OpenAI] = None
         self.stats = {
@@ -286,6 +287,9 @@ class EmbeddingGenerator:
                 .order("id")
                 .range(offset, offset + PAGE_SIZE - 1)
             )
+
+            if self.ids:
+                query = query.in_("id", self.ids)
 
             if not self.force:
                 query = query.is_("profile_embedding", "null")
@@ -483,13 +487,18 @@ def main():
                         help="Build texts but don't call OpenAI")
     parser.add_argument("--force", "-f", action="store_true",
                         help="Re-embed contacts that already have embeddings")
+    parser.add_argument("--ids", type=str, default=None,
+                        help="Comma-separated contact IDs to process")
     args = parser.parse_args()
+
+    ids = [int(x.strip()) for x in args.ids.split(",")] if args.ids else None
 
     generator = EmbeddingGenerator(
         test_mode=args.test,
         dry_run=args.dry_run,
-        force=args.force,
+        force=args.force or bool(ids),
         test_count=args.count,
+        ids=ids,
     )
     success = generator.run()
     sys.exit(0 if success else 1)

@@ -314,12 +314,13 @@ class ContactTagger:
         "enrich_honors_awards, fec_donations, real_estate_data"
     )
 
-    def __init__(self, test_mode=False, dry_run=False, force=False, workers=10, test_count=10):
+    def __init__(self, test_mode=False, dry_run=False, force=False, workers=10, test_count=10, ids=None):
         self.test_mode = test_mode
         self.dry_run = dry_run
         self.force = force
         self.workers = workers
         self.test_count = test_count
+        self.ids = ids
         self.supabase: Optional[Client] = None
         self.openai: Optional[OpenAI] = None
         self.stats = {
@@ -349,6 +350,16 @@ class ContactTagger:
         return True
 
     def get_contacts(self) -> list[dict]:
+        # If specific IDs requested, fetch just those
+        if self.ids:
+            response = (
+                self.supabase.table("contacts")
+                .select(self.SELECT_COLS)
+                .in_("id", self.ids)
+                .execute()
+            )
+            return response.data
+
         all_contacts = []
         page_size = 1000
         offset = 0
@@ -575,7 +586,13 @@ def main():
                         help="Re-tag contacts that already have ai_tags")
     parser.add_argument("--workers", "-w", type=int, default=150,
                         help="Number of concurrent workers (default: 50)")
+    parser.add_argument("--ids", type=str, default=None,
+                        help="Comma-separated list of contact IDs to tag (e.g., '2633,1264')")
     args = parser.parse_args()
+
+    ids_list = None
+    if args.ids:
+        ids_list = [int(x.strip()) for x in args.ids.split(",") if x.strip()]
 
     tagger = ContactTagger(
         test_mode=args.test,
@@ -583,6 +600,7 @@ def main():
         force=args.force,
         workers=args.workers,
         test_count=args.count,
+        ids=ids_list,
     )
     success = tagger.run()
     sys.exit(0 if success else 1)

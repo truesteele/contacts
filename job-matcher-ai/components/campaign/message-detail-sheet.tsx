@@ -100,6 +100,9 @@ interface MessageDetailSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUpdated: () => void;
+  /** API prefix for campaign routes. Defaults to '/api/network-intel' (Justin's tables).
+   *  For Sally's tables, pass '/api/network-intel/sally'. */
+  apiPrefix?: string;
 }
 
 type ChatMessage = {
@@ -156,6 +159,7 @@ export function MessageDetailSheet({
   open,
   onOpenChange,
   onUpdated,
+  apiPrefix = '/api/network-intel',
 }: MessageDetailSheetProps) {
   const [contact, setContact] = useState<ContactFull | null>(null);
   const [loading, setLoading] = useState(false);
@@ -203,7 +207,7 @@ export function MessageDetailSheet({
     setError('');
     setSaveError('');
     try {
-      const res = await fetch(`/api/network-intel/campaign/${id}`);
+      const res = await fetch(`${apiPrefix}/campaign/${id}`);
       if (!res.ok) throw new Error('Failed to fetch contact');
       const data = await res.json();
       const c: ContactFull = data.contact;
@@ -252,7 +256,7 @@ export function MessageDetailSheet({
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [apiPrefix]);
 
   // Auto-resize all textareas after data loads
   useEffect(() => {
@@ -334,7 +338,7 @@ export function MessageDetailSheet({
       abortController = new AbortController();
       activeChatAbortRef.current = abortController;
 
-      const res = await fetch(`/api/network-intel/campaign/${contact.id}/chat`, {
+      const res = await fetch(`${apiPrefix}/campaign/${contact.id}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         signal: abortController.signal,
@@ -518,7 +522,7 @@ export function MessageDetailSheet({
 
       // Send patches sequentially
       for (const patch of patches) {
-        const res = await fetch(`/api/network-intel/campaign/${contact.id}`, {
+        const res = await fetch(`${apiPrefix}/campaign/${contact.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(patch),
@@ -534,7 +538,7 @@ export function MessageDetailSheet({
         setGeneratingOutreach(true);
         setSaving(false); // Let the generating state take over
         try {
-          const genRes = await fetch(`/api/network-intel/campaign/${contact.id}/generate-outreach`, {
+          const genRes = await fetch(`${apiPrefix}/campaign/${contact.id}/generate-outreach`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
           });

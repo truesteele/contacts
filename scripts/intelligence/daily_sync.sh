@@ -10,7 +10,20 @@ set -euo pipefail
 
 cd /Users/Justin/Code/TrueSteele/contacts
 source .venv/bin/activate
-export $(grep -v '^#' .env | grep -v '^\s*$' | xargs)
+# Safe .env loader — handles special chars in values (<, >, #, spaces, dots in keys)
+while IFS= read -r line || [[ -n "$line" ]]; do
+  [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+  [[ "$line" != *=* ]] && continue
+  key="${line%%=*}"
+  # Skip invalid bash identifiers (e.g. AZURE_5.1_MINI_ENDPOINT)
+  [[ ! "$key" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]] && continue
+  value="${line#*=}"
+  # Strip surrounding double quotes if present
+  if [[ "$value" =~ ^\"(.*)\"$ ]]; then
+    value="${BASH_REMATCH[1]}"
+  fi
+  export "$key=$value"
+done < .env
 
 DATE=$(date +%Y-%m-%d)
 LOG_DIR="logs"

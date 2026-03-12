@@ -109,7 +109,7 @@ The three pillars of donor readiness are Capacity, Propensity, and Relationship 
       A close friend you haven't spoken to in 3 years is still rated 4.
 
    b) BEHAVIORAL COMMUNICATION CLOSENESS (comms_closeness + comms_momentum)
-      Data-derived from actual communication patterns across email, LinkedIn DMs, and SMS:
+      Data-derived from actual communication patterns across email, LinkedIn DMs, SMS, calendar meetings, and phone calls:
       - active_inner_circle: Frequent, recent, bidirectional communication across intimate channels
       - regular_contact: Consistent communication pattern, reliably in touch
       - occasional: Infrequent communication, scattered threads
@@ -304,6 +304,8 @@ SELECT_COLS = (
     "fec_donations, real_estate_data, "
     "comms_last_date, comms_thread_count, communication_history, "
     "comms_closeness, comms_momentum, comms_summary, "
+    "comms_meeting_count, comms_last_meeting, "
+    "comms_call_count, comms_last_call, "
     "enrich_employment, enrich_education, enrich_volunteering, "
     "known_donor, nonprofit_board_member, "
     "outdoor_environmental_affinity, outdoor_affinity_evidence, "
@@ -442,8 +444,11 @@ def summarize_comms(contact: dict) -> str:
     closeness = contact.get("comms_closeness")
     momentum = contact.get("comms_momentum")
 
-    if not last_date and not thread_count:
-        return "No communication history (email, LinkedIn, or SMS)"
+    meeting_count = contact.get("comms_meeting_count", 0)
+    call_count = contact.get("comms_call_count", 0)
+
+    if not last_date and not thread_count and not meeting_count and not call_count:
+        return "No communication history (email, LinkedIn, SMS, calendar, or phone)"
 
     parts = []
 
@@ -456,7 +461,7 @@ def summarize_comms(contact: dict) -> str:
     if last_date:
         parts.append(f"Last contact: {last_date}")
     if thread_count:
-        parts.append(f"Total threads (email + LinkedIn DMs + SMS): {thread_count}")
+        parts.append(f"Total threads/events/calls: {thread_count}")
 
     # Rich channel-level data from comms_summary JSONB
     cs = parse_jsonb(contact.get("comms_summary"))
@@ -464,7 +469,7 @@ def summarize_comms(contact: dict) -> str:
         channels = cs.get("channels", {})
         # Channel breakdown
         ch_parts = []
-        for ch_name in ["email", "linkedin", "sms"]:
+        for ch_name in ["email", "linkedin", "sms", "calendar", "calls"]:
             ch = channels.get(ch_name)
             if not ch:
                 continue
@@ -473,12 +478,31 @@ def summarize_comms(contact: dict) -> str:
             ch_group = ch.get("group_threads", 0)
             ch_last = ch.get("last_date", "")
             if ch_last:
-                ch_last = ch_last[:10]  # date only
-            label = {"email": "email", "linkedin": "LinkedIn DM", "sms": "SMS"}.get(ch_name, ch_name)
-            detail = f"{ch_threads} {label} threads ({ch_bidir} bidirectional"
-            if ch_name == "email" and ch_group:
-                detail += f", {ch_group} group"
-            detail += f", last: {ch_last})" if ch_last else ")"
+                ch_last = ch_last[:10]
+            label = {"email": "email", "linkedin": "LinkedIn DM", "sms": "SMS",
+                     "calendar": "calendar meeting", "calls": "phone call"}.get(ch_name, ch_name)
+            if ch_name == "calendar":
+                detail = f"{ch_threads} {label}s ({ch_group} group"
+                total_min = ch.get("total_duration_minutes", 0)
+                if total_min:
+                    detail += f", {total_min} total minutes"
+                detail += f", last: {ch_last})" if ch_last else ")"
+            elif ch_name == "calls":
+                incoming = ch.get("inbound", 0)
+                outgoing = ch.get("outbound", 0)
+                missed = ch.get("missed", 0)
+                detail = f"{ch_threads} {label}s ({incoming} incoming, {outgoing} outgoing"
+                if missed:
+                    detail += f", {missed} missed"
+                total_sec = ch.get("total_duration_seconds", 0)
+                if total_sec:
+                    detail += f", {total_sec // 60} total minutes"
+                detail += f", last: {ch_last})" if ch_last else ")"
+            else:
+                detail = f"{ch_threads} {label} threads ({ch_bidir} bidirectional"
+                if ch_name == "email" and ch_group:
+                    detail += f", {ch_group} group"
+                detail += f", last: {ch_last})" if ch_last else ")"
             ch_parts.append(detail)
         if ch_parts:
             parts.append(f"Channel breakdown: {'; '.join(ch_parts)}")
@@ -748,6 +772,10 @@ def build_contact_context(contact: dict, goal: str) -> str:
     # LinkedIn About/Summary — rich self-description of values and identity
     if contact.get("summary"):
         parts.append(f"LinkedIn About: {contact['summary']}")
+
+    # Additional notes (spouse info, personal knowledge, etc.)
+    if contact.get("notes"):
+        parts.append(f"Additional Notes: {contact['notes']}")
     parts.append("")
 
     # Prior fundraising signals
@@ -806,6 +834,10 @@ def build_contact_context(contact: dict, goal: str) -> str:
         parts.append("Mission Alignment Flags:\n  " + "\n  ".join(alignment_flags))
 
     # Wealth signals
+    cap_indicators = contact.get("capacity_indicators")
+    if cap_indicators and isinstance(cap_indicators, list):
+        parts.append("Capacity Indicators:\n  " + "\n  ".join(cap_indicators))
+
     fec = parse_jsonb(contact.get("fec_donations"))
     parts.append(f"FEC Political Donations: {summarize_fec(fec)}")
 

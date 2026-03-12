@@ -231,3 +231,8 @@ Started: 2026-02-24
 - Estimated time: ~302 min (~5 hours sequential)
 
 **Key insight:** The 48% hit rate is dominated by catch-all results (67% of found emails). For a real production run, might want to lower confidence threshold for catch-all big-tech contacts or add domain-specific heuristics. The 52% miss rate is mostly domain discovery failure — contacts at small/unknown companies where domain guessing fails.
+
+---
+## COMPLETED
+Finished at: Tue Feb 24 19:37:24 PST 2026
+Total iterations: 6

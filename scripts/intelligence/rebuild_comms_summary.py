@@ -2,9 +2,10 @@
 """
 Network Intelligence — Rebuild Communication Summary
 
-Aggregates communication data across all channels (email, LinkedIn DM, SMS)
-per contact from the unified `contact_email_threads` table and stores a
-structured `comms_summary` JSONB on the contacts table.
+Aggregates communication data across all channels (email, LinkedIn DM, SMS,
+calendar meetings, phone calls) per contact from contact_email_threads,
+contact_calendar_events, and contact_call_logs tables. Stores a structured
+`comms_summary` JSONB on the contacts table.
 
 Usage:
   python scripts/intelligence/rebuild_comms_summary.py --test          # Preview 5 contacts
@@ -64,6 +65,8 @@ def build_chronological_summary(channel_data: dict) -> str:
         "email": "email",
         "linkedin": "LinkedIn DM",
         "sms": "SMS",
+        "calendar": "meeting",
+        "calls": "call",
     }
 
     # For the most recent year, break down by month for more detail
@@ -73,11 +76,9 @@ def build_chronological_summary(channel_data: dict) -> str:
     for year, channel in sorted_keys:
         count = year_channel_counts[(year, channel)]
         label = channel_labels.get(channel, channel)
-        plural = "s" if count != 1 and label == "email" else ""
-        if label == "LinkedIn DM" and count != 1:
+        plural = ""
+        if count != 1 and label in ("email", "LinkedIn DM", "meeting", "call"):
             plural = "s"
-        elif label == "SMS":
-            plural = ""  # SMS is already plural
 
         if year == current_year:
             # For current year, get month breakdown
@@ -96,11 +97,7 @@ def build_chronological_summary(channel_data: dict) -> str:
                 # Few months — list them
                 for m in sorted(month_counts.keys()):
                     mc = month_counts[m]
-                    p = "s" if mc != 1 and label == "email" else ""
-                    if label == "LinkedIn DM" and mc != 1:
-                        p = "s"
-                    elif label == "SMS":
-                        p = ""
+                    p = "s" if mc != 1 and label in ("email", "LinkedIn DM", "meeting", "call") else ""
                     parts.append(f"{mc} {label}{p} in {month_names[m]} {year}")
             else:
                 parts.append(f"{count} {label}{plural} in {year}")
@@ -113,9 +110,10 @@ def build_chronological_summary(channel_data: dict) -> str:
 class CommsSummaryBuilder:
     """Aggregates communication data per contact and writes comms_summary JSONB."""
 
-    def __init__(self, test_mode=False, contact_id=None):
+    def __init__(self, test_mode=False, contact_id=None, ids=None):
         self.test_mode = test_mode
         self.contact_id = contact_id
+        self.ids = ids
         self.supabase: Client | None = None
         self.stats = {
             "contacts_processed": 0,
@@ -134,20 +132,15 @@ class CommsSummaryBuilder:
         print("Connected to Supabase")
         return True
 
-    def get_all_threads(self) -> dict[int, list[dict]]:
-        """Fetch all threads from contact_email_threads, grouped by contact_id."""
-        all_threads = []
+    def _paginated_fetch(self, table: str, select_cols: str) -> list[dict]:
+        """Generic paginated fetch from a Supabase table."""
+        all_rows = []
         page_size = 1000
         offset = 0
 
-        select_cols = (
-            "contact_id, channel, is_group, direction, message_count, "
-            "first_message_date, last_message_date, participant_count"
-        )
-
         while True:
             query = (
-                self.supabase.table("contact_email_threads")
+                self.supabase.table(table)
                 .select(select_cols)
                 .order("contact_id")
                 .range(offset, offset + page_size - 1)
@@ -155,23 +148,138 @@ class CommsSummaryBuilder:
 
             if self.contact_id:
                 query = query.eq("contact_id", self.contact_id)
+            elif self.ids:
+                query = query.in_("contact_id", self.ids)
 
             page = query.execute().data
             if not page:
                 break
-            all_threads.extend(page)
+            all_rows.extend(page)
             if len(page) < page_size:
                 break
             offset += page_size
 
+        return all_rows
+
+    def get_all_threads(self) -> dict[int, list[dict]]:
+        """Fetch all threads from contact_email_threads, grouped by contact_id."""
+        select_cols = (
+            "contact_id, channel, is_group, direction, message_count, "
+            "first_message_date, last_message_date, participant_count"
+        )
+        all_threads = self._paginated_fetch("contact_email_threads", select_cols)
         print(f"Fetched {len(all_threads)} thread rows")
 
-        # Group by contact_id
         grouped = defaultdict(list)
         for t in all_threads:
             grouped[t["contact_id"]].append(t)
-
         return dict(grouped)
+
+    def get_all_calendar_events(self) -> dict[int, list[dict]]:
+        """Fetch all calendar events, grouped by contact_id."""
+        select_cols = (
+            "contact_id, start_time, duration_minutes, attendee_count, "
+            "event_type, ical_uid"
+        )
+        all_events = self._paginated_fetch("contact_calendar_events", select_cols)
+        print(f"Fetched {len(all_events)} calendar event rows")
+
+        grouped = defaultdict(list)
+        for e in all_events:
+            grouped[e["contact_id"]].append(e)
+        return dict(grouped)
+
+    def get_all_call_logs(self) -> dict[int, list[dict]]:
+        """Fetch all call logs, grouped by contact_id."""
+        select_cols = (
+            "contact_id, call_date, call_type, duration_seconds"
+        )
+        all_calls = self._paginated_fetch("contact_call_logs", select_cols)
+        print(f"Fetched {len(all_calls)} call log rows")
+
+        grouped = defaultdict(list)
+        for c in all_calls:
+            grouped[c["contact_id"]].append(c)
+        return dict(grouped)
+
+    def build_calendar_channel(self, events: list[dict]) -> dict:
+        """Build channel stats for calendar events."""
+        # Dedup by ical_uid
+        seen_uids = set()
+        unique_events = []
+        for e in events:
+            uid = e.get("ical_uid")
+            if uid and uid in seen_uids:
+                continue
+            if uid:
+                seen_uids.add(uid)
+            unique_events.append(e)
+
+        dates = []
+        group_count = 0
+        total_minutes = 0
+
+        for e in unique_events:
+            st = e.get("start_time")
+            if st:
+                dates.append(st if isinstance(st, str) else st.isoformat())
+            attendees = e.get("attendee_count", 0) or 0
+            if attendees > 2:
+                group_count += 1
+            total_minutes += e.get("duration_minutes", 0) or 0
+
+        first_date = min(dates) if dates else None
+        last_date = max(dates) if dates else None
+        count = len(unique_events)
+
+        return {
+            "threads": count,
+            "messages": 0,
+            "first_date": first_date,
+            "last_date": last_date,
+            "bidirectional": count,  # all meetings are inherently bidirectional
+            "inbound": 0,
+            "outbound": 0,
+            "group_threads": group_count,
+            "total_duration_minutes": total_minutes,
+        }
+
+    def build_calls_channel(self, calls: list[dict]) -> dict:
+        """Build channel stats for phone calls."""
+        dates = []
+        incoming = 0
+        outgoing = 0
+        missed = 0
+        total_seconds = 0
+
+        for c in calls:
+            cd = c.get("call_date")
+            if cd:
+                dates.append(cd if isinstance(cd, str) else cd.isoformat())
+            ct = c.get("call_type", "")
+            if ct == "incoming":
+                incoming += 1
+            elif ct == "outgoing":
+                outgoing += 1
+            elif ct == "missed":
+                missed += 1
+            total_seconds += c.get("duration_seconds", 0) or 0
+
+        first_date = min(dates) if dates else None
+        last_date = max(dates) if dates else None
+
+        return {
+            "threads": len(calls),
+            "messages": 0,
+            "first_date": first_date,
+            "last_date": last_date,
+            "bidirectional": incoming + outgoing,  # actual conversations
+            "inbound": incoming,
+            "outbound": outgoing,
+            "group_threads": 0,
+            "missed": missed,
+            "total_duration_seconds": total_seconds,
+        }
 
     def build_summary(self, contact_id: int, threads: list[dict]) -> dict:
         """Build the comms_summary JSONB for one contact."""
@@ -273,18 +381,31 @@ class CommsSummaryBuilder:
         }
 
     def save_summary(self, contact_id: int, summary: dict) -> bool:
-        """Write comms_summary, comms_last_date, comms_thread_count to contacts."""
+        """Write comms_summary and aggregate stats to contacts."""
         try:
-            # Extract last date as date only (YYYY-MM-DD)
             last_date = summary.get("overall_last_date")
             if last_date:
-                last_date = last_date[:10]  # Take YYYY-MM-DD portion
+                last_date = last_date[:10]
 
-            self.supabase.table("contacts").update({
+            update = {
                 "comms_summary": summary,
                 "comms_last_date": last_date,
                 "comms_thread_count": summary["total_threads"],
-            }).eq("id", contact_id).execute()
+            }
+
+            # Calendar stats
+            cal_ch = summary.get("channels", {}).get("calendar")
+            if cal_ch:
+                update["comms_meeting_count"] = cal_ch["threads"]
+                update["comms_last_meeting"] = cal_ch["last_date"][:10] if cal_ch.get("last_date") else None
+
+            # Call stats
+            calls_ch = summary.get("channels", {}).get("calls")
+            if calls_ch:
+                update["comms_call_count"] = calls_ch["threads"]
+                update["comms_last_call"] = calls_ch["last_date"][:10] if calls_ch.get("last_date") else None
+
+            self.supabase.table("contacts").update(update).eq("id", contact_id).execute()
             return True
         except Exception as e:
             print(f"  ERROR saving contact {contact_id}: {e}")
@@ -295,29 +416,91 @@ class CommsSummaryBuilder:
         if not self.connect():
             return False
 
-        # Fetch all threads
-        grouped = self.get_all_threads()
-        total_contacts = len(grouped)
-        print(f"Found {total_contacts} contacts with threads")
+        # Fetch all data sources
+        threads_grouped = self.get_all_threads()
+        calendar_grouped = self.get_all_calendar_events()
+        calls_grouped = self.get_all_call_logs()
+
+        # Merge all contact IDs across data sources
+        all_contact_ids = set(threads_grouped.keys()) | set(calendar_grouped.keys()) | set(calls_grouped.keys())
+        total_contacts = len(all_contact_ids)
+        print(f"Found {total_contacts} contacts with communication data "
+              f"(threads: {len(threads_grouped)}, calendar: {len(calendar_grouped)}, calls: {len(calls_grouped)})")
 
         if total_contacts == 0:
-            print("No contacts with threads found")
+            print("No contacts with communication data found")
             return True
 
-        # In test mode, limit to 5 contacts
-        contact_ids = sorted(grouped.keys())
+        contact_ids = sorted(all_contact_ids)
         if self.test_mode:
             contact_ids = contact_ids[:5]
             print(f"TEST MODE: Processing {len(contact_ids)} contacts (preview only)")
 
         for i, cid in enumerate(contact_ids):
-            threads = grouped[cid]
+            threads = threads_grouped.get(cid, [])
+            cal_events = calendar_grouped.get(cid, [])
+            call_logs = calls_grouped.get(cid, [])
+
             summary = self.build_summary(cid, threads)
+
+            # Add calendar channel if events exist
+            if cal_events:
+                cal_channel = self.build_calendar_channel(cal_events)
+                summary["channels"]["calendar"] = cal_channel
+                # Merge into overall stats
+                summary["total_threads"] += cal_channel["threads"]
+                if cal_channel["first_date"]:
+                    dates = [d for d in [summary["overall_first_date"], cal_channel["first_date"]] if d]
+                    summary["overall_first_date"] = min(dates) if dates else None
+                if cal_channel["last_date"]:
+                    dates = [d for d in [summary["overall_last_date"], cal_channel["last_date"]] if d]
+                    summary["overall_last_date"] = max(dates) if dates else None
+
+            # Add calls channel if logs exist
+            if call_logs:
+                calls_channel = self.build_calls_channel(call_logs)
+                summary["channels"]["calls"] = calls_channel
+                summary["total_threads"] += calls_channel["threads"]
+                if calls_channel["first_date"]:
+                    dates = [d for d in [summary["overall_first_date"], calls_channel["first_date"]] if d]
+                    summary["overall_first_date"] = min(dates) if dates else None
+                if calls_channel["last_date"]:
+                    dates = [d for d in [summary["overall_last_date"], calls_channel["last_date"]] if d]
+                    summary["overall_last_date"] = max(dates) if dates else None
+
+            # Recompute most recent channel with all channels
+            most_recent_channel = None
+            most_recent_date = None
+            for channel, stats in summary["channels"].items():
+                ld = stats.get("last_date")
+                if ld and (most_recent_date is None or ld > most_recent_date):
+                    most_recent_date = ld
+                    most_recent_channel = channel
+            summary["most_recent_channel"] = most_recent_channel
+
+            # Build chronological summary from raw data across all sources
+            # Convert calendar events and calls into thread-like dicts for the summary builder
+            raw_by_channel = {}
+            # Email/LinkedIn/SMS threads are in threads_grouped
+            for t in threads:
+                ch = t.get("channel", "email")
+                raw_by_channel.setdefault(ch, []).append(t)
+            # Calendar events → thread-like dicts
+            for e in cal_events:
+                raw_by_channel.setdefault("calendar", []).append({
+                    "last_message_date": e.get("start_time"),
+                })
+            # Call logs → thread-like dicts
+            for c in call_logs:
+                raw_by_channel.setdefault("calls", []).append({
+                    "last_message_date": c.get("call_date"),
+                })
+            summary["chronological_summary"] = build_chronological_summary(raw_by_channel)
+
             self.stats["contacts_processed"] += 1
 
             if self.test_mode:
-                # Print preview without saving
-                print(f"\n--- Contact {cid} ({len(threads)} threads) ---")
+                print(f"\n--- Contact {cid} ({len(threads)} threads, {len(cal_events)} events, {len(call_logs)} calls) ---")
                 print(f"  Total messages: {summary['total_messages']}")
                 print(f"  Channels: {list(summary['channels'].keys())}")
                 print(f"  First date: {summary['overall_first_date']}")
@@ -357,11 +540,16 @@ def main():
                         help="Preview 5 contacts without writing to DB")
     parser.add_argument("--contact-id", "-c", type=int, default=None,
                         help="Process a single contact by ID")
+    parser.add_argument("--ids", type=str, default=None,
+                        help="Comma-separated contact IDs to process")
     args = parser.parse_args()
+
+    ids = [int(x.strip()) for x in args.ids.split(",")] if args.ids else None
 
     builder = CommsSummaryBuilder(
         test_mode=args.test,
         contact_id=args.contact_id,
+        ids=ids,
     )
     success = builder.run()
     sys.exit(0 if success else 1)

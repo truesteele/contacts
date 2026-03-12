@@ -1,0 +1,544 @@
+FLOURISH FUND INNOVATION CHALLENGE
+Technology & Innovation for Family Flourishing
+________________
+
+
+EXECUTIVE SUMMARY
+The Flourish Fund Innovation Challenge is a $600,000 competitive funding opportunity to accelerate technology solutions in foster care and family preservation — with a potential increase to $800,000 pending a final commitment. The Challenge features a dual-track national competition: a Nonprofit Track ($500,000 funded by Google.org through Flourish Fund's Technology & Innovation Initiative) and a Social Enterprise Track ($100,000 funded by Eagle Ventures).
+
+This first-of-its-kind structure brings nonprofits and mission-driven for-profits together under one umbrella, enabling Flourish Fund and its partners to:
+* Discover innovative solutions across both nonprofit and for-profit sectors
+* Support emerging organizations with fresh approaches to foster care challenges
+* Build a cross-sector community of innovators working toward shared goals
+* Create a pipeline of potential future Scale grant recipients and investment opportunities
+________________
+
+
+CHALLENGE OVERVIEW
+Name: Flourish Fund Innovation Challenge: Technology for Family Flourishing
+Total Fund Pool: $600,000 (with potential increase to $800,000 — see Pending Funding below)
+
+Dual-Track Structure:
+
+NONPROFIT TRACK (Flourish Fund — $500,000)
+* Funded by Google.org through Flourish Fund's Technology & Innovation Initiative
+* Open to 501(c)(3) nonprofits and fiscally sponsored projects
+* Awards structured as grants; Google.org open-source IP requirements apply
+* Final selection authority rests with Flourish Fund
+
+Grant Structure — Nonprofit Track:
+* 4 Winners: $100,000 each
+* 4 Runners-Up: $25,000 each
+* Total Awards: 8 organizations
+
+Grant Flexibility:
+* Winners receive 60% flexible funding ($60,000) for general operations and sustainability, plus 40% ($40,000) designated for technology innovation
+* Runners-up receive 50% flexible funding ($12,500) for general operations, plus 50% ($12,500) for technology innovation
+* This structure acknowledges that technology innovation requires organizational capacity and stability
+
+SOCIAL ENTERPRISE TRACK (Eagle Ventures — $100,000)
+* Funded by Eagle Ventures
+* Open to mission-driven for-profits, B-Corps, and social enterprises
+* Awards structured as investment or prize; no open-source IP requirements
+* Final selection authority rests with Eagle Ventures Investment Committee
+* Potential for follow-on investment
+
+Focus Areas: Aligned with Flourish Fund's three strategic pillars:
+1. Preventing Family Separation — Digital solutions that strengthen at-risk families
+2. Supporting Foster Families — Technology tools that reduce burnout and improve retention
+3. Preparing Youth for Success — Digital platforms for workforce readiness and life skills
+
+Pending Funding:
+* Verbal commitment from Mike Winters for an additional $200,000, which would bring the total challenge to $800,000. Not yet finalized.
+________________
+
+
+PARTNERSHIP STRUCTURE (Eagle Ventures)
+Vision: One Innovation Challenge brand. Two coordinated tracks. A shared commitment to surfacing breakthrough solutions for foster care and family flourishing.
+
+Flourish Fund runs a nonprofit track focused on grants to community organizations. Eagle Ventures runs a for-profit track focused on investment-ready social enterprises. Both operate under a unified brand, share judges across tracks, and culminate in a joint Winners Celebration.
+
+Unified Front End:
+* One landing page and brand identity
+* Clear routing: applicants self-select nonprofit or for-profit track
+* Coordinated timeline: same application window, same announcement date
+* Joint marketing and co-branding across both partners' networks
+
+Cross-Pollination:
+* Shared problem statement: Both tracks address the same challenge, collaboratively defined
+* Aligned impact criteria: Shared criteria for innovation and impact; financial viability criteria differ by track
+* Shared judges: Eagle Ventures representatives on Flourish Fund panel; Flourish Fund/Google representatives on Eagle Ventures panel
+* Expert input: Foster care experts provide feedback to for-profit applicants; business experts provide feedback to nonprofit applicants
+* Entrepreneur feedback: All applicants reaching judge review receive written feedback
+* Network access: For-profit finalists invited to Flourish Fund's Innovators Network learning sessions
+* Impact measurement: Potential partnership with Impact Rising for shared metrics and reporting across both tracks
+
+Decision Rights:
+* Nonprofit grant awards: Flourish Fund (with input from full judging panel including Eagle Ventures)
+* For-profit awards/investment: Eagle Ventures Investment Committee (with input from full judging panel including Flourish Fund/Google)
+* Challenge branding and messaging: Joint (both partners must approve)
+* Event format and timing: Joint (both partners must approve)
+
+What Each Partner Brings:
+
+Flourish Fund:
+* Challenge infrastructure: landing page, nonprofit application platform, communications
+* Program design: peer review process, learning community, Innovators Network
+* Google relationship: potential tech support, employee volunteers, and co-branding
+* Convening: Winners Celebration, kickoff, ongoing cohort support
+
+Eagle Ventures:
+* For-profit infrastructure: Pro Forma platform, pitch competition expertise
+* Investment capability: due diligence process, Investment Committee, follow-on funding
+* Network: LP community, impact investor visibility
+* High-profile connections: Tim Tebow and other Eagle Ventures partners for judging and promotion
+
+Financial Contributions:
+* Flourish Fund (via Google.org): $500,000 — Nonprofit track prize pool + operations
+* Eagle Ventures: $100,000 — For-profit track prize + potential follow-on investment
+* Note: Financial contributions remain separate. Google.org funds flow exclusively to nonprofit track with applicable open-source IP requirements. Eagle Ventures funds flow to for-profit track without IP restrictions. No commingling of funds.
+________________
+
+
+ELIGIBILITY REQUIREMENTS
+
+NONPROFIT TRACK
+Eligible Organizations:
+* 501(c)(3) nonprofits or fiscal sponsorship
+* Annual revenue under $2 million
+* Currently serving at least 50 families/youth annually (or clear plan to reach this within 12 months)
+* Based in or serving U.S. communities
+* Early-stage organizations prioritized; mid-size orgs piloting new tech also eligible
+
+SOCIAL ENTERPRISE TRACK
+Eligible Organizations:
+* For-profit organizations with explicit social mission
+* Registered B-Corps and benefit corporations
+* Seed to Series A stage
+* Annual revenue under $2 million
+* Pre-revenue startups eligible
+* Currently serving or planning to serve at least 50 families/youth annually
+
+Eligible Projects (All Tracks):
+* Must incorporate innovative technology solutions (or new service models with technology components)
+* Directly address foster care or family preservation
+* Include plan for measuring cost per outcome
+* Demonstrate human-centered design approach
+* Nonprofit track: commit to open-source requirements per Google.org agreement
+
+Special Pathways:
+
+Lived Experience Leadership:
+* Organizations led by people with personal experience in foster care or family preservation systems are especially encouraged
+* Brings unique insights that make solutions more effective
+* Active recognition in the selection process
+
+Organizations Over $2M Revenue:
+* May submit a Letter of Inquiry (LOI) for custom funding through Flourish Fund's standard grant process
+* 2-3 page maximum, including organization overview, innovation description, technology component, alignment & impact, and pilot scope (12-18 months)
+* Typical funding range: $50,000-$150,000
+* Rolling basis, typically 4-6 week response time
+
+Ineligible:
+* Government agencies
+* Individuals without organizational affiliation
+* For-profit companies without explicit social mission (nonprofit track)
+* Traditional venture-backed startups prioritizing returns over impact (social enterprise track)
+* Projects focused solely on research without direct service component
+________________
+
+
+SELECTION CRITERIA
+Applications will be evaluated on five key criteria (20 points each, 100 total):
+
+1. INNOVATION (20 points)
+* Novel application of digital tools, automation, or data analytics
+* Creative use of existing technology for foster care challenges
+* Potential to transform traditional service delivery models
+* Clear technological differentiation from existing solutions
+
+2. IMPACT POTENTIAL (20 points)
+* Clear target population and number served
+* Evidence-based theory of change
+* Projected cost per outcome improvements (targeting 30% reduction)
+* Potential to reduce foster care entries or improve placement stability
+* Focus on preventing family separation over downstream interventions
+
+3. MISSIONAL ALIGNMENT (20 points)
+* Whole Family Approach: Solutions that strengthen entire families, not just children
+* Church/Faith Engagement: Ability to mobilize or partner with faith communities
+* Redemptive Orientation: Focus on restoration and healing, not just crisis response
+* Collaborative Spirit: Commitment to field-building and sharing learnings
+* Values-Driven Technology: Human dignity at center, technology as enabler not replacement
+
+4. FEASIBILITY (20 points)
+* Technical capacity and expertise on team
+* Realistic timeline and milestones
+* Clear implementation plan with defined phases
+* Evidence of past project execution
+* Understanding of data privacy and security requirements
+
+5. SCALABILITY & SUSTAINABILITY (20 points)
+* Path to serving 500+ families/youth within 2 years
+* Open-source commitment and field-building potential (nonprofit track)
+* Business model viability and scalability (social enterprise track)
+* Revenue model or funding strategy post-grant
+* Replication potential in other communities
+* Partnership strategy for expansion
+________________
+
+
+IMPLEMENTATION TIMELINE
+
+Phase 1: Launch & Applications (Late February — April 15, 2026)
+* Late February 2026: Public launch announcement
+* Late February – Early March: Judge recruitment, conflict of interest forms, and orientation
+* Week of March 9: Judge orientation call (rubric and process overview)
+* March 16, 2026: Applications open (both nonprofit and social enterprise tracks)
+* Late March 2026: Information sessions (separate sessions for nonprofit and social enterprise tracks; recordings available)
+* March – April 2026: Office hours for drop-in support throughout application window
+* April 8, 2026: Application deadline reminder (1-week warning)
+* April 15, 2026: Applications close at 11:59pm ET (no extensions)
+
+Phase 2: Review & Selection (April 16 — May 13, 2026)
+* April 16-17: Applications distributed to judging panel with review instructions
+* April 16-30: Expert panel review and initial scoring (self-paced, 4-6 hours per judge)
+* April 30: Initial scores due
+* May 1-3: Semi-finalist summary packet distributed and reviewed by judges
+* May 2-9: Finalist interviews (8-12 organizations, 3-5 hours per judge)
+* May 10: Final scores due
+* May 9 or 12: Final deliberation call (1-1.5 hours)
+* May 10-13: Final selections confirmed
+
+Phase 3: Winner Announcement & Awards (May 17, 2026)
+* May 17: Winner Announcement Event — winners announced on stage
+* May 18-29: Post-event follow-up (grant agreements, award terms, next steps)
+* June 1: First disbursements (grants to nonprofit winners; Eagle Ventures finalizes social enterprise terms)
+
+Phase 4: Implementation & Community Building (June 2026 — December 2027, 18 months)
+* June 2026: Implementation begins; kickoff convening (in-person, all awardees)
+* Quarterly: Progress check-ins and learning sessions
+* Both nonprofit and for-profit winners participate in Clapham Foster Care Solution Group (twice-yearly convenings)
+* Quarterly learning sessions; Eagle Ventures portfolio companies invited to Flourish Fund events and vice versa
+________________
+
+
+JUDGE TIMELINE & COMMITMENTS
+Total estimated time commitment: 12-16 hours over approximately 12 weeks
+
+* Feb 23 – March 2: Receive invitation and confirm participation (15-20 min)
+* Feb 23 – March 6: Complete conflict of interest form (10-15 min)
+* By March 6: Hold calendar dates for review, deliberation, and event (5 min)
+* Week of March 9: Attend judge orientation call — rubric and process overview (1 hour)
+* March 16 – April 15: Optional — share challenge with network during application window (10-15 min)
+* March 16 – April 15: Application window open
+* April 16-17: Receive assigned applications and review instructions (15 min)
+* April 16 – April 30: Application review and initial scoring, self-paced (4-6 hours total)
+* By April 30: Submit initial scores (included above)
+* May 1-3: Review semi-finalist summary packet (45-60 min)
+* May 2-9: Participate in finalist interviews, 8-12 organizations (3-5 hours total)
+* By May 10: Submit final scores (30 min)
+* May 9 or May 12: Participate in final deliberation call (1-1.5 hours)
+* May 10-13: Confirm final selections if needed via email (15-20 min)
+* May 17: Attend winner announcement event (1-2 hours + travel)
+
+Open Questions:
+* Judge participation in finalist interviews: Confirm whether all judges participate or a subset
+* Travel support for winner announcement event: Scope of support to be determined based on judge locations
+________________
+
+
+APPLICATION PROCESS
+
+Step 1: Organizational Readiness Self-Assessment (Optional but Recommended)
+Complete a brief 10-question online tool to determine organizational readiness. Takes 5-10 minutes.
+
+Sample questions:
+* Does your organization currently track cost per outcome for your programs?
+* Do you have at least one staff member with basic technology proficiency?
+* Can your organization commit to participating in quarterly learning sessions?
+* Are you prepared to share learnings openly with the field?
+
+Step 2: Full Application (Online Form)
+1. Organization Information (10 minutes)
+* Basic details, tax status, budget
+* Team composition and technical expertise
+* Current programs and populations served
+
+2. Innovation Proposal (1,500 words max, ~45 minutes)
+* Problem statement and solution overview
+* Technology approach and innovation
+* Target population and expected outcomes
+* Implementation timeline
+
+3. Budget Narrative (~30 minutes)
+* Detailed budget breakdown for technology investment (40% for winners, 50% for runners-up — nonprofit track)
+* Brief narrative on how flexible funding will strengthen organizational capacity
+* Cost per outcome projections
+* Sustainability plan
+
+4. Supporting Materials
+* 2-minute video pitch (required) — guidance provided
+* Technical documentation (if applicable)
+* Evidence of past work (optional)
+
+Total estimated application time: 2-3 hours
+Application features: save and return anytime, auto-save, templates provided (Theory of Change, Budget, Outcomes Framework)
+________________
+
+
+PEER REVIEW PROCESS
+Why Peer Review? Research shows that applicants find peer review one of the most valuable parts of competitive processes. It helps you:
+* Understand how your proposal compares to others in the field
+* Learn about potential partners and collaborators
+* Receive practical, actionable feedback from practitioners
+* Deepen your understanding of the evaluation criteria
+
+How It Works:
+* All eligible applicants will be invited to review 3-5 other applications
+* Reviews are blind — you won't know who you're reviewing or who reviews you
+* You'll use a simplified rubric (provided) to score and comment
+* Takes approximately 2-3 hours total
+* Your participation strengthens your own application and the entire field
+
+Benefits:
+* 93% of participants in similar processes rate peer review as valuable
+* Organizations report forming lasting partnerships through this process
+* Even non-winners gain insights that strengthen future funding applications
+________________
+
+
+FLOURISH INNOVATORS NETWORK
+All semi-finalists (top 20-25 applicants) are invited to join the Flourish Innovators Network, a community of leading organizations working on technology-enabled solutions for foster care.
+
+Network Benefits:
+1. Visibility & Funding Connections
+* Profile featured on Flourish Fund website
+* Introductions to aligned funders in our network
+* Included in curated lists for philanthropists seeking to fund foster care innovation
+
+2. Learning & Technical Support
+* Quarterly 90-minute virtual learning sessions on topics like:
+   * AI implementation best practices for human services
+   * Data security and privacy for vulnerable populations
+   * Effective partnerships between tech and social services
+   * Sustainability and revenue models for nonprofit tech
+* Access to recorded sessions and resource library
+* Peer networking opportunities
+* For-profit finalists from Eagle Ventures track also invited to learning sessions
+
+3. Mini-Grants for Urgent Needs
+* Network members are eligible for "Bridge Grants" of $5,000-$10,000
+* Flexible, unrestricted funding for strategic pivots or urgent capacity needs
+* Streamlined application process (2 pages, 2-week turnaround)
+* Limited availability, awarded on rolling basis
+
+Duration: Network membership lasts 2 years with option to renew
+40% of similar networks report that members received additional funding from connections made through network activities.
+________________
+
+
+JUDGING PANEL
+We assemble up to 12 judges representing diverse perspectives, with shared judges across both tracks.
+
+Panel Composition:
+1. Technology Expert — Innovation specialist from tech sector
+2. Foster Care Leader — Executive from established child welfare organization
+3. Lived Experience Representative — Former foster youth or foster parent
+4. Faith Community Leader — Church leader engaged in family ministries
+5. Impact Investor — Venture philanthropist with technology focus
+6. Academic Expert — Researcher in child welfare innovation
+7. Google.org Representative — Technical advisor from funder
+8. Flourish Fund Board Member — Strategic oversight
+9. Field Practitioner — Frontline caseworker or program director
+10. Eagle Ventures Representative — Investment and social enterprise expertise
+11-12. Additional judges as needed
+
+Cross-Track Judging:
+* Eagle Ventures holds 1-2 seats on the Flourish Fund nonprofit panel
+* Flourish Fund and/or Google hold 1-2 seats on the Eagle Ventures for-profit panel
+* Nonprofit judging panel composition: curated by Flourish Fund (Eagle Ventures suggestions welcome)
+* For-profit judging panel composition: curated by Eagle Ventures (Flourish Fund/Google suggestions welcome)
+
+Judges review applications, conduct finalist interviews, and make final recommendations. Final selection authority rests with Flourish Fund (nonprofit track) or Eagle Ventures Investment Committee (social enterprise track).
+________________
+
+
+PROGRAM GUIDELINES
+
+Use of Funds — Nonprofit Track
+Flexible Portion (60% for winners, 50% for runners-up):
+* Can be used for any organizational need
+* Examples: staff salaries, rent, fundraising, capacity building, reserves
+* No restrictions or additional reporting beyond standard grant reporting
+
+Technology Innovation Portion (40% for winners, 50% for runners-up):
+Allowable expenses include:
+* Technology development and testing
+* Staff time for implementation and training
+* Professional development in AI/technology
+* Data security and privacy infrastructure
+* User research and testing
+* Evaluation and measurement systems
+* Direct service delivery costs related to innovation
+* Equipment purchases (any amount — no cap)
+* Technical assistance and consulting
+
+No overhead cap. We recognize that effective work requires full organizational infrastructure.
+
+Social Enterprise Track: Awards structured as investment or prize. Terms determined by Eagle Ventures Investment Committee.
+
+Reporting Requirements
+Light-touch reporting focused on learning, not compliance:
+* Quarterly Check-ins: 30-minute Zoom calls with Flourish staff (conversational, not formal presentations)
+* 6-Month Report: 3-page narrative + simple metrics dashboard
+* 12-Month Report: 3-page narrative + metrics dashboard + 1 success story
+* Final Report (18 months): 5-page narrative + final metrics + reflections on what worked/what didn't
+
+Key metrics we track:
+* Cost per outcome (baseline vs. current)
+* Number of families/youth served
+* Technology implementation milestones
+* Open-source releases and adoption by others (nonprofit track)
+* Partnership formation
+
+Philosophy: We want to learn WITH you, not monitor you. Reports should be honest about challenges and pivots, not just highlight successes.
+
+Open Source Commitment (Nonprofit Track Only)
+Per Google.org requirements, nonprofit track grantees must:
+* Release any code under Apache 2.0 license within 3 months of creation
+* Share other materials under Creative Commons CC-BY-4.0
+* Make innovations searchable and accessible to others
+* No patents on grant-funded innovations
+* Participate in one public webinar to share learnings
+
+This ensures the entire field benefits from our collective investments.
+
+Social Enterprise Track: No open-source IP requirements. No IP restrictions.
+________________
+
+
+COMPREHENSIVE FEEDBACK
+
+For All Applicants:
+* Automated email confirming receipt
+* Notification of eligibility status
+* Access to aggregate data about applicant pool (number of applications, geographic distribution, common themes)
+
+For Peer Review Participants:
+* Summary of feedback from peers who reviewed your application
+* Aggregate scoring data
+
+For Finalists:
+* Detailed written feedback from interview panel
+* Specific recommendations for strengthening proposal
+* Invitation to reapply in future rounds
+
+For Winners:
+* Comprehensive feedback incorporated into grant agreement and implementation planning
+________________
+
+
+MARKETING & OUTREACH STRATEGY
+Target Audiences:
+1. Small, faith-based organizations in foster care
+2. Youth-led organizations with technology focus
+3. Local nonprofits testing digital solutions
+4. Early-stage social enterprises and B-Corps
+5. University programs with social innovation labs
+6. Mission-driven for-profit startups in family services
+
+Outreach Channels:
+* Direct email to 500+ organizations
+* Partner promotion through networks (Christian Alliance for Orphans, Together for Adoption, National Foster Parent Association)
+* Social media campaign (#FlourishInnovation)
+* Webinars with technology nonprofits and social enterprises
+* Conference presentations (RootsCon, Christian Community Development Association)
+* Media coverage in sector publications (Chronicle of Philanthropy, Stanford Social Innovation Review)
+* Eagle Ventures LP community and impact investor networks
+* Tim Tebow and other high-profile Eagle Ventures partners for promotion
+
+Key Messages:
+* "Technology can transform how we support families"
+* "Small organizations, big innovations"
+* "Your innovation could help 40% more families"
+* "Join a community of faith-driven innovators"
+* "Even if you don't win, you'll gain valuable feedback and connections"
+* "Nonprofits and for-profits, one challenge, one mission"
+
+Shared Moments:
+* Joint Launch: Coordinated announcement (late February 2026)
+* Virtual Finalist Showcase: Top 10 from each track featured publicly
+* Live Pitch Event: Top 3 from each track pitch live at Praxis Summit (May 17, 2026)
+* Kickoff Convening: In-person gathering for all awardees (June 2026)
+________________
+
+
+SUCCESS METRICS
+Challenge Success Indicators:
+* 100+ eligible applications received (across both tracks)
+* 50% from organizations with budgets under $1M
+* 40% from organizations less than 5 years old
+* Geographic diversity across 20+ states
+* 80% of applicants rate process as "valuable" or "very valuable"
+
+Grantee Success Indicators (18-month targets):
+* Average 30% reduction in cost per outcome
+* Collective reach of 5,000+ families/youth
+* 80% of grantees sustain programs beyond grant period
+* 4+ grantees qualify for future Scale grants or follow-on investment
+* Open-source tools adopted by 20+ organizations (nonprofit track)
+* 40% of Innovators Network members secure additional funding
+________________
+
+
+RISK MITIGATION
+Risk: Limited technical capacity in small organizations
+Mitigation: Provide technical assistance through Project Evident; build learning community; flexible funding for capacity building
+
+Risk: Data privacy concerns with vulnerable populations
+Mitigation: Require privacy plan in application; provide templates and resources; connect with pro bono legal support
+
+Risk: Sustainability challenges post-grant
+Mitigation: Require sustainability plan; 60/50% flexible funding strengthens organizational foundation; provide fundraising support through network; Eagle Ventures provides follow-on investment pathway for social enterprises
+
+Risk: Limited applications or lack of diversity
+Mitigation: Extended outreach through both Flourish Fund and Eagle Ventures networks; simplified application process; organizational readiness tool; targeted recruitment
+
+Risk: Small team capacity for intensive support
+Mitigation: Leverage peer learning model; use technology for efficiency (video submissions, online forms); focus support on finalists; build alumni network for peer support
+
+Risk: Cross-sector coordination challenges (nonprofit/for-profit tracks)
+Mitigation: Clear decision rights documented; separate operational platforms; shared judges build coherence; joint branding requires mutual approval
+________________
+
+
+BUDGET ALLOCATION
+
+National Challenge Funding:
+* Flourish Fund (via Google.org): $500,000 — Nonprofit track prize pool
+* Eagle Ventures: $100,000 — Social enterprise track prize + potential follow-on investment
+* Mike Winters (verbal, pending): $200,000 — Additional challenge funding (not yet finalized)
+* Current Confirmed Total: $600,000
+* Pending Total (if Winters commitment finalizes): $800,000
+
+Note: Financial contributions remain separate. Google.org funds flow exclusively to nonprofit track with applicable open-source IP requirements. Eagle Ventures funds flow to for-profit track without IP restrictions. No commingling of funds.
+
+Additional Program Costs (from Flourish operations budget):
+* Platform and application management: $15,000
+* Judge honoraria: $10,000
+* Convening, Demo Day, and Praxis Summit participation: $20,000
+* Marketing: $10,000
+* Evaluation: $15,000
+* Bridge Grants for Innovators Network: $20,000
+* Staff time: Existing budget
+Total Program Investment: ~$690,000 (confirmed) + $200,000 (pending)
+________________
+
+
+CONCLUSION
+The Flourish Fund Innovation Challenge represents a first-of-its-kind opportunity to bring nonprofits and social enterprises together under one umbrella to solve foster care's most pressing challenges. By combining Flourish Fund's grant-making expertise with Eagle Ventures' investment capability, we create multiple pathways for innovators to receive funding and support.
+
+Incorporating best practices — including peer review, comprehensive feedback, an innovators network, flexible funding, and a live pitch event at Praxis Summit — we create value for all participants while identifying high-potential innovations across sectors.
+
+This approach allows Flourish Fund and its partners to efficiently identify innovations while building a cross-sector community committed to transforming foster care through technology, faith, and collaboration.

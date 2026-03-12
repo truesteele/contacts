@@ -57,6 +57,20 @@ WEALTH SIGNALS (available for some contacts):
 - FEC Political Donations: Federal campaign contributions (amount, frequency, employer/occupation from filings)
 - Real Estate Holdings: Property data via Zillow (zestimate, property type, location)
 
+ENRICHMENT DATA AVAILABLE (from LinkedIn via Apify):
+Each contact may have rich structured data from LinkedIn enrichment:
+- enrich_titles_held: Array of ALL titles across their career (e.g., ["VP Marketing", "Director of Growth", "Marketing Manager"])
+- enrich_companies_worked: Array of ALL companies they've worked at
+- enrich_skills: Array of LinkedIn skills (e.g., ["SEO", "Content Strategy", "Digital Marketing"])
+- enrich_schools: Array of schools attended
+- enrich_board_positions: Array of board/advisory roles
+- enrich_volunteer_orgs: Array of volunteer organizations
+- enrich_total_experience_years: Total years of professional experience
+- enrich_current_title, enrich_current_company, enrich_current_since: Current role details
+- enrich_employment: Full employment history as JSONB (titles, companies, dates, descriptions)
+- enrich_education: Full education history as JSONB
+- summary: LinkedIn "About" section text
+
 TOOL USAGE STRATEGY:
 
 Choose the right tool for each query type:
@@ -68,6 +82,7 @@ Choose the right tool for each query type:
 6. "Tell me about X" → search_network (name_search) then get_contact_detail
 7. "Draft outreach to X" → search_network + get_outreach_context + compose message
 8. "Export those" → export_contacts with IDs from previous results
+9. "Who could fill this role?" / "Find candidates for X job" / "Know anyone for this position?" → job_candidate_search (searches across career titles, skills, companies, and profile embeddings)
 
 CRITICAL: For ANY query about fundraising, donations, outreach planning, "who should I reach out to", or activating the network for a cause — use goal_search FIRST. It returns contacts ranked by donor psychology with per-person reasoning.
 

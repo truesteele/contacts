@@ -27,10 +27,10 @@ export async function GET(
     }
 
     return Response.json({ tasks: data || [], grouped })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Projects tasks GET error:', error)
     return Response.json(
-      { error: error.message || 'Failed to fetch tasks' },
+      { error: error instanceof Error ? error.message : 'Failed to fetch tasks' },
       { status: 500 }
     )
   }
@@ -65,10 +65,10 @@ export async function POST(
     if (error) throw new Error(`DB error: ${error.message}`)
 
     return Response.json({ task: data }, { status: 201 })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Projects tasks POST error:', error)
     return Response.json(
-      { error: error.message || 'Failed to create task' },
+      { error: error instanceof Error ? error.message : 'Failed to create task' },
       { status: 500 }
     )
   }
@@ -107,43 +107,12 @@ export async function PATCH(
     if (error) throw new Error(`DB error: ${error.message}`)
 
     return Response.json({ task: data })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Projects tasks PATCH error:', error)
     return Response.json(
-      { error: error.message || 'Failed to update task' },
+      { error: error instanceof Error ? error.message : 'Failed to update task' },
       { status: 500 }
     )
   }
 }
 
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: Promise<{ projectId: string }> }
-) {
-  try {
-    const { projectId } = await params
-    const { id } = await req.json()
-
-    if (!id) {
-      return Response.json({ error: 'Task id is required' }, { status: 400 })
-    }
-
-    const supabase = createProjectsServerClient()
-
-    const { error } = await supabase
-      .from('project_tasks')
-      .delete()
-      .eq('id', id)
-      .eq('project_id', projectId)
-
-    if (error) throw new Error(`DB error: ${error.message}`)
-
-    return Response.json({ success: true })
-  } catch (error: any) {
-    console.error('Projects tasks DELETE error:', error)
-    return Response.json(
-      { error: error.message || 'Failed to delete task' },
-      { status: 500 }
-    )
-  }
-}

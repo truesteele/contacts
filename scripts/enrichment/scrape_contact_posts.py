@@ -42,12 +42,13 @@ class ContactPostScraper:
     MAX_CONCURRENT = 8   # Concurrent actor runs
 
     def __init__(self, test_mode=False, batch_size=None, start_from=None,
-                 post_months=6, max_posts=50, force=False):
+                 post_months=6, max_posts=50, force=False, ids=None):
         self.supabase: Optional[Client] = None
         self.apify: Optional[ApifyClient] = None
         self.test_mode = test_mode
         self.limit = batch_size
         self.start_from = start_from
+        self.ids = ids
         self.post_months = post_months
         self.max_posts = max_posts
         self.force = force
@@ -97,6 +98,9 @@ class ContactPostScraper:
                 .order("id")
                 .range(offset, offset + page_size - 1)
             )
+
+            if self.ids:
+                query = query.in_("id", self.ids)
 
             if self.start_from:
                 query = query.gte("id", self.start_from)
@@ -422,7 +426,11 @@ def main():
     parser.add_argument("--months", "-m", type=int, default=6, help="Months of posts to keep (default: 6)")
     parser.add_argument("--max-posts", type=int, default=15, help="Max posts per contact (default: 15)")
     parser.add_argument("--force", "-f", action="store_true", help="Re-scrape contacts that already have posts")
+    parser.add_argument("--ids", type=str, default=None,
+                        help="Comma-separated contact IDs to process")
     args = parser.parse_args()
+
+    ids = [int(x.strip()) for x in args.ids.split(",")] if args.ids else None
 
     scraper = ContactPostScraper(
         test_mode=args.test,
@@ -430,7 +438,8 @@ def main():
         start_from=args.start_from,
         post_months=args.months,
         max_posts=args.max_posts,
-        force=args.force,
+        force=args.force or bool(ids),
+        ids=ids,
     )
     success = scraper.run()
     sys.exit(0 if success else 1)

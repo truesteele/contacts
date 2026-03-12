@@ -435,7 +435,12 @@ SELECT_COLS = (
 # TODO: Populate with Sally's actual inner circle names once she reviews
 # For now, empty — all contacts go through standard list assignment logic
 
-SALLY_TIER_1_NAMES: set[str] = set()
+SALLY_TIER_1_NAMES: set[str] = {
+    "Kay Fernandez Smith",
+    "Kaitlin Levenstrong",
+    "Tiffany Cheng Nyaggah",
+    "Allie DiLauro",
+}
 
 
 # ── Reuse helpers from score_ask_readiness ────────────────────────────
@@ -698,14 +703,11 @@ def determine_campaign_list(contact: dict) -> str:
         except (ValueError, TypeError):
             score = 0
 
-    approach = oc.get("recommended_approach", "")
-    addressable = approach in ("personal_email", "in_person", "text_message")
-
-    if tier == "ready_now" and addressable:
+    if tier == "ready_now":
         return "B"
-    elif tier == "cultivate_first" and score >= 76 and addressable:
+    elif tier == "cultivate_first" and score >= 76:
         return "C"
-    elif tier == "cultivate_first" and 60 <= score <= 75 and addressable:
+    elif tier == "cultivate_first" and score >= 60:
         return "D"
 
     return "D"
@@ -859,7 +861,8 @@ class CampaignScaffolder:
                 break
             offset += page_size
 
-        # Filter to campaign universe: ready_now (addressable) + cultivate_first >= 60 (addressable)
+        # Filter to campaign universe: ready_now + cultivate_first >= 60
+        # Include ALL contacts regardless of email/approach status — emails will be found
         campaign_contacts = []
         for c in all_contacts:
             ar = parse_jsonb(c.get("ask_readiness"))
@@ -876,13 +879,11 @@ class CampaignScaffolder:
                     score = int(score)
                 except (ValueError, TypeError):
                     score = 0
-            approach = oc.get("recommended_approach", "")
-            addressable = approach in ("personal_email", "in_person", "text_message")
 
-            # Include: ready_now + addressable, or cultivate_first >= 60 + addressable
-            if tier == "ready_now" and addressable:
+            # Include: ready_now, or cultivate_first >= 60
+            if tier == "ready_now":
                 campaign_contacts.append(c)
-            elif tier == "cultivate_first" and score >= 60 and addressable:
+            elif tier == "cultivate_first" and score >= 60:
                 campaign_contacts.append(c)
 
         # Also include Sally's Tier 1 contacts not already in the list

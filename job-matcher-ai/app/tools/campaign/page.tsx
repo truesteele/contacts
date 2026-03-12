@@ -70,7 +70,7 @@ interface CampaignContact {
   subject: string | null;
   has_outreach: boolean;
   has_copy: boolean;
-  send_status: Record<string, { sent_at: string; resend_id: string }> | null;
+  send_status: Record<string, { sent_at?: string; drafted_at?: string; resend_id?: string; gmail_draft_id?: string; method?: string }> | null;
   donation: { amount: number; donated_at: string; source: string } | null;
   responded_at: string | null;
   sidelined_reason: string | null;
@@ -94,6 +94,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string 
   donated: { label: 'Donated', color: 'bg-green-100 text-green-800 border-green-200', dot: 'bg-green-500' },
   responded: { label: 'Responded', color: 'bg-yellow-100 text-yellow-800 border-yellow-200', dot: 'bg-yellow-500' },
   sent: { label: 'Sent', color: 'bg-blue-100 text-blue-800 border-blue-200', dot: 'bg-blue-500' },
+  gmail_draft: { label: 'In Gmail', color: 'bg-amber-100 text-amber-800 border-amber-200', dot: 'bg-amber-500' },
   draft: { label: 'Draft', color: 'bg-gray-100 text-gray-600 border-gray-200', dot: 'bg-gray-400' },
 };
 
@@ -124,7 +125,12 @@ type BcdSortField = 'name' | 'list' | 'ask_amount' | 'persona';
 function getContactStatus(c: CampaignContact): string {
   if (c.donation) return 'donated';
   if (c.responded_at) return 'responded';
-  if (c.send_status && Object.keys(c.send_status).length > 0) return 'sent';
+  if (c.send_status && Object.keys(c.send_status).length > 0) {
+    const entries = Object.values(c.send_status);
+    const allGmailDrafts = entries.every((e) => e.method === 'gmail_draft');
+    if (allGmailDrafts) return 'gmail_draft';
+    return 'sent';
+  }
   return 'draft';
 }
 
@@ -248,6 +254,7 @@ export default function CampaignPage() {
   const [bcdSortOrder, setBcdSortOrder] = useState<'asc' | 'desc'>('desc');
 
   // Send state
+  const [sendMethod, setSendMethod] = useState<'resend' | 'gmail_draft'>('gmail_draft');
   const [sendingIds, setSendingIds] = useState<Set<number>>(new Set());
   const [sendingAllA, setSendingAllA] = useState(false);
   const [sendingPreEmail, setSendingPreEmail] = useState(false);
@@ -382,45 +389,55 @@ export default function CampaignPage() {
   const sendCampaignEmails = useCallback(async (
     contactIds: number[],
     emailType: string,
-  ): Promise<{ total_sent: number; total_failed: number; total_skipped: number }> => {
+  ): Promise<{ total_sent: number; total_failed: number; total_skipped: number; errors: string[] }> => {
     // Batch to avoid edge runtime timeout (30s). 20 contacts × ~300ms ≈ 6s per batch.
     const BATCH_SIZE = 20;
     let total_sent = 0;
     let total_failed = 0;
     let total_skipped = 0;
+    const errors: string[] = [];
 
     for (let i = 0; i < contactIds.length; i += BATCH_SIZE) {
       const batch = contactIds.slice(i, i + BATCH_SIZE);
       const res = await fetch('/api/network-intel/campaign/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contact_ids: batch, email_type: emailType }),
+        body: JSON.stringify({ contact_ids: batch, email_type: emailType, send_method: sendMethod }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || `Send failed (${res.status})`);
       }
       const result = await res.json();
-      total_sent += result.total_sent || 0;
+      console.log('[Campaign Send] batch result:', result);
+      total_sent += (result.total_sent || 0) + (result.total_drafted || 0);
       total_failed += result.total_failed || 0;
       total_skipped += result.total_skipped || 0;
+      // Collect error messages from failed results
+      for (const r of result.results || []) {
+        if (r.status === 'failed' && r.error) errors.push(`${r.contact_name}: ${r.error}`);
+      }
     }
 
-    return { total_sent, total_failed, total_skipped };
-  }, []);
+    return { total_sent, total_failed, total_skipped, errors };
+  }, [sendMethod]);
 
   const handleSendOne = useCallback(async (contact: CampaignContact) => {
     const email = resolveEmail(contact);
     if (!email) return;
     const name = `${contact.first_name} ${contact.last_name}`.trim();
-    if (!window.confirm(`Send to ${name} at ${email}?`)) return;
+    const action = sendMethod === 'gmail_draft' ? 'Create Gmail draft for' : 'Send to';
+    if (!window.confirm(`${action} ${name} at ${email}?`)) return;
 
     setSendingIds((prev) => new Set(prev).add(contact.id));
     try {
-      await sendCampaignEmails([contact.id], 'personal_outreach');
+      const result = await sendCampaignEmails([contact.id], 'personal_outreach');
+      if (result.total_failed > 0) {
+        alert(`Failed: ${result.errors.join('; ') || 'Unknown error'}`);
+      }
       await loadData();
-    } catch {
-      // loadData will show current state regardless
+    } catch (err) {
+      alert(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setSendingIds((prev) => {
         const next = new Set(prev);
@@ -428,7 +445,7 @@ export default function CampaignPage() {
         return next;
       });
     }
-  }, [sendCampaignEmails, loadData]);
+  }, [sendMethod, sendCampaignEmails, loadData]);
 
   const handleSendAllA = useCallback(async () => {
     const unsent = listAContacts.filter((c) => {
@@ -436,7 +453,8 @@ export default function CampaignPage() {
       return status === 'draft' && c.channel === 'email' && resolveEmail(c);
     });
     if (unsent.length === 0) return;
-    if (!window.confirm(`Send personal outreach to ${unsent.length} unsent List A contacts?`)) return;
+    const action = sendMethod === 'gmail_draft' ? 'Create Gmail drafts for' : 'Send personal outreach to';
+    if (!window.confirm(`${action} ${unsent.length} unsent List A contacts?`)) return;
 
     setSendingAllA(true);
     try {
@@ -596,10 +614,10 @@ export default function CampaignPage() {
     // Determine campaign phase based on current date
     const now = new Date();
     const phases = [
-      { name: 'Personal Outreach', start: '2026-02-24', end: '2026-03-02' },
-      { name: 'Pre-Email Notes', start: '2026-03-03', end: '2026-03-07' },
-      { name: 'Email Sequence', start: '2026-03-09', end: '2026-03-23' },
-      { name: 'Follow-Up & Close', start: '2026-03-24', end: '2026-04-06' },
+      { name: 'Personal Outreach', start: '2026-03-02', end: '2026-03-09' },
+      { name: 'Email 1 + Follow-Up', start: '2026-03-10', end: '2026-03-16' },
+      { name: 'Email 2 + Follow-Up', start: '2026-03-17', end: '2026-03-23' },
+      { name: 'Email 3 + Close', start: '2026-03-24', end: '2026-04-06' },
     ];
     let currentPhase = 'Pre-Launch';
     for (const phase of phases) {
@@ -872,6 +890,25 @@ export default function CampaignPage() {
           <TabsContent value="list-a">
             <TooltipProvider delayDuration={300}>
             <div className="mt-2">
+              <div className={cn(
+                'rounded-lg px-3 py-2 mb-3 text-xs flex items-center gap-2',
+                sendMethod === 'gmail_draft'
+                  ? 'bg-amber-50 border border-amber-200 text-amber-800'
+                  : 'bg-blue-50 border border-blue-200 text-blue-800'
+              )}>
+                <span className="font-medium">Send via:</span>
+                <select
+                  value={sendMethod}
+                  onChange={(e) => setSendMethod(e.target.value as 'resend' | 'gmail_draft')}
+                  className="text-xs font-medium border rounded px-2 py-1 bg-white"
+                >
+                  <option value="gmail_draft">Gmail Draft → justinrsteele@gmail.com</option>
+                  <option value="resend">Resend → justin@outdoorithmcollective.org</option>
+                </select>
+                <span className="text-[10px] opacity-70">
+                  {sendMethod === 'gmail_draft' ? 'Creates drafts you send manually' : 'Sends immediately via Resend'}
+                </span>
+              </div>
               <div className="flex items-center justify-between mb-3">
                 <div className="text-xs text-muted-foreground">
                   {listAContacts.length} personal outreach contacts — sorted by ask amount
@@ -891,12 +928,12 @@ export default function CampaignPage() {
                       {sendingAllA ? (
                         <>
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          Sending...
+                          {sendMethod === 'gmail_draft' ? 'Drafting...' : 'Sending...'}
                         </>
                       ) : (
                         <>
                           <SendHorizonal className="w-3.5 h-3.5" />
-                          Send All Unsent ({unsentCount})
+                          {sendMethod === 'gmail_draft' ? `Draft All Unsent (${unsentCount})` : `Send All Unsent (${unsentCount})`}
                         </>
                       )}
                     </Button>
@@ -926,7 +963,7 @@ export default function CampaignPage() {
                         const isEmail = c.channel === 'email';
                         const hasEmail = !!resolveEmail(c);
                         const isSending = sendingIds.has(c.id);
-                        const canSend = isEmail && hasEmail && status === 'draft' && !sendingAllA;
+                        const canSend = isEmail && hasEmail && status === 'draft' && !sendingAllA && !sendingIds.has(c.id);
                         return (
                           <tr
                             key={c.id}
@@ -979,7 +1016,7 @@ export default function CampaignPage() {
                                       )}
                                     </Button>
                                   </TooltipTrigger>
-                                  <TooltipContent>Send email now</TooltipContent>
+                                  <TooltipContent>{sendMethod === 'gmail_draft' ? 'Create Gmail draft' : 'Send email now'}</TooltipContent>
                                 </Tooltip>
                               )}
                               {status === 'sent' && (

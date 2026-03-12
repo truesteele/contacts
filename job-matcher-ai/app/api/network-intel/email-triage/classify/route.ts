@@ -47,9 +47,48 @@ COLD SALES PATTERNS:
   "Justin - following up", "last follow up Justin", "A gentle nudge from my end"
 - Sender name looks like a sales rep + generic company: "Marcus from ClarityMail", etc.
 
+COLD RECRUITING (even from Gmail/Yahoo addresses):
+- Gmail/Yahoo/Outlook addresses where the username contains recruiter keywords:
+  "recruiting", "talentacquisition", "executivesearch", "headhunter"
+  Examples: kourtniehitchcockrecruiting@gmail.com, rennienastor.talentacquisition@gmail.com
+- Vague flattering subjects that are templated recruiter spam:
+  "Confidential Opportunity Aligned With Your Experience"
+  "Strategic Role Alignment for Your Leadership Experience"
+  "Chief Executive Officer" (just a job title as the subject)
+  "Scaling AI for Impact & Philanthropic Innovation" (from a recruiter gmail address)
+- Display name shows a corporate domain (e.g., "career.ngc.com") but actual sender is @gmail.com
+- These are mass-spray cold emails, NOT genuine recruiters from named firms
+- A recruiter from a known firm (Korn Ferry, Spencer Stuart, Heidrick) = action.
+  A random Gmail with "recruiting" in the username = skip.
+
+AUTOMATED NOTIFICATIONS:
+- Bounce/delivery failure notifications (mailer-daemon@googlemail.com)
+- API key delivery emails (noreply@api.data.gov)
+- Kindora's own automated product emails sent to Justin's accounts:
+  "Your Intel Brief for X is ready", "Welcome to Kindora!", "Your organization profile is ready"
+  (Justin built the product — these are system notifications, not action items)
+- Error monitoring alerts from noreply@outdoorithm.com
+
+SECURITY / ACCOUNT ALERTS (always skip — Justin goes straight to inbox for these):
+- Sign-in alerts and new device notifications (Dropbox, Google, Apple, etc.)
+- Verification codes, 2FA codes, OTP codes from any service
+- Password reset emails (Supabase, GitHub, any SaaS)
+- Token expiration notices (GitHub PAT, API keys about to expire)
+- "Someone signed in to your account" notifications from any service
+- Google Voice forwarded text messages that contain security/verification codes
+  (short codes like 28750, 5-digit senders are almost always automated codes)
+- These are time-sensitive but low-value — Justin will find them in his inbox when needed.
+  They should NEVER be flagged as action or urgent.
+
+EVENT REMINDERS (always skip):
+- Event platform reminders (Luma, Eventbrite, Splash, etc.) for events already RSVP'd
+- "EVENT REMINDER:" or "Reminder:" prefixed subjects about upcoming events
+- These are calendar noise — the event is already on Justin's calendar.
+
 NEWSLETTERS/MARKETING:
 - Mass-distributed newsletters from mailing list platforms (beehiiv, convertkit, substack, mailchimp)
   UNLESS the sender is someone Justin personally knows
+- Weekly digests from SaaS tools (e.g., Instrumentl "Weekly deadline digest")
 
 ═══ FYI — Informational, no reply needed ═══
 
@@ -71,10 +110,29 @@ NEWSLETTERS/MARKETING:
   recognizable names) that appears genuine
 - Co-founder messages (Karibu, Sally when about OC/Outdoorithm business)
 
+INBOUND SALES LEADS (HIGH PRIORITY ACTION):
+- Marketplace inquiries (e.g., Blackbaud Marketplace "New inquiry" emails about Kindora)
+- Contact form submissions from potential customers asking about Kindora
+- Demo requests or "interested in learning more" emails about Kindora from nonprofits,
+  foundations, consultants, or educational institutions
+- Replies to Justin's outbound sales/partnership emails (someone responding to a pitch)
+- Referrals where someone recommends a person try Kindora
+These are revenue opportunities. Even if the sender is noreply@ (like Blackbaud forwarding
+a marketplace inquiry), the underlying message is from a real person interested in buying.
+Always classify these as ACTION, never as skip/notification.
+
 IMPORTANT NUANCES:
 - "Re:" from a known collaborator = action. "RE:" from a random sales domain = skip.
 - Someone at a real company reaching out about a real opportunity = action.
   Someone at a SaaS tool reaching out to sell = skip.
+- A gmail address with "recruiting" or "talentacquisition" in the username = skip (mass cold recruiter).
+  A recruiting email from a named executive search firm = action.
+- Kindora's own automated emails (Intel Briefs, Welcome emails) sent to Justin = skip.
+- Delivery Status Notification / bounce messages from mailer-daemon = skip.
+- Instrumentl weekly digests or other SaaS product digests = skip (newsletter).
+- ANY email with a verification code, OTP, sign-in alert, password reset, or token expiration = skip.
+  These are never action items. Justin goes to his inbox directly when he needs these.
+- Event reminders from Luma, Eventbrite, etc. for already-RSVP'd events = skip.
 - If unsure, lean toward action — false negatives (missing a real email) are worse than
   false positives (showing a sales email).
 

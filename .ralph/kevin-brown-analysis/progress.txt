@@ -1,0 +1,330 @@
+# Ralph Progress Log
+Loop: kevin-brown-analysis
+Started: 2026-02-26
+---
+
+## Data Overview
+- 100 Kevin Brown posts in `influencer_posts` table (Nov 2024 – Feb 2026)
+- 23,456 reactions in `influencer_post_reactions` (13,167 unique reactors)
+- 256 contacts in Justin's DB engage with Kevin's posts
+- Media: 61 text (avg 539 engagement), 39 carousel (avg 345 engagement)
+- Engagement: avg 463, max 3,134, avg likes 366, avg comments 49, avg shares 48
+- Top post (3,134): "Your solo Communications Officer isn't a unicorn..."
+- MCP server: supabase-contacts (NOT supabase_crm)
+- Env var: SUPABASE_SERVICE_KEY (not SUPABASE_KEY)
+
+## Codebase Patterns
+- Python venv: .venv/ (activate with source .venv/bin/activate)
+- OPENAI_APIKEY (no underscore before KEY)
+- GPT-5 mini does NOT support temperature=0
+- openai.responses.parse() with text_format=PydanticModel for structured output
+- ThreadPoolExecutor(max_workers=150) for GPT-5 mini batch
+- Supabase client: create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_SERVICE_KEY"])
+
+---
+
+## Iteration Log
+
+### Iteration 1 — US-001: Extract and Catalog (COMPLETE)
+**Script:** `scripts/intelligence/analyze_kevin_brown.py --step catalog`
+**Output:** `docs/kevin_brown_posts_catalog.json` (164KB, 100 posts, 17 fields each)
+
+**Key Findings:**
+- **100 posts**, Nov 5 2025 – Feb 25 2026 (~4 months, ~6 posts/week)
+- **Engagement:** min 75, avg 463, median 229, P75 578, P90 1,141, max 3,134
+- **Heavy right-skew:** median (229) << mean (463) — a few viral hits pull the average up
+- **40% of posts** get 101-200 engagement; only 13% break 1,000
+- **Text outperforms carousel:** text avg 539 vs carousel avg 345 (56% higher)
+- **But carousels drive more conversation:** comment-to-like 0.217 vs text 0.171, share-to-like 0.133 vs 0.099
+- **Length sweet spot unclear from averages alone** — medium (300-800) and long (800-1500) are similar avg engagement (~440), but the 2 very_long posts average 1,619 (small sample)
+- **Weekday >> Weekend:** Mon avg 683, Wed avg 643 vs Sat 246, Sun 145
+- **Avg hook (first line) length:** 40 chars — punchy, short openers
+- **Top post (3,134):** "Your solo Communications Officer isn't a unicorn..." — long-form (1,360 chars), text format
+- **#2 (2,661):** "Simple does not mean shallow." — medium (481 chars), activist campaign commentary
+
+**Post metrics saved per post:**
+id, post_url, post_date, iso_date, day_of_week, post_content, media_type, engagement_likes/comments/shares/total, char_count, hook_length, line_count, length_bucket, comment_to_like_ratio, share_to_like_ratio
+
+**Next:** US-003 will add rhetorical device & framing deep-dive
+
+### Iteration 2 — US-002: Theme & Core Message Analysis (COMPLETE)
+**Script:** `scripts/intelligence/analyze_kevin_brown.py --step themes`
+**Method:** GPT-5 mini structured output (Pydantic) with 150 workers, 100/100 posts analyzed
+
+**Key Findings — Theme Analysis:**
+- **Dominant theme: fundraising_strategy (64%)** — but NOT the highest engagement
+- **advocacy_activism is KING for engagement:** avg 1,493 (3.2× the fundraising avg of 367) despite only 5 posts
+- **visual_creative is hidden gem:** avg 1,177 (3 posts only, but includes #2 post at 2,661)
+- **leadership posts are feast-or-famine:** avg 512, but top post (3,134) is leadership; median only 232
+- **fundraising_strategy is workhorse:** 64 posts, avg 367, reliable but not viral
+
+**Content Category Insights:**
+- **call_to_action CRUSHES IT:** avg 833 (23 posts) — 2.4× the educational avg (341)
+- **inspirational is #2:** avg 443 (11 posts) — emotional uplift outperforms pure education
+- **educational is the base:** 53 posts, avg 341 — consistent but not viral
+- **contrarian underperforms:** avg 211 (5 posts) — Kevin's audience doesn't love contrarian takes
+- **No case_study or hot_take posts** in the dataset — Kevin avoids these formats
+
+**Emotional Appeal:**
+- **pride (avg 1,146)** and **empathy (avg 798)** are TOP emotions by engagement
+- **aspiration dominates volume (58%)** but avg is 388 — common but not special
+- **urgency (21 posts, avg 450)** performs above average — scarcity/FOMO works
+- **fear/outrage are rare** but decent when used (2 outrage posts avg 505)
+
+**Target Audience:**
+- **fundraisers (68%)** are his bread-and-butter but avg only 365
+- **nonprofit_leaders (23%)** get higher avg 518 — broader audience = more shares
+- **comms_professionals (6%)** highest avg of regular audiences at 914
+- **donors (2 posts) avg 896** — rare but high-impact when Kevin speaks TO donors
+
+**Rhetorical Devices (frequency → engagement):**
+- **Most common:** antithesis (82), enumeration (72), repetition (66), metaphor (62)
+- **Highest engagement:** rhetorical_question (avg 683), irony (696), analogy (657), tricolon (653)
+- **Key insight:** Kevin's viral formula combines antithesis + enumeration + metaphor as a base, then layers in rhetorical questions or tricolon for the highest performers
+- **juxtaposition (44 posts, avg 581)** is the engagement sweet spot — used often AND performs well
+
+**Top Post Patterns:**
+- #1 (3,134): leadership + empathy + call_to_action — "Your solo Communications Officer isn't a unicorn"
+- #2 (2,661): visual_creative + aspiration + educational — "Simple does not mean shallow"
+- #3 (2,375): advocacy_activism + urgency + call_to_action — aid defense post
+- Pattern: TOP posts combine (leadership/advocacy) theme × (empathy/pride) emotion × call_to_action category
+
+**For Kindora (implications):**
+- Don't just educate — ADVOCATE (outdoor equity, nature access, screen time crisis)
+- Use pride/empathy emotions over pure aspiration
+- Always include a call to action (comment, share, tag)
+- The "speak to leaders" frame outperforms "speak to practitioners"
+- Rhetorical questions and tricolon structures should be signature moves
+
+**Next:** US-004 will analyze length, format, and timing optimization
+
+### Iteration 3 — US-003: Rhetorical Device & Framing Deep-Dive (COMPLETE)
+**Script:** `scripts/intelligence/analyze_kevin_brown.py --step rhetoric`
+**Method:** GPT-5 mini structured output (RhetoricAnalysis Pydantic model), 150 workers, 100/100 posts analyzed
+
+**Key Findings — Opening Hooks:**
+- **emoji_hook is rare but HIGHEST avg (806)** — only 2 posts, but eye-catching
+- **statistic hooks are strong (avg 653, 7 posts)** — numbers grab attention
+- **list_preview (avg 613, 8 posts)** — "Here are 5 things..." style works well
+- **provocative_statement is DOMINANT (45 posts!)** but avg 495 — Kevin's go-to, reliable not spectacular
+- **story_opening UNDERPERFORMS (avg 171)** — Kevin's audience wants punchy, not narrative
+- **imperative_command (avg 236)** — "Stop doing X" doesn't land as well as expected
+
+**Key Findings — Structural Patterns:**
+- **myth_bust is TOP (avg 1,073)** but rare (2 posts) — huge opportunity for Kindora
+- **build_to_reveal (avg 701, 10 posts)** — tension → payoff is Kevin's secret weapon
+- **list_format (26 posts, avg 474)** and **problem_solution (50 posts, avg 405)** are workhorses
+- **narrative_arc BOMBS (avg 164)** — Kevin's audience doesn't want stories, they want frameworks
+- **problem_solution is Kevin's default (50%)** — identifies a pain, provides an answer
+
+**Key Findings — Framing Techniques:**
+- **identity_appeal (avg 793)** — "You as a fundraiser..." frames crush it — people engage when they feel seen
+- **contrast (avg 536, 14 posts)** — side-by-side comparisons are strong and frequently used
+- **reframing DOMINATES volume (65 posts)** with solid avg 472 — Kevin's signature: take familiar idea, flip it
+- **storytelling_frame and social_proof underperform** — Kevin's audience wants frameworks, not stories
+
+**Key Findings — CTAs:**
+- **share_this is KING (avg 732, 18 posts)** — "Repost ♻️ if you agree" drives massive engagement
+- **none (57 posts, avg 435)** — Kevin often doesn't include CTAs and still gets engagement
+- **comment_below (avg 344)** — asking for comments works less well than asking for shares
+- **link_in_comments (avg 294)** — external links hurt engagement (algorithm penalty?)
+
+**Key Findings — Tone:**
+- **passionate (avg 646, 18 posts)** — when Kevin gets fired up, engagement follows
+- **authoritative (50 posts, avg 476)** — his default mode, reliable
+- **conversational (avg 343)** — less formal tone slightly underperforms
+
+**Key Findings — Formatting:**
+- **Bold unicode: negligible effect** — with bold avg 489 vs without 442 (not significant)
+- **Emoji: 100% of posts use emoji** — it's Kevin's universal signature (💪🏽💛)
+- **Hook gap: 90% of posts use it** — standard technique, slight advantage (472 vs 390)
+
+**Key Findings — Rhetorical Device Combos:**
+- **Viral combos ALL include antithesis** — it's in 80/100 posts, the foundation of everything
+- **antithesis + repetition + rhetorical_question + metaphor** = highest-engagement recipe
+- **Top 5 viral posts all layer 5+ devices** — more devices = more engagement (when done skillfully)
+- **rhetorical_question (avg 627)** and **alliteration (avg 586)** are the highest-engagement individual devices
+- **tricolon (avg 525, 45 posts)** — rule of three is reliable and frequent
+
+**Kevin's Rhetorical DNA (synthesized):**
+1. **Opens with provocative statement** (45% of posts) — short, punchy, challenges an assumption
+2. **Frames as problem → solution** (50%) or **builds to a reveal** (10%, higher engagement)
+3. **Reframes a familiar concept** (65%) — makes the audience see something differently
+4. **Layers antithesis + repetition + enumeration** as base devices (present in 70%+ of posts)
+5. **Asks for shares, not comments** — share_this CTA crushes comment_below 2:1
+6. **100% emoji, 90% hook gap, 45% bold unicode** — consistent formatting signature
+7. **Passionate > authoritative** for peak engagement, but authoritative is his steady state
+
+**For Kindora (rhetorical implications):**
+- Open with **statistics or provocative statements** about outdoor access/screen time
+- Use **myth_bust or build_to_reveal** structures (both massively outperform problem_solution)
+- Frame posts with **identity_appeal** ("As a parent who believes in nature...") or **contrast**
+- Always include **share_this CTA** — "Repost if you believe every kid deserves time outside"
+- Layer **antithesis + rhetorical questions + tricolon** as core devices
+- Passionate tone > conversational for viral potential
+- Bold unicode is optional but doesn't hurt; emoji is mandatory (Kevin never skips it)
+- Always use hook gap (blank line after first line)
+
+**Next:** US-004 will analyze length, format, and timing optimization
+
+### Iteration 4 — US-004: Length, Format & Timing Optimization (COMPLETE)
+**Script:** `scripts/intelligence/analyze_kevin_brown.py --step format`
+**Method:** Pure statistical analysis from catalog data (no GPT calls needed)
+**Output:** CSV scatter data at `docs/kevin_brown_length_vs_engagement.csv`, format_summary in JSON catalog
+
+**Key Findings — Length:**
+- **very_long (1500+) has HIGHEST engagement** (avg 1,619) but only 2 posts — tiny sample, not reliable
+- **medium (300-800) is the workhorse:** 70 posts, avg 443, median 234 — Kevin's default length
+- **long (800-1500) is similar:** 25 posts, avg 440, median 197 — no significant advantage over medium
+- **short (<300) is rare:** only 3 posts — Kevin almost never writes short posts
+- **INSIGHT:** Length doesn't matter much between 300-1500 chars — content quality matters more than word count
+
+**Key Findings — Hook Length:**
+- **25-50 chars is the sweet spot:** 78 posts, avg 506 — punchy but not tiny
+- **50+ chars BOMBS:** avg 143-160 — too long for a hook, loses attention
+- **RULE: Keep hooks under 50 characters**
+
+**Key Findings — Format:**
+- **Text dominates:** 61 posts, avg 539 vs carousel avg 345 (56% higher raw engagement)
+- **BUT carousels drive more conversation:** comment/like ratio 0.217 vs text 0.171 (27% more)
+- **AND carousels get shared relatively more:** share/like ratio 0.133 vs text 0.099 (34% more)
+- **INSIGHT:** Text gets higher raw engagement, carousels drive deeper engagement
+
+**Key Findings — Timing:**
+- **Monday is KING:** avg 683 — strongest day by far
+- **Wednesday is #2:** avg 643 — midweek spike
+- **Weekend is DEAD:** Saturday avg 246, Sunday avg 145
+
+**Key Findings — Posting Cadence:**
+- **5.6 posts/week avg, median 6** — almost every weekday
+- **Engagement trend FLAT across months:** 431-488 avg — no seasonal effect
+
+**Key Findings — Cross-Tabs (the gold):**
+- **advocacy_activism works in ANY format** — always high engagement
+- **fundraising_strategy is better as medium-length text:** medium avg 389 vs long avg 253
+- **leadership posts need LONG format:** long avg 727 vs medium avg 327
+- **statistic × carousel is EXPLOSIVE:** avg 1,292 — numbers + visual = viral
+- **story_opening × ANY format BOMBS:** avg 164-178 — confirmed: audience doesn't want stories
+
+**Line Count:**
+- **16-20 lines is the high-engagement sweet spot:** avg 735 (includes top post at 3,134)
+- **6-10 lines is daily default:** 44 posts, avg 371
+
+**OPTIMAL CONTENT FORMULA:**
+- Length: medium (300-800 chars), go long for leadership themes
+- Format: text (56% higher engagement)
+- Day: Monday or Wednesday
+- Hook: 25-50 characters
+- Lines: 16-20 for viral potential, 6-10 for daily content
+
+**For Kindora:**
+- Default text posts, 300-800 chars, posted Monday or Wednesday
+- Hooks under 50 characters — every char over 50 costs engagement
+- Go long for leadership/advocacy themes only
+- Use carousels when you want conversation (higher comment/share ratios)
+- Never post weekends — 2-4x engagement drop
+- Post 5-6 times/week — consistency > volume
+- Pair statistics with carousels for viral potential
+
+**Next:** US-006 will create the master analysis document with Kindora content strategy
+
+### Iteration 5 — US-005: Kevin's Content Playbook — Signature Patterns (COMPLETE)
+**Script:** `scripts/intelligence/analyze_kevin_brown.py --step playbook`
+**Method:** GPT-5 mini structured output (PlaybookSynthesis Pydantic model) — single comprehensive synthesis call with full analysis data as context
+**Output:** `playbook` section in JSON catalog, full playbook printed to stdout
+
+**Key Findings — Top 5 Signature Moves:**
+1. **Identity Mirror** (5 posts, avg 793 eng) — Open with identity-facing statement ("Your X isn't a Y"), enumerate damage, finish with binary choice. Uses identity_appeal framing. Top example: "Your solo Communications Officer isn't a unicorn" (3,134 eng)
+2. **Passionate Mobilizer** (8 posts, avg 1,216 eng) — Emotionally charged opening + tight problem-solution + direct social CTA. Passionate tone + call_to_action category = highest-engagement combo. Top example: "What has aid ever done for anyone?" (2,375 eng)
+3. **Build-to-Reveal Educator** (10 posts, avg 701 eng) — Short paradox/provocative opener → staged evidence → concise lesson reveal. Exploits Kahneman's System 1/2 gap. Top example: "Simple does not mean shallow" (2,661 eng)
+4. **Myth-Bust Persuader** (2 posts, avg 1,073 eng) — Strong stat/myth → systematic counter-evidence → prescriptive alternative. Rare but explosive when used. Top example: "USAID cuts $60 billion: outrage" (1,994 eng)
+5. **Reframe Authority** (65 posts, avg 472 eng) — Take common assumption, reframe it, show costs, give actionable alternative. Kevin's workhorse move — 65% of all posts. Most common framing in top-10% posts.
+
+**Key Findings — Viral Formula:**
+- Theme: fundraising_strategy OR advocacy_activism
+- Hook: provocative statement (25-50 chars)
+- Structure: problem_solution OR list_format OR build_to_reveal
+- Frame: reframing (60% of top-10%) + contrast
+- Tone: authoritative OR passionate
+- Length: medium (300-800 chars)
+- Format: text
+- CTA: none OR share_this
+- Emotion: aspiration, empathy, or pride
+- Devices: antithesis + tricolon + repetition as base layer
+
+**Key Findings — What Doesn't Work:**
+1. Story-first opening (avg 171) — slow starts kill attention
+2. Narrative arc structure (avg 164) — audience wants frameworks, not stories
+3. Storytelling frame (avg 156) — reflective tales underperform prescriptions
+4. Imperative command hook (avg 236) — "Do this" feels bossy
+5. Link in comments CTA (avg 294) — external links hurt algorithmic reach
+
+**Key Findings — Audience Psychology:**
+- **Identity:** Pragmatic mission-driven practitioners (fundraisers, nonprofit leaders, comms pros)
+- **Triggers:** Pride (avg 1,146) > empathy (avg 798) > urgency (avg 450) > aspiration (avg 388)
+- **Preferences:** Reframes, concrete steps, rules to follow — NOT stories or soft reflections
+- **Sharing motivation:** Identity signaling + practical utility + advocacy amplification
+
+**Key Findings — Content Calendar:**
+- Post 5-6x/week, focus Monday & Wednesday (avg 683 & 643)
+- Monday: high-impact advocacy/leadership/identity posts
+- Midweek: visual creative, build-to-reveal, practical how-tos
+- Thursday/Friday: fundraising strategy, curated resources
+- Weekend: skip or repurpose evergreen content
+- Text format default (61% of posts, 56% higher engagement), carousels for saveable resources
+
+**For Kindora (playbook implications):**
+- Kevin's top move for Kindora adaptation: **Passionate Mobilizer** (avg 1,216 eng) — outdoor education advocacy with direct share CTA
+- **Build-to-Reveal** is perfect for Kindora's "did you know" format: paradox about nature/kids → evidence → Kindora's solution
+- **Myth-Bust** is underused but explosive — "Screen time isn't the enemy. Indoor isolation is." format
+- **Identity Mirror** maps directly: "You're not a helicopter parent for wanting your kids outside" / "Your family hike isn't just a hike"
+- NEVER use story-first openings or narrative arcs — Justin's audience (parents, educators) will want the same: punchy frameworks > drawn-out stories
+- Default to share_this CTA: "Repost if you believe every kid deserves time outside"
+
+### Iteration 6 — US-006: Kindora Content Strategy & Master Document (COMPLETE)
+**Output:** `docs/KEVIN_BROWN_CONTENT_ANALYSIS.md` (~650 lines, comprehensive standalone document)
+**Method:** Synthesis of all US-001 through US-005 analysis data into actionable Kindora strategy
+
+**Document Structure (6 parts + appendix):**
+1. Executive Summary — 5 key findings with engagement data
+2. Kevin's Profile — who he is, cadence, engagement metrics, top 5 posts
+3. Content Analysis — theme/category/emotion/audience tables with engagement
+4. Rhetorical Analysis — hooks, structures, framing, CTAs, tone, device combos
+5. Format & Length — optimal formula, cross-tabs, timing
+6. Kevin's Playbook — 5 signature moves with templates
+7. **Kindora Content Strategy** — the deliverable section
+
+**Kindora Strategy Deliverables:**
+- **5 Content Pillars:** Outdoor Equity Advocacy (1x Mon), Screen Time vs Nature (1x Wed), Parent Identity & Pride (1x/wk), Outdoor Education Framework (2x Tue/Thu), Builder's Journey (1x Fri)
+- **10 Post Templates:** Each adapts a Kevin signature move for Kindora — complete with template structure + filled-in example
+  1. Outdoor Equity Mobilizer (Passionate Mobilizer pattern)
+  2. Nature Myth-Buster (Myth-Bust pattern)
+  3. Parent Identity Mirror (Identity Mirror pattern)
+  4. Build-to-Reveal (Build-to-Reveal pattern)
+  5. Weekly Framework Drop (Reframe Authority pattern)
+  6. Stat-Driven Carousel (cross-tab: statistic × carousel)
+  7. Advocacy Hot Take (advocacy + passionate tone)
+  8. Founder's Reframe (leadership + long format)
+  9. "Did You Know" Educator (educational + list_preview hook)
+  10. Community Spotlight (pride emotion driver)
+- **Voice Guide:** Kevin vs Justin comparison table + 8 rules for Justin's LinkedIn voice
+- **Content Calendar:** Daily pillar rotation (Mon-Sat), monthly rhythm (advocacy → education → identity → personal)
+- **25 Hooks:** 5 per pillar — all under 50 chars, provocative or stat-driven
+- **Engagement Tactics:** What to adopt (share CTAs, emoji, hook gap, single-sentence lines, bold unicode, tricolon) vs what to skip (story openings, narrative arcs, link CTAs, weekend posting)
+
+**Key Strategic Recommendations:**
+1. Advocacy-first, education-second — Kevin's data proves advocacy content outperforms educational 3-4x
+2. Post 5-6x/week, heaviest on Monday and Wednesday
+3. Open with provocative statements or stats, under 50 chars, blank line after
+4. Use identity-appeal framing ("You're not X for wanting Y")
+5. Default text format for reach, carousels for saveable resources
+6. Share CTAs ("Repost ♻️") at least 2-3x/week
+7. Pride and empathy emotions > aspiration (pride avg 1,146 vs aspiration avg 388)
+8. Never open with stories (avg 171 engagement — worst performer across all hooks)
+
+**ALL 6 STORIES COMPLETE — LOOP FINISHED**
+
+---
+## COMPLETED
+Finished at: Thu Feb 26 18:45:35 PST 2026
+Total iterations: 7

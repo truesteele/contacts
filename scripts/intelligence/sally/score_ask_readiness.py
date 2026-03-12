@@ -79,7 +79,7 @@ camping expeditions, gear provision, and nature education.
 Current state: 49 donors, $30K raised, startup phase seeking founding donor community.""",
 
     "kindora_sales": """GOAL: Kindora Enterprise Sales
-Kindora is an AI-powered grant matching platform for nonprofits, co-founded by Justin Steele as CEO.
+Kindora is an AI-powered grant matching platform for nonprofits, co-founded by Sally and Justin Steele (Justin is CEO).
 Mission: Helping nonprofits find and apply for grants more efficiently using AI.
 Target buyers: Foundation program officers, nonprofit executive directors, grantmaking network leaders.
 Current state: Early-stage startup seeking enterprise customers and champions.""",
@@ -533,7 +533,7 @@ def summarize_shared_institutions(institutions) -> str:
         itype = inst.get("type", "")
         temporal = inst.get("temporal_overlap", False)
         depth = inst.get("depth", "")
-        sally_period = inst.get("sally_period", inst.get("justin_period", ""))
+        sally_period = inst.get("sally_period", "")
         contact_period = inst.get("contact_period", "")
         notes = inst.get("notes", "")
 

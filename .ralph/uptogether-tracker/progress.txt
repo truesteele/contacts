@@ -101,6 +101,23 @@ Started: 2026-03-11
 - The `grouped` response from the API groups by section, but subsection grouping is done client-side
 - Key pattern: SECTION_ORDER array controls display order; any DB sections not in the list appear at bottom
 
+### Iteration 8 — US-008: Seed Data and Deploy (2026-03-11)
+**What:** Created seed script, populated database, added Vercel env vars, deployed to production.
+**How:**
+- Created `scripts/intelligence/seed_uptogether_tracker.py` using Supabase REST API with service role key
+- 79 tasks across 6 sections: Deliverables (10), Application (47), Materials (8), Workplan (4), Meetings (1), Open Questions (9)
+- Application section covers all ~47 questions across 8 subsections (I–VIII) with word limits and owner assignments
+- Materials organized in P1/P2/P3 priority tiers
+- Deliverables grouped by AI Strategy Document, Google.org Application, Strategy Session
+- Kickoff meeting pre-marked as `done`
+- Added 3 env vars to Vercel: `NEXT_PUBLIC_PROJECTS_SUPABASE_URL`, `NEXT_PUBLIC_PROJECTS_SUPABASE_ANON_KEY`, `PROJECTS_SUPABASE_SERVICE_ROLE_KEY`
+- Deployed to `steele-contacts.vercel.app` — page loads, API returns all 79 tasks
+- Typecheck passes clean
+**Learnings:**
+- PostgREST bulk insert requires all objects to have identical keys — normalize with defaults dict before inserting
+- Vercel `printf '%s'` for piping env vars (not echo) to avoid trailing newline corruption
+- Seed script uses `clear_existing()` to make it idempotent — safe to re-run
+
 ### Iteration 7 — US-007: Add Inline Editing and Real-Time Persistence (2026-03-11)
 **What:** Added full interactive editing to the tracker page with optimistic UI updates.
 **How:**

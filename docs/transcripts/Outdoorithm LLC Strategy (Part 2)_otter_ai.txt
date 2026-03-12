@@ -1,0 +1,361 @@
+Speaker 1  0:00  
+Okay, so we were talking about not having an alternative right now in terms of product other than our camps age tool, which we would do more, build out more to kind of more tech camping companion.
+
+Unknown Speaker  0:22  
+I we don't have another product that we think
+
+Unknown Speaker  0:36  
+can necessarily do better, because I express the concern about some concern about eating air at lunch, if our
+
+Speaker 1  0:47  
+focus is an AI tool, but if we built it out into camping companion, and then, I mean, I do think you said data is our vote, and I think it is, but I think trust also is, because right now, our advantage is that people still don't trust AI and so I think when we it up and then we place ourselves there as a conduit, I think that's an
+
+Speaker 2  1:11  
+advantage. Do you think people would be more likely to use an educational app or like,
+
+Speaker 1  1:16  
+well, that's where I was saying I need to, like, understand our audience better, because I don't know if the majority of our users are new to campaign, and if they're not, the educational piece might not matter to them.
+
+Speaker 2  1:34  
+Well, you've only got like, 400 users, so it's not I don't know if understanding who's using right now, may or may not.
+
+Speaker 2  1:48  
+Who's your ideal customer profile? Is it the 400 people that have signed up, or is it somebody else?
+
+Speaker 1  1:56  
+Well, I think we've been told and we've discovered that getting somebody to do something new is a lot harder than scaffolding or helping or easing something for somebody who's already doing the thing. And so I worry that we turn it into an educational piece, then we're trying to find people who don't can, or we barely can, and we'll just like, inspire them to continue and to increase or augment their camping, whereas if the people who are using it are already campers, and if that's the majority, then I feel like we can keep growing that growing that.
+
+Unknown Speaker  2:47  
+And I wonder if the expansion is not in to education that they need to other
+
+Speaker 1  2:55  
+outdoor feats, right? Like the agentic companion is like an outdoors companion, and it can help me figure out camping, but maybe it'll also help me figure out like hiking and kayaking and skiing.
+
+Speaker 2  3:10  
+Or is that crazy? No. I mean, I think if you were able to build something like that, really, really compelling for camping and starting to get traction, lots of companies would probably be interested in acquiring you to be able to apply it to their own stuff.
+
+Speaker 1  3:36  
+Scissors. I. But you don't think it's worth us building
+
+Speaker 2  3:47  
+out those particular No, I think you nail camping first, and then if you do a great job scaffolding people into camping adventures, then yes, like you could totally extend it. Other types of outdoor adventure. And I think you would become a really, really interesting acquisition target to lots of industries where, like, Wait, like, you're getting lots of people out camping, and again, it's a bet. I mean, like, it's not that you take down your pages, so it's not as if, like, oh, you know, if the agent Dick thing doesn't work out, your website flops, especially if you keep the cost really low, then it's like, you know, I mean. I would like outdoor them to get to the point, at some point where it's at least
+
+Unknown Speaker  4:39  
+paying for itself.
+
+Speaker 2  4:45  
+Yeah, I don't know if you know how. I mean, I assume it's not even, I don't think it's that expensive either, right? Like, we have no more developers working on it. It's just like, supabase, some AI API costs. There's like, we need an account. We have accounts for bookkeepers. I would love to do
+
+Speaker 1  5:10  
+that. I just go through and reconcile every now and again, and then I hand it off to Jack to look through the
+
+Speaker 2  5:18  
+four taxes. It's not that it's not that expensive. It doesn't have to make very much money to be able to break even, but it's still not breaking even right now.
+
+Speaker 2  5:43  
+But you know, if, if we built out this kind of like agentic companion thing, like I said, it'd be ahead of the curve, it would probably not get, like, a ton of uptake right now, but what you're betting is that the market's going to turn in that direction, and when it does, you're going to start to capture all of the
+
+Speaker 1  6:09  
+intent. Catch that last part. What does I'll be able to capture all the
+
+Speaker 2  6:13  
+intent if the market turns towards these kinds of solutions, like, people start to trust AI more. There's more and more tools out there. People start to be like, Wow, agentic. AI has really gotten good. Wait, I would love to have an agent for camping. I've got one who's like a counselor for me now, and I've got one that's like helping me do my personal finances. And, you know, people are, like, starting to trust how good these things are getting, and then it's just natural for them to be like, Oh God, there should be an agent to help me with figuring out how to camp. And it's like, Yep,
+
+Speaker 1  6:53  
+I think do we bring the mental health? Well, yeah, but mental health and wellness piece to this part too, because, or is that like starting to stretch right? Because it's, I think people try to figure out a campus still a small segment
+
+Speaker 1  7:12  
+medical market, new campers, right? I mean, was the play too. It's just like, people are, or was it up their research can't remember, or maybe just anyway, like, you know, folks aren't engaging in higher difficulty activities as much or higher cost activities. And so, like, I don't know what is the market segment of people who are entering camping and are like, Oh, I really want to camp, and I need the genetic to get us started, or is it mostly going to be one, people who already camped, I want to make it easier for themselves. And then two, I may be hiding and want to transition to camping, but then three people who are maybe interested in wellness and are starting to see and read alteration from how nature helps you find like there's something else working in there, rather than
+
+Speaker 2  8:21  
+just like too much of thinking how too many things at once, we be betting a little bit that, like as AI proliferates the market, people start to feel more and More starved for like human interaction, something that's
+
+Speaker 2  8:40  
+actually alive, something like this, starts to become more and more appealing.
+
+Speaker 1  8:48  
+Wait, people are cramping more. Oh, like camping. I thought you were saying that people wouldn't want the agentic tool they would want to go back to, like talking to the person.
+
+Speaker 2  8:58  
+I mean, maybe, but like this is the tool that facilitates you being able to get out of the tools a little bit. It's like using the tools to help you do something in real life. You
+
+Speaker 2  9:20  
+I don't know it's, I mean, it's a bet, you know, it's like, but it's not necessarily a bet that like, where your other alternatives are so much stronger that, you know, sort of like, Well, right now, you have this whole series of different tools, and people engage with them somewhat sporadically. None of them make you a lot of money if you pull it all together into an agentic tool that potentially gives you the opportunity to corner, start corner to market.
+
+Unknown Speaker  10:01  
+Why not? I guess you said, why not?
+
+Speaker 2  10:06  
+Yeah, why not? Like, I feel like you got to take a bet on something you can't. Yeah, we can't, like, hang it out here forever, yeah, and I
+
+Speaker 1  10:15  
+think that was, like, our premium model was also partly based on that, on giving people a wide swath of things to choose from. And you're right, like, every time I'm on our website, I'm like, in this world forever, especially, yeah, what would it look like to because my other concern is we just keep building product. So what would it look like to take camps AI and make it more companion? I and make it more companions for it to be customized, that's a little bit more people could still use it as is, and maybe if they see how good it
+
+Speaker 2  11:09  
+is, yeah. I mean, you try to, you know, you try to take whatever information they give and you use it, you know, but then encourage people to give more, because it would get better. I mean, I know that these like Opus 4.6 really strong model, Codex 5.2 also really strong model like, you know, I've seen, I've seen what they can do agentically with coding, and I've seen what they can do agentically with producing music, some kind of like, well, what can it? What can they do to orchestrate our stuff? I mean, I'm assuming that the models are now at a point where they can do it quite well, but, you know, yeah, it would require more building and more tinkering, because I'm like, it's tricky. Like, you know, I think you would want it to be able to automatically set up notifications and manage the notifications, you know, like, hey, I'll set that notification up for you. Do? We already talked about a mile Market Street, California, 183 I will go book that site for you. You know, like, stuff like that, where just, yeah, I don't know, like,
+
+Speaker 3  12:33  
+I you
+
+Speaker 2  12:38  
+know, but, but we, but basically, like, the site is full of tools, you Know, weather and like, science for California, 183 information.
+
+Speaker 2  12:54  
+So yeah, I mean being able to string something like that together in elegant form. I mean outside of the these AI companies themselves, I haven't seen it done. This is me smart.
+
+Speaker 4  13:12  
+Look at this. This is east market street. This is West Market
+
+Unknown Speaker  13:31  
+Street. Yeah, I mean, I haven't seen it done, and so I'm kind of like, well, you know, like, what other app you think of where you're like, oh, man,
+
+Speaker 2  13:50  
+that that kind of like customized. It knows my stuff. It's like, helping me do a complicated thing and doing it in a customized way. That's doing that, like, honestly, Claude and open AI, like, that's kind of it. So, you know, we would be, we would be pushing the boundary of like, what can be done, yeah, but it's also like, it takes a lot of time, because, you know, we were like, Oh, can we do this feature? And I'm like, Oh yeah, that's like Pandora or Oh yeah, I've already, I know that I can do that. Well, it's really like, the stringing it together and, like, all the logic and like how it all comes together, like, harder. Big
+
+Speaker 2  15:07  
+church. I You can't think of anything else that you feel like, no, there's a product here that is a better wedge. I mean, it kind of and it becomes like a long it becomes like a long game play of like, well, you're gonna continue have a website out there, you're gonna continue to capture traffic, you're gonna continue to try to, like, invest in the things and like, your product wedge, you're gonna take a bet on it being like, AI, can't be companion that, like, soup to nuts. Like, basically does everything for you, and you're gonna build towards that eventuality. In the meantime, you're probably gonna, like, I mean, maybe you pick up more traffic, maybe you get some additional traction, but it's not likely gonna hit me any kind of like hockey stick growth curve, because it's just like, it's
+
+Unknown Speaker  15:59  
+not you're saying I should do that because I'm not thinking
+
+Unknown Speaker  16:02  
+that is that you're not thinking, What
+
+Speaker 1  16:05  
+are you saying that I Think I've maybe just messaged You. You
+
+Speaker 4  16:48  
+Yeah, it looks like this is not used. I it
+
+Unknown Speaker  17:21  
+looks like this is not used, okay? So we just summarized that
+
+Speaker 1  17:30  
+we could have camps age AI as the product, or we could center it around, find your perfect campground, and then camps age can be one of the tools, but we would make it very clear that algorithm is where people go to find a campground. And then we started talking about weekly LinkedIn posts or newsletters, maybe both, where it's like the best campground this week. So based off of weather and a variety of other subjective factors, it could continue to like let people know that we are kind of their go to source for keeping information specifically around where to go.
+
+Speaker 2  18:20  
+I mean, your product wedge becomes find your perfect campground.
+
+Unknown Speaker  18:26  
+So it's not a product itself. It's
+
+Speaker 3  18:29  
+a toolbox or that mean?
+
+Speaker 1  18:36  
+I mean, instead of it being like, I guess, each product is solving a problem, and we're naming the problem, so we're saying, what do you need? Do you need the perfect campground? Right? Do do you need? Do you need the perfect campground, right?
+
+Speaker 2  18:52  
+Yeah. I mean, I think it's like, it's the job that you're being hired to do, right and right now, if you said, Well, what job is outdoor rhythm being hired to do? I think
+
+Speaker 1  19:05  
+it actually is that. But it's not clear on our website. You think it's
+
+Unknown Speaker  19:08  
+finding a campground is the job that people are having. People are hiring yesterday?
+
+Speaker 1  19:13  
+Yeah, I mean, except in the beginning, but I think the map and the campground pages are, you know? And you said, yeah, it's our data. Are kind of the biggest, like, like, the boat, the asset. I Right, yeah. I mean, we do have other stuff that does, like, you know, work buddy, it up a little bit make a little bit murky
+
+Unknown Speaker  19:44  
+gear, more than a little bit, yeah,
+
+Speaker 1  19:47  
+no, okay, I agree it is working, but I'm saying, if somebody stepped back and said, What do I use? The map, the campground pages, the gear tool, the weather, the reservation tool, what am I using it for? Well, yes, they're using it to plan a camping trip. So we're saying not where the place to come to plan a trip, but where the place to come to discover.
+
+Speaker 2  20:12  
+Well, again, not just to discover in a general sense, but finding your perfect like discover can be literally like, you know, start flying around and see different things and,
+
+Speaker 1  20:25  
+you know, yeah, it's just that used to be our tagline, find your perfect
+
+Speaker 2  20:35  
+camera, right? Yeah. I mean, I don't know. I mean, I think we've explored, like, a lot of different framings and hate greens. I mean,
+
+Unknown Speaker  20:42  
+I think that was like on the website. No, I know. I
+
+Speaker 2  20:45  
+just, I don't remember. I uh, it's just, I don't we have not built the product around this idea that the number one job that people are hiring us to do is to find their perfect campgrounds because, like, the we don't have like a campground save feature that's, like, really prominent and easy. We don't have like a, like, a virtual pinup map that has like, all their favorite places, you know, like, we don't encourage people to, like, write about or reflect or review or post pictures of their favorite places. We don't have like, I would, I would, I would design it almost like a Netflix for campgrounds like, Oh, tell us what campgrounds you like. We don't have a feature right now where it's like, tell us what campgrounds you like, and then we'll recommend other campgrounds that are similar. Like, we don't have any of that, which, if the primary job was like, Hey, you're here to, like, find your perfect campground. You know, that would be, we would be doing that differently. The agentic thing is, like the job you're being hired to do is to like soup to nuts, get me out there, find the campground, you know, organize my trip, like, help me figure out what I need to buy and bring. Help me make the reservation. That's not to say that we can't do those things. Like, we can still do those things. All kinds of companies have, like, a core product and then, like, a ton of upsell around it, which you just had to be super clear with, like, what it is you're doing and as a primary thing, and like, you know, marketing and branding that thing to people so that they are like, okay, I get it. I get it. I get what I would come here for, primarily, and then I see the other things that I can do once
+
+Speaker 1  22:58  
+I'm here, So the companion feels like substantially different to you. Yeah, yeah.
+
+Speaker 1  23:15  
+Do you think it's too narrow? They ask if you don't have any answers to that, I kind of figure things out by asking questions. I don't necessarily mean that you have to be the solution, but I'm wondering to myself whether is that too narrow, you know, like, if we're only locator of campgrounds, and then, you know, AI comes in, in a little bit with
+
+Unknown Speaker  23:43  
+a way to do that. I guess then people can, like, save their favorites. This
+
+Speaker 1  23:54  
+gives a little bit of the Duolingo, but I like it better because it's it's more inclusive of both new campers and existing campers, because even if they're not looking to go camp somewhere else, you really only camp in one place they were maybe, probably not the site for them now either.
+
+Speaker 1  24:25  
+Yeah, like, if they're like, I only camp at Mora Bay twice a year, and I don't care to ever go. Else to have like this emotion, attachment to this one place. They're probably not the kind of people who use our website. So it doesn't center that winter
+
+Unknown Speaker  24:44  
+add some value around, like, equipment, things like that, but, like, the
+
+Unknown Speaker  24:50  
+weather is huge, honestly,
+
+Speaker 2  24:53  
+yeah, but if you've been going for a long time and you know, like, hey, Morro Bay in whatever, May is really great, but June sucks, I love the broken pieces.
+
+Unknown Speaker  25:08  
+Broken Pieces. I didn't have any during the
+
+Speaker 1  25:30  
+trip, they're really good.
+
+Speaker 1  25:40  
+I have our soundtrack kind of in the back of mine all the time. I
+
+Speaker 1  25:52  
+Yeah, so maybe we're not focus on those folks, although we do have something to offer them as well.
+
+Speaker 1  26:10  
+I I like the every adventure begins another frame.
+
+Speaker 2  26:17  
+Yeah, it's just that, I don't know if it's the primary frame for the whole website. Like, yeah. I mean, right now, I think it is, because it's like, we don't have a clear product focus, and so we're like, leading with our kind of, like missional adventure, like, where you're at home for kind of doing it all. But again, like, I don't know, I but again, like, I don't know, it feels very hard to earn that kind of usage and loyalty, because people are like, well, I don't know who you are. He said, It's rare hard.
+
+Speaker 2  27:07  
+I think if you go like, if you logged on to the landing page that talks about how they're in the collective I feel like every adventure begins another would be a great way to like frame that up at the top of that page, yeah. But for the entire website, I agree there. I mean, I wonder if there's some way to dovetail the public health message into like a find is it not even, yeah. I mean,
+
+Unknown Speaker  27:42  
+find your peace. I don't
+
+Unknown Speaker  27:45  
+know. It can't be vague enough that people are like, what does that even mean?
+
+Speaker 3  27:50  
+Yeah,
+
+Speaker 1  27:55  
+I mean, I think this, I think the wellness piece has been something that we would try to weave in for a long time, but I think the framing that you did recently around public health infrastructure is super compelling, like, I that's the first time I read one of our documents, whether it was, like, generated by me and AI or by you and AI, that like, nailed it, but like this one just felt true. Of
+
+Speaker 2  28:29  
+course, that one is a little bit more leaned in on the collective side, but not
+
+Speaker 1  28:35  
+really, because even if we did a companion tool, it would kind of be like we talked about, like, maybe we do go ahead and help people make their own reservations and automate that like that's very much under the dies, not the dies in the false sense, but like taking into account the reality of our public health crisis and the untapped potential of all this public land that We are paid
+
+Unknown Speaker  29:05  
+to sustain.
+
+Speaker 2  29:10  
+So you're kind of like, then leaning into this spirit of adventure exploration, like, you know, there's so much out there timeline, find
+
+Unknown Speaker  29:22  
+yourself outside that's somebody else's time. Oh, that might be him camp.
+
+Speaker 2  29:34  
+I mean, I think your tagline needs to be something much more tangible in this new challenge. I have no idea who you are, right. What? What can I do?
+
+Speaker 2  30:05  
+Yeah, I mean, I think that that might be an interesting, a more compelling one to lean into in the near term, just because, like, what's
+
+Unknown Speaker  30:14  
+the last and you said compelling
+
+Unknown Speaker  30:16  
+one? What thing to lean into in the near term?
+
+Speaker 1  30:19  
+In the near term with ace in the New York Times, like, today is so thick, like talking to me in the car, man, and like, kind of
+
+Speaker 3  30:30  
+here i here.
+
+Speaker 1  30:35  
+Yeah, it feels good to me.
+
+Speaker 2  30:39  
+I just don't think that the agentic piece is ready yet, like, I don't know that the technology is quite there, although it might be great
+
+Speaker 1  30:46  
+thing though, is that with this find your perfect campground piece. It's still one component, so we can be building it out of the back. Yeah, you can eventually get there.
+
+Speaker 2  30:55  
+And I think the find your perfect campground lends itself to like, a lot more, like Instagram, LinkedIn, whatever, just newsletters. We I
+
+Speaker 2  31:46  
+one challenge that we do have is photos. What's the challenge there? Yeah, we have a bunch of amazing photos from pretty much every campground in the country, except they're
+
+Speaker 1  31:58  
+all on Google. We can't use those. It would Yeah, we're letting the backstory then, because I you pulled them and then you needed to do one with them. I can't remember. What do you mean? Do you mean? Like, well, I guess go ahead and say what you were gonna say. I think you're gonna be about to answer my question.
+
+Speaker 2  32:18  
+I mean, it violates Google's Terms of Service. I would, I think, to like, surface the photos from their users.
+
+Unknown Speaker  32:30  
+But I guess even more than that, it's like the photos are owned by the individuals, and they gave Google permission to
+
+Unknown Speaker  32:44  
+display the photos on Google.
+
+Speaker 2  32:46  
+They have not given outdoor for them permission, and if we start displaying their photos on our website, they might get upset that we're showing their photos. Like, maybe, this is maybe as a professional photographer, and this person is like, well, I'll just share on Google, and maybe something will be able to find me better, although that wouldn't really work, because it's really hard to find the people who take photos, but I don't know, for whatever reason, they're like, I'm willing to put my photo there, but it's like they didn't give you permission to use it. Now, using it sometimes people just get offended, not because of the substance of the thing, but just like the feeling of it. Like, yeah, wait, I didn't give you permission to that. Like, why did you get Google permission? Like, what's not the point? Like, I told them they could use it, but I can tell you you can
+
+Speaker 2  33:48  
+use it. So I just know, as our website was getting more and more traffic, I didn't just start to feel like, you know, I feel like we're on shaky ground. I don't want to put us at risk. Like, right? You know, you end up in some like, you know, also, just with everything going on at
+
+Unknown Speaker  34:10  
+Google's negative experience.
+
+Speaker 2  34:17  
+So I don't know, like I did my best. I mean, it was a lot of work, but I did my best to go out and try to find publicly sourced alternatives, and I built some very sophisticated, like scraping tools and whatnot, and try to find public agencies that posting their own photos and wiki Wikipedia
+
+Speaker 2  34:46  
+Photos and yeah, but it's just a little tough, because Google has such great, publicly sourced photos and so, you know, but we can't do that would make such a compelling visual.
+
+Speaker 1  35:01  
+I wonder, though, like, if there's a way for people to upload their own pictures, or of users, you know, just like, find your perfect hand, and it's like, is there a way to do like, have it on the app where it's like, upload a picture and, you know, they have to not check the box and they don't want to use it or something. Yes, that is definitely talking to you.
+
+Unknown Speaker  35:45  
+It, yeah, I have the ability to upload photos on the thing right now, I just, again, it's the highlighting. Yeah, do you build
+
+Speaker 1  35:56  
+different pieces so people know what they actually need to do, know where to
+
+Speaker 2  36:01  
+find it. That's, I mean, that that would be huge for us to get user generated content, but I don't know, like, again, that's a lot of research. I mean, that's not just Justin doing a little bit of coding, and throw something up that's like, what's the user psychology behind what it takes to get a user to make the effort to put a photo? You know? How do you encourage them to do it? And what are the nudges? And then do you show them like, Hey, your photos gotten 50,000 views. Like, what like, want to put up another one? Like, oh, we gave you this badge because your photo got 5000 views. Like, that's the devil in the details piece. Like, oftentimes you and I will talk about something and be like, oh, yeah, go do that. And then it's like, you know, 20 hours of work later, and I'm still like, how do I piece this all together in a way that actually goes getting our own photos? Sweet? That'd be huge.
+
+Unknown Speaker  37:07  
+And you don't feel it's enough like it's not. I don't think we can
+
+Unknown Speaker  37:15  
+open your window while we
+
+Speaker 2  37:18  
+drive. Just open it without the screen. She's sitting in the sun. I
+
+Speaker 1  37:48  
+so you don't feel like it's efficient to give them the option and make it more obvious, like
+
+Speaker 2  38:06  
+more cultivation. I think so. I don't think I mean getting users to do anything is really hard. You you
+
+Speaker 1  39:30  
+gorgeous Okay, so I need to do some donor psychology or user psychology, and Then I
+
+Speaker 1  39:49  
+think I need to go through the website as a fresh user and try to figure out, like, one of remember, like, what pieces are in and two, figure out which ones are obvious and which ones are so I can get, like, a really, really understanding of the way it's set up, And then see where there might be gaps. Because it did,
+
+Unknown Speaker  40:23  
+we ever start,
+
+Unknown Speaker  40:30  
+but we built all those badges on the OC side. Do you feel like that skills quickly, that's helpful. What do you mean by that? Well, it's kind of like you've already done it over there. Yeah. I mean, I could
+
+Unknown Speaker  40:50  
+use that code. Yeah. Actions.
+
+Speaker 1  41:10  
+You kind of exciting.
+
+Unknown Speaker  41:20  
+It's helpful to have strategy definitely makes running an organization better and easier.
+
+Transcribed by https://otter.ai

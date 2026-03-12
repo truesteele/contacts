@@ -271,6 +271,60 @@ SELECT count(*) FROM {user}_contacts WHERE enrich_current_company IS NOT NULL;
 
 ---
 
+### Stage 7b: FEC Political Donation Enrichment
+
+**Script:** `{user}/enrich_fec_donations.py`
+**Depends on:** Stage 2
+**Cost:** $0 (FEC API is free)
+**Time:** ~1 hour (rate-limited at 950 req/hr)
+
+Searches OpenFEC API for federal campaign contributions ($200+), a strong free wealth indicator.
+
+**What it does:**
+- Queries `api.open.fec.gov/v1/schedules/schedule_a/` by name across cycles 2020-2026
+- GPT-5 mini verifies person identity (employer/city/state cross-check)
+- Writes `fec_donations` JSONB: total_amount, donation_count, max_single, recent_donations, verification
+
+**Key note for Sally tables:** `enrich_employment` is stored as a JSON string (not parsed JSONB). Script includes `_parse_jsonb_field()` helper to handle this.
+
+**Adaptation checklist:**
+- [ ] Update table name
+- [ ] Remove `country` from SELECT_COLS if not in schema
+- [ ] Add `_parse_jsonb_field()` for double-encoded JSON fields
+
+**Reference:** `scripts/intelligence/sally/enrich_fec_donations.py`
+
+---
+
+### Stage 7c: Real Estate Enrichment
+
+**Script:** `{user}/enrich_real_estate.py`
+**Depends on:** Stages 7, 8 (needs familiarity_rating and ai_capacity_tier)
+**Cost:** ~$0.01/contact (Apify skip-trace $0.007 + Zillow $0.003)
+**Time:** 15-30 minutes
+
+3-step pipeline: address lookup → Zillow ZPID → Zestimate + property data.
+
+**What it does:**
+- Filters to contacts with `familiarity_rating >= 2` OR `ai_capacity_tier = 'major_donor'`
+- Step 0: GPT backfills city/state from `enrich_employment` location fields
+- Step 1: Apify skip-trace (name + city/state → address) or 411.com scraper
+- Step 2: Zillow autocomplete (address → ZPID)
+- Step 3: Apify Zillow detail (ZPID → Zestimate)
+- GPT validates each match
+
+**Key note:** Sally's LinkedIn CSV doesn't include location, but `enrich_employment` contains `"location"` fields from Apify enrichment. The GPT backfill step extracts city/state from these.
+
+**Adaptation checklist:**
+- [ ] Update table name
+- [ ] Remove `country`, `location_name` from SELECT_COLS if not in schema
+- [ ] Add `_parse_jsonb_field()` for double-encoded JSON fields
+- [ ] Make `people_search_scraper` import conditional (curl_cffi arch issues)
+
+**Reference:** `scripts/intelligence/sally/enrich_real_estate.py`
+
+---
+
 ### Stage 8: LLM Structured Tagging
 
 **Script:** `{user}/tag_contacts.py`
@@ -560,24 +614,95 @@ SELECT count(*) FROM {user}_contacts WHERE justin_contact_id IS NOT NULL;
 **Files:**
 - `job-matcher-ai/app/api/network-intel/{user}/ask-readiness/route.ts`
 - `job-matcher-ai/app/api/network-intel/{user}/campaign/route.ts`
+- `job-matcher-ai/app/api/network-intel/{user}/campaign/[id]/route.ts` — GET + PATCH for `campaign_2026` JSONB (list movement, donation recording, mark responded, sideline)
+- `job-matcher-ai/app/api/network-intel/{user}/campaign/send/route.ts`
+- `job-matcher-ai/app/api/network-intel/{user}/contact/[id]/route.ts` — full contact detail with FEC donations, real estate data, comms history, shared institutions, ask readiness, campaign data
 - `job-matcher-ai/app/tools/{user}-ask-readiness/page.tsx`
 - `job-matcher-ai/app/tools/{user}-campaign/page.tsx`
+- `job-matcher-ai/app/components/ContactDetailSheet.tsx` — shared slide-out panel component (accepts `apiPrefix` prop)
 
 **Depends on:** Stage 1
 **Cost:** $0
 **Time:** 10 minutes
 
-Clone Justin's existing routes and pages, change table name and headers.
+Clone Justin's existing routes and pages, change table name and headers. Build full UI parity including contact detail panel and campaign management.
+
+**What it includes:**
+- **Contact detail API** (`/api/network-intel/{user}/contact/[id]/route.ts`): Returns full contact record with FEC donations, real estate data, comms history, shared institutions, ask readiness, and campaign data
+- **Campaign PATCH API** (`/api/network-intel/{user}/campaign/[id]/route.ts`): GET + PATCH for `campaign_2026` JSONB — supports list movement (A/B/C/D), donation recording, mark responded, and sideline
+- **ContactDetailSheet component** (shared, accepts `apiPrefix` prop): Slide-out panel showing wealth signals (FEC political giving, home values/Zestimates), outreach copy, list management controls, and full communication history
+- **Ask-readiness page**: Clickable contact names open `ContactDetailSheet` with `apiPrefix="/api/network-intel/{user}"`
+- **Campaign page**: Full parity with Justin's — donation recording, mark responded, message detail view, list movement, send functionality
 
 **Adaptation checklist:**
 - [ ] API routes: change `from('contacts')` to `from('{user}_contacts')`
 - [ ] API routes: adjust `SELECT_COLS` for columns that exist in `{user}_contacts`
+- [ ] Contact detail API: ensure all JSONB fields (fec_donations, real_estate_data, ask_readiness, campaign_2026, comms_summary) are included
+- [ ] Campaign PATCH API: validate list values (A/B/C/D) and donation amounts
 - [ ] UI pages: update header text to `"{User}'s Network"`
 - [ ] UI pages: update API endpoint paths
 - [ ] UI pages: update CSV export filenames
 - [ ] UI pages: update component names to avoid conflicts
+- [ ] ContactDetailSheet: pass correct `apiPrefix` prop for the user's namespace
 
-**Reference:** `job-matcher-ai/app/api/network-intel/sally/`, `job-matcher-ai/app/tools/sally-ask-readiness/`, `job-matcher-ai/app/tools/sally-campaign/`
+**Reference:** `job-matcher-ai/app/api/network-intel/sally/`, `job-matcher-ai/app/tools/sally-ask-readiness/`, `job-matcher-ai/app/tools/sally-campaign/`, `job-matcher-ai/app/components/ContactDetailSheet.tsx`
+
+---
+
+### Stage 19: Email Discovery
+
+**Script:** `{user}/discover_emails.py`
+**Depends on:** Stages 2, 4, 5 (contacts imported, OAuth tokens, email threads gathered)
+**Cost:** $0 (all free methods)
+**Time:** ~4 hours for 850 contacts (mostly LinkedIn scraping batches)
+
+3-phase pipeline to find email addresses for contacts that don't have one yet.
+
+**Phase 1: Thread Participant Extraction**
+- Extracts emails from `{user}_contact_email_threads` participant fields
+- Instant, costs $0
+- Usually yields 0 results since contacts with threads already have emails assigned
+
+**Phase 2: Gmail Name Search**
+- Searches user's Gmail accounts by contact name (first + last name query)
+- Finds emails buried in correspondence where the contact wasn't previously linked
+- Free, ~30 min for 850 contacts
+- Sally result: 223 emails found (32.8% hit rate among contacts without emails)
+
+**Phase 3: LinkedIn Playwright Scraping**
+- Logs into user's LinkedIn via Playwright browser automation
+- Visits each contact's profile page and extracts email from the contact info section
+- Runs in batches of 100 profiles per session (~45 min per session)
+
+**LinkedIn scraping safety measures (10 total):**
+1. 100 profiles per session hard cap
+2. 8-15 second delays between profile visits
+3. 3-8 minute session breaks every 25 profiles
+4. Cookie persistence between sessions (avoids repeated logins)
+5. Auth wall detection and abort
+6. Circuit breaker on consecutive failures
+7. Anti-detection: remove webdriver flag
+8. Anti-detection: random viewport sizing
+9. Human-like typing speed for login
+10. Feed browsing between session breaks
+
+**CLI options:** `--phase 1|2|3`, `--all` (run all phases), `--batch-size`, `--linkedin-email`, `--linkedin-password`, `--headless`
+
+**Adaptation checklist:**
+- [ ] Update table names: `{user}_contacts`, `{user}_contact_email_threads`
+- [ ] Update Gmail account list and credential paths (Phase 2)
+- [ ] Update `{USER}_EMAILS` set for self-filtering
+- [ ] User must provide their LinkedIn credentials for Phase 3
+- [ ] Adjust batch size if network is larger (keep <= 100 per session)
+
+**Verification:**
+```sql
+SELECT count(*) FROM {user}_contacts WHERE email IS NOT NULL;  -- Should be 70-80%+ after all phases
+```
+
+**Sally result:** 590 new emails found total (223 Gmail search + 357 LinkedIn scraping across 5 batches), coverage went from 6.6% (56/850) to 79.2% (673/850). LinkedIn scraping: 60-86% hit rate per batch, 0 errors, 0 rate limits across all 5 batches.
+
+**Reference:** `scripts/intelligence/sally/discover_emails.py`
 
 ---
 
@@ -602,15 +727,17 @@ Stage 15: Write campaign copy (Lists B-D)     [~$0.50, 5 min]    ← depends on 
 Stage 16: Write personal outreach (List A)    [~$2-5, 15 min]    ← depends on 13, 14
 Stage 17: Cross-reference networks            [$0, 1 min]        ← depends on 2
 Stage 18: API routes + UI pages               [$0, 10 min]       ← depends on 1
+Stage 19: Email discovery (3 phases)          [$0, ~4 hrs]       ← depends on 2, 4, 5
 ```
 
 **Parallel opportunities:**
 - Stages 3, 4, 7, 17, 18 can all run in parallel after Stage 2
 - Stages 5 and 6 can run in parallel after Stage 4
 - Stages 15 and 16 can run in parallel after Stages 13+14
+- Stage 19 can run after Stage 5 (needs email threads for Phase 1, OAuth for Phase 2)
 
 **Total estimated cost:** ~$12-16 per user
-**Total estimated time:** 3-5 hours (mostly waiting on Apify and Gmail scanning)
+**Total estimated time:** 3-5 hours (mostly waiting on Apify and Gmail scanning) + ~4 hours for email discovery LinkedIn batches
 
 ---
 
@@ -662,6 +789,87 @@ Stage 18: API routes + UI pages               [$0, 10 min]       ← depends on 
 - Fuzzy SequenceMatcher >= 0.85 second pass (medium confidence)
 - Common mismatches: nicknames ("Mom"), first-name-only, hyphenated names
 - Unmatched entries are expected — many SMS contacts aren't on LinkedIn
+
+---
+
+## Real Execution Data: Sally Steele (March 2026)
+
+### Actual Costs
+
+| Stage | Contacts | Actual Cost | Actual Time | Notes |
+|-------|----------|------------|-------------|-------|
+| Apify enrichment | 849 | ~$3.40 | ~45 min | 96.6% success, 29 private/restricted |
+| LLM tagging | 850 | $1.92 | ~8 min | 150 workers, 0 errors |
+| Comms closeness (1st run) | 850 | $0.06 | ~2 min | 199 DB errors at 150 workers — Supabase pool overwhelmed |
+| Comms closeness (re-run) | 850 | $0.11 | ~2 min | 20 workers, 2 errors only |
+| Gmail gathering | 850 | $0.10 | ~6 min | 45 contacts with threads, 626 threads collected |
+| Calendar gathering | 850 | $0.11 | ~1.5 min | 55 contacts with meetings, 172 events |
+| Ask readiness (1st run) | 850 | $1.52 | ~4 min | 20 workers, 8 retries (all succeeded) |
+| Ask readiness (re-run) | 850 | ~$1.52 | ~4 min | With full comms data |
+| Rebuild comms summary | 132 | $0 | <30s | 54 email + 55 calendar + 79 SMS contacts |
+| Familiarity backfill | 850 | $0 | <30s | 718 at 0, 53 at 1, 48 at 2, 30 at 3, 1 at 4 |
+| FEC political donations | 850 | ~$0 | ~30 min | 129 contacts with FEC data, rate-limited 950 req/hr |
+| Real estate enrichment | 109 | $1.06 | ~15 min | 52 validated addresses, 34 Zestimates (top: $7.95M) |
+| Ask readiness (final, with FEC+RE) | 850 | $1.50 | ~18 min | 4 ready_now, 545 cultivate, 287 long_term, 14 not_fit |
+| Campaign scaffold | 545 | $0.06 | ~36s | After removing email-required filter (was 28) |
+| A-list outreach (Opus 4.6) | 4 | $0.46 | ~29s | 3 email + 1 text, Sally's voice |
+| Email discovery (3 phases) | 850 | $0 | ~4 hrs | 590 new emails: 223 Gmail + 357 LinkedIn (5 batches) |
+| **Total (full pipeline)** | | **~$12.00** | **~7 hours** | Plus ~$3.40 Apify enrichment |
+
+### Key Metrics
+
+| Metric | Value |
+|--------|-------|
+| LinkedIn contacts imported | 849 |
+| Apify enriched | 821 (96.6%) |
+| Email coverage | 673/850 (79.2%) — up from 56/850 (6.6%) at start |
+| Email sources | Gmail search 223, LinkedIn scraping 357 (5 batches), thread extraction 0 |
+| SMS matched | 79 contacts (from 1,230 phone numbers) |
+| Email threads gathered | 626 (45 contacts) |
+| Calendar events stored | 172 (55 contacts) |
+| Contacts with any comms | 132 |
+| Shared with Justin's network | 281 (33.1% overlap) |
+| FEC donors found | 129 (15.2%) |
+| Real estate Zestimates | 34 (top: Jon Dahl $7.95M, Jody Rose $6.2M) |
+| Ask-readiness: ready_now | 4 (0.5%) |
+| Ask-readiness: cultivate_first | 545 (64.1%) |
+| Ask-readiness: long_term | 287 (33.8%) |
+| Ask-readiness: not_a_fit | 14 (1.6%) |
+| Campaign contacts scaffolded | 545 (expanded from 28 after removing email-required filter) |
+| A-list outreach messages written | 4 (Claude Opus 4.6, Sally's voice) |
+
+### Lessons Learned
+
+1. **Supabase connection pool limits:** 150 concurrent workers overwhelmed the DB connection pool, causing "Server disconnected" errors. **Fix:** Use 20 workers for any script that writes to Supabase. 150 workers is fine for OpenAI API calls but the DB write bottleneck occurs when saving results.
+
+2. **Google OAuth flow:** The `InstalledAppFlow.run_local_server()` approach fails when running in a remote/CLI environment because:
+   - Port conflicts with stale processes
+   - State parameter mismatches between server and manually-crafted URLs
+   - `ERR_CONNECTION_REFUSED` when the local server isn't reachable from user's browser
+
+   **Working approach:** Use `redirect_uri=http://localhost` (no port). Google redirects to localhost which fails, but the auth code is visible in the URL bar. User copies the full URL back, code is extracted and exchanged server-side via `requests.post('https://oauth2.googleapis.com/token')`. This works regardless of network topology.
+
+3. **Anchor profile blocker:** Sally's own LinkedIn scrape returned empty via Apify (profile may be restricted). **Fix:** Query Justin's `contacts` table where Sally exists as contact id 1917 with full enrichment from when she was scraped as one of his connections. Cross-reference the primary user's contact DB for team members' profiles.
+
+4. **SMS matching rate:** Only 79/1,230 (6.4%) phone numbers matched to LinkedIn contacts. This is expected — most SMS contacts aren't on LinkedIn (family, local services, etc.). The matches that do occur are high-value relationship signals.
+
+5. **Gmail scanning is lightweight:** 850 contacts across 3 accounts took only 6 minutes and $0.10. The bottleneck isn't the API calls but the GPT summary step.
+
+6. **Ask-readiness distribution is consistent:** Sally's network shows similar tier ratios to Justin's — heavy cultivate_first (65%), meaning most contacts need relationship building before a fundraising ask.
+
+7. **Double-encoded JSONB fields:** Supabase sometimes stores JSONB columns (e.g., `enrich_employment`, `enrich_education`) as JSON strings rather than parsed objects. Scripts that check `isinstance(val, list)` will silently fail. **Fix:** Always use a `_parse_jsonb_field()` helper that does `json.loads()` on string values before type checks.
+
+8. **Real estate enrichment requires location backfill:** LinkedIn CSVs don't include location data. The real estate pipeline needs city/state to search for addresses. **Fix:** Run Apify enrichment first, then use GPT to extract city/state from `enrich_employment[0].location`. The real estate script has a built-in GPT backfill step.
+
+9. **curl_cffi architecture mismatch:** On Apple Silicon Macs, `curl_cffi` may install as x86_64 binary, causing ImportError at import time. **Fix:** Wrap the import in try/except and fall back to Apify-only mode (skip 411.com path). The Apify skip-trace path works on all platforms.
+
+10. **FEC API is slow but free:** The OpenFEC API rate-limits to 1,000 req/hr. For 850 contacts, expect ~30 min. Cost is $0 but time is the bottleneck. Run as a background task.
+
+11. **List A requires manual curation:** The scaffold script assigns List A based on `TIER_1_NAMES` set. After ask-readiness scoring completes, review the ready_now contacts (score 80+, familiarity 3-4, inner_circle comms) and add them to the set before re-running scaffold.
+
+12. **Remove addressable gates from campaign scaffold:** The initial campaign scaffold only included contacts with known email addresses, limiting it to 28 contacts. After removing the `addressable` filter, the campaign expanded to 545 contacts. Email addresses can be found later -- don't let missing emails block campaign planning.
+
+13. **LinkedIn email scraping is safe at low volume:** 500 profiles across 5 sessions (100 each, ~45 min per session) with human-like delays produced 0 errors, 0 rate limits, and 0 auth walls. Cookie persistence between sessions avoids repeated logins. Never exceed 100 profiles per session.
 
 ---
 

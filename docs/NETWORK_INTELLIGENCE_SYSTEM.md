@@ -1,7 +1,7 @@
 # Personal Network Intelligence System
 
-**Last updated:** 2026-02-22
-**Status:** Phase 1-5 COMPLETE, Phase 6 COMPLETE — All enrichments run, all 2,937 contacts fully scored
+**Last updated:** 2026-03-03
+**Status:** Phase 1-5 COMPLETE, Phase 6 COMPLETE, Influencer Analysis COMPLETE, Daily Automated Sync ACTIVE — All enrichments run, all 2,940 contacts fully scored, daily sync at 8am PT, Kevin Brown 100-post content analysis complete
 
 ---
 
@@ -13,7 +13,7 @@
 4. [Architecture Overview](#4-architecture-overview)
 5. [Layer 1: LLM Structured Tagging](#5-layer-1-llm-structured-tagging)
 6. [Layer 2: Vector Embeddings](#6-layer-2-vector-embeddings)
-7. [Layer 3: Google Workspace Communication History](#7-layer-3-google-workspace-communication-history)
+7. [Layer 3: Communication History (All Channels)](#7-layer-3-communication-history-all-channels)
 8. [Scoring Models](#8-scoring-models)
 9. [Schema Design](#9-schema-design)
 10. [Processing Pipeline](#10-processing-pipeline)
@@ -25,6 +25,7 @@
     - [14.13 Ownership Likelihood Classification](#1413-ownership-likelihood-classification)
     - [14.14 Zillow Batch Data Bug & Re-scrape](#1414-zillow-batch-data-bug--re-scrape-2026-02-22)
     - [14.15 FEC Multi-Person Aggregation Bug Fix](#1415-fec-multi-person-aggregation-bug-fix-2026-02-22)
+    - [14.16 Web Research Enrichment for Non-LinkedIn Contacts](#1416-web-research-enrichment-for-non-linkedin-contacts-2026-02-23)
 15. [Cost Estimates](#15-cost-estimates)
 16. [Open Questions](#16-open-questions)
 
@@ -69,12 +70,16 @@ The goal is to generate actionable outreach lists like:
 | Profile embeddings (768d) | 100% (2,937) | text-embedding-3-small |
 | Interests embeddings (768d) | 99.9% (2,933) | text-embedding-3-small |
 | Communication history (Gmail) | 628 contacts | 5 Gmail accounts, LLM-summarized |
+| Communication history (Calendar) | 288 contacts, 1,857 events | 5 Google Calendar accounts |
+| Communication history (SMS) | 147 contacts, 47K messages | Android SMS backup XML |
+| Communication history (Call logs) | 50 contacts, 785 calls | Android call backup XML |
+| Unified comms_summary | 1,242 contacts | Aggregated from all 5 channels |
 | Familiarity ratings (0-4) | 100% (2,937) | Human-rated + backfilled |
 | FEC political donations | 100% (2,937) — 325 verified donors | OpenFEC API + GPT verification |
 | Real estate data | 46% (1,358) — 690 with Zestimates | Skip-trace + Zillow pipeline |
 | Structured institutional overlap | 66% (1,949) | GPT-5 mini with career timeline |
 | Ask-readiness scoring | 100% (2,937) | GPT-5 mini donor psychology model |
-| Email addresses | ~60% | Various sources + email discovery |
+| Email addresses | ~70% | Various sources + Gmail discovery + ZeroBounce permutation finder |
 | LinkedIn posts | 76 posts (Justin's only) | Apify post scraper |
 | Legacy Perplexity scoring | 53% (1,315) | Deprecated — replaced by AI tags |
 
@@ -448,11 +453,11 @@ For 2,500 contacts, whole-profile embeddings are sufficient. If we later need mo
 
 ---
 
-## 7. Layer 3: Google Workspace Communication History
+## 7. Layer 3: Communication History (All Channels)
 
 ### Goal
 
-Add a `communication_history` JSONB column that captures the essence of Justin's interactions with each contact across Gmail, Google Calendar, and Google Chat.
+Add communication data that captures the essence of Justin's interactions with each contact across 5 channels: Gmail, Google Calendar, LinkedIn DM, SMS, and phone calls.
 
 ### Data Sources (via MCP Servers)
 
@@ -517,6 +522,96 @@ For each contact with an email address:
 - **Total per contact:** ~500-1,500 tokens in JSONB
 - This keeps the data compact enough to include in LLM context for outreach drafting
 
+### Unified `comms_summary` JSONB Structure
+
+**Script:** `scripts/intelligence/rebuild_comms_summary.py`
+
+The `comms_summary` column aggregates data from all 5 communication channels into a single JSONB blob per contact. This is the **primary data source** consumed by all downstream scoring, campaign, and outreach scripts. It reads from 3 DB tables (`contact_email_threads`, `contact_calendar_events`, `contact_call_logs`) plus the existing `communication_history` JSONB (for SMS and LinkedIn DM data).
+
+```json
+{
+  "channels": {
+    "email": {
+      "threads": 12,
+      "messages": 48,
+      "first_date": "2019-03-15",
+      "last_date": "2025-11-20",
+      "bidirectional": 8,
+      "inbound": 5,
+      "outbound": 7,
+      "group_threads": 3
+    },
+    "linkedin": {
+      "threads": 2,
+      "messages": 6,
+      "first_date": "2022-05-10",
+      "last_date": "2024-01-15",
+      "bidirectional": 2,
+      "inbound": 1,
+      "outbound": 1,
+      "group_threads": 0
+    },
+    "sms": {
+      "threads": 1,
+      "messages": 245,
+      "first_date": "2020-06-01",
+      "last_date": "2026-02-20",
+      "bidirectional": 1,
+      "inbound": 120,
+      "outbound": 125,
+      "group_threads": 0
+    },
+    "calendar": {
+      "threads": 15,
+      "messages": 0,
+      "first_date": "2018-09-10",
+      "last_date": "2026-01-30",
+      "bidirectional": 15,
+      "inbound": 0,
+      "outbound": 0,
+      "group_threads": 8,
+      "total_duration_minutes": 1200
+    },
+    "calls": {
+      "threads": 60,
+      "messages": 0,
+      "first_date": "2024-01-15",
+      "last_date": "2026-02-18",
+      "bidirectional": 55,
+      "inbound": 25,
+      "outbound": 30,
+      "group_threads": 0,
+      "missed": 5,
+      "total_duration_seconds": 50880
+    }
+  },
+  "total_threads": 90,
+  "first_date": "2018-09-10",
+  "last_date": "2026-02-20",
+  "chronological_summary": "2018: 1 calendar, 2019-2020: 5 email + 1 sms, ...",
+  "channel_summary": "15 meetings, 60 calls (848 min), 12 email threads, 245 SMS messages, 2 LinkedIn threads"
+}
+```
+
+**Channel semantics:**
+- `threads` = email threads / events / calls / SMS conversations / LinkedIn DM threads
+- `messages` = individual messages within threads (0 for calendar/calls)
+- `bidirectional` = threads with both-direction activity (all events count for calendar; incoming+outgoing for calls)
+- `group_threads` = multi-party interactions (attendee_count > 2 for calendar; multi-recipient for email)
+- Calendar extras: `total_duration_minutes`
+- Calls extras: `missed` count, `total_duration_seconds`
+
+**Denormalized stats written to contacts table:**
+`comms_last_date`, `comms_thread_count`, `comms_meeting_count`, `comms_last_meeting`, `comms_call_count`, `comms_last_call`
+
+**Downstream consumers (all read `comms_summary`):**
+- `score_comms_closeness.py` — LLM closeness/momentum scoring
+- `score_ask_readiness.py` — donor readiness scoring
+- `scaffold_campaign.py` — campaign planning
+- `write_campaign_copy.py` — campaign message generation
+- `write_personal_outreach.py` — personalized outreach
+- `generate_prospect_profile.py` — prospect profile documents
+
 ### Privacy Considerations
 
 - Store summaries, not raw email text
@@ -537,8 +632,8 @@ Based on Granovetter's tie strength theory, weighted by:
 | Shared employer (same time) | High | 25 | LLM analysis of employment overlap |
 | Shared school (same era) | High | 20 | LLM analysis of education dates |
 | Shared board/volunteer org | High | 15 | LLM analysis of volunteer data |
-| Communication recency | Medium | 15 | Google Workspace Layer 3 |
-| Communication volume | Medium | 10 | Google Workspace Layer 3 |
+| Communication recency | Medium | 15 | Communication History (Layer 3) |
+| Communication volume | Medium | 10 | Communication History (Layer 3) |
 | LinkedIn connection tenure | Low | 5 | `connected_on` date |
 | Mutual recommendations | Medium | 5 | LinkedIn recommendations |
 | Shared location | Low | 5 | Location data |
@@ -642,6 +737,33 @@ ALTER TABLE contacts ADD COLUMN IF NOT EXISTS
 
 ALTER TABLE contacts ADD COLUMN IF NOT EXISTS
   comms_last_gathered_at timestamptz;
+
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS
+  comms_summary jsonb;  -- Unified summary across all 5 channels (email, LinkedIn, SMS, calendar, calls)
+
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS
+  comms_last_date date;  -- Most recent communication across all channels
+
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS
+  comms_thread_count integer;  -- Total threads + events + calls
+
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS
+  comms_meeting_count integer;  -- Calendar meeting count
+
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS
+  comms_last_meeting date;  -- Most recent calendar meeting
+
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS
+  comms_call_count integer;  -- Phone call count
+
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS
+  comms_last_call date;  -- Most recent phone call
+
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS
+  comms_closeness text;  -- LLM-scored: active_inner_circle, regular_contact, occasional, dormant, one_way, no_history
+
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS
+  comms_momentum text;  -- LLM-scored: growing, stable, fading, inactive
 
 -- Computed/denormalized scores (from ai_tags, for fast filtering)
 ALTER TABLE contacts ADD COLUMN IF NOT EXISTS
@@ -1006,6 +1128,237 @@ python scripts/intelligence/gather_comms_history.py --summarize-only
 python scripts/intelligence/discover_emails.py --test --dry-run
 python scripts/intelligence/discover_emails.py  # Full run
 ```
+
+---
+
+### Phase 5b: Calendar Meeting History — COMPLETE
+**Status:** Done (2026-02-24)
+**Script:** `scripts/intelligence/gather_calendar_meetings.py`
+
+**Approach:** Event-centric pipeline — pulls ALL events from each Google Calendar, then batch-matches attendee emails against the contacts table. Much more efficient than per-contact searching (5 API pulls vs 14,700). Uses same OAuth credentials as email collection. Two-phase pipeline: Phase A collects raw event data, Phase B summarizes with GPT-5 mini.
+
+**Same 5 Google Workspace Accounts** as Phase 5 email collection.
+
+**Results:**
+- **288 contacts** matched with calendar meetings
+- **1,857 events** stored with full attendee data, event type, duration, conference type
+- **278 GPT-5 mini summaries** with meeting patterns and relationship analysis
+- **0 errors** during collection, 10 transient connection errors during summarization
+- **Total LLM cost:** ~$1.15 (GPT-5 mini structured output)
+- **Date range:** September 2012 → February 2026
+
+**Database:**
+- New table: `contact_calendar_events` — raw event data with `UNIQUE(contact_id, event_id, account_email)`
+- New columns on `contacts`: `comms_meeting_count` (smallint), `comms_last_meeting` (date), `meetings_last_gathered_at` (timestamptz)
+- Meeting data aggregated into `comms_summary` JSONB → `channels.calendar` key (via `rebuild_comms_summary.py`)
+
+**Event Processing Logic:**
+- Skips cancelled events, events with no attendees, all-day events without meaningful attendees
+- Skips events where Justin declined
+- Deduplicates by `iCalUID` for cross-calendar counting
+- Classifies event types: meeting, call, video_call, one_on_one, demo, board, conference, social, interview
+- Detects conference type: Zoom, Meet, Teams, WebEx
+
+**CLI:**
+```bash
+# Full collection + summarization
+python scripts/intelligence/gather_calendar_meetings.py
+
+# Collect only (no LLM)
+python scripts/intelligence/gather_calendar_meetings.py --collect-only
+
+# Summarize only (use existing data)
+python scripts/intelligence/gather_calendar_meetings.py --summarize-only --workers 30
+
+# Single account test
+python scripts/intelligence/gather_calendar_meetings.py --test --account justin@kindora.co
+
+# Re-collect everything
+python scripts/intelligence/gather_calendar_meetings.py --force
+```
+
+---
+
+### Phase 5c: Email Finder Pipeline — COMPLETE
+**Status:** Done (2026-02-25)
+**Script:** `scripts/intelligence/find_emails.py`
+**Ralph loop:** `.ralph/email-finder/`
+
+**Approach:** DIY permutation + verification pipeline for ~894 contacts who have name + company but no email. Does NOT use email-finder databases (Hunter, Apollo) — instead generates email permutations from name + company domain, verifies via ZeroBounce API, and validates via GPT-5 mini.
+
+**Pipeline (per contact):**
+1. **Domain discovery** — hardcoded map (80+ companies) → prefix matching → generic slug fallback (.com/.org/.io/.co) → DNS MX validation
+2. **Permutation generation** — 8-12 candidates: first.last@, flast@, f.last@, firstlast@, etc. Handles hyphenated names, suffixes (Jr/III/PhD), multi-word last names
+3. **ZeroBounce verification** — API returns `valid`, `invalid`, `catch-all`, `unknown`, `spamtrap`, `abuse`, `do_not_mail` + rich metadata (free_email, active_in_days, smtp_provider)
+4. **Best result selection** — prefer `valid` over `catch-all`, tiebreak by activity recency
+5. **GPT-5 mini validation** — screens for stale employer domains, catch-all skepticism, common name strictness. Auto-skips obvious matches (name in email + domain matches company + valid ZB status)
+6. **Save to DB** — writes to `contacts.email` (only if currently NULL/empty)
+
+**Credit conservation:**
+- DNS MX check filters bad domains before ZeroBounce (free)
+- Stops testing permutations once a `valid` result is found
+- Limits catch-all domains (Google, Amazon, etc.) to 3 permutations
+- Limits non-catch-all domains to 5 permutations
+- Bad domain detection: skips remaining perms if domain-level failure (does_not_accept_mail, no_dns_entries)
+- `is_obvious_match` skips LLM call for clear matches
+
+**Email verification blocklist (`invalid_emails` table):**
+- **Reads** all known-invalid emails before each run — skips generating/testing these permutations
+- **Writes** ZeroBounce-confirmed invalid emails back to the table after each contact
+- Blocklist grows over time — future runs are faster and cheaper
+- Sources: `resend_bounce` (campaign sends), `resend_delivery`, `zerobounce` (prior verification), `zerobounce_find` (this pipeline), `manual_review`
+
+**CLI:**
+```bash
+# Test individual modules
+python scripts/intelligence/find_emails.py --test-domains
+python scripts/intelligence/find_emails.py --test-perms
+python scripts/intelligence/find_emails.py --test-verify
+python scripts/intelligence/find_emails.py --test-validate
+
+# Dry-run (no DB writes)
+python -u scripts/intelligence/find_emails.py --dry-run -n 50
+
+# Live run
+python -u scripts/intelligence/find_emails.py -n 200
+
+# Resume after buying credits (skip first 200)
+python -u scripts/intelligence/find_emails.py -n 200 --offset 200
+
+# Adjust confidence / workers
+python -u scripts/intelligence/find_emails.py --min-confidence 80 --workers 30
+```
+
+**Cost:**
+- ZeroBounce: ~3-5 credits/contact ($0.008-0.01/credit depending on volume)
+- OpenAI GPT-5 mini: ~$0.002/contact
+- Estimated total for 894 contacts: ~$25-35
+
+---
+
+### Phase 5d: SMS Communication History — COMPLETE
+**Status:** Done (2026-02-22)
+**Script:** `scripts/intelligence/gather_sms_history.py`
+**Doc:** `docs/SMS_ENRICHMENT.md`
+
+**Approach:** Parses Android SMS Backup & Restore XML files (~5GB), matches conversations to contacts via phone number (98), exact name + GPT confirmation (30), and fuzzy name + GPT (19). Merges into existing `communication_history` JSONB alongside email data.
+
+**Results:**
+- **147 contacts** matched with SMS conversations (143 unique)
+- **47,304 messages** parsed (after filtering short codes, own-number, group texts, spam)
+- **37 phone numbers backfilled** from name-matched contacts
+- **LLM cost:** $0.11 (GPT-5 mini)
+
+**Database:**
+- New table: `contact_sms_conversations` — per-contact SMS data with `UNIQUE(contact_id, phone_number)`
+- Merged into existing `contacts.communication_history` JSONB with `source: "sms"` entries
+
+---
+
+### Phase 5e: Call Log History — COMPLETE
+**Status:** Done (2026-02-24)
+**Script:** `scripts/intelligence/sync_phone_backup.py` (also handles SMS sync)
+
+**Approach:** Parses Android call backup XML files (~450KB) from Google Drive. Matches calls to contacts by phone number and exact name. Stores individual call records with type (incoming/outgoing/missed/voicemail) and duration.
+
+**Results (first run):**
+- **785 calls** matched to **49 contacts**
+- **1,471 total calls** in backup (Jan 2024 — Feb 2026)
+- Call types: 479 incoming, 695 outgoing, 201 missed, 96 voicemail
+- **Zero errors**, runtime 48s
+
+**Database:**
+- New table: `contact_call_logs` — individual call records with `UNIQUE(contact_id, phone_number, call_date)`
+- New columns on `contacts`: `comms_call_count` (integer), `comms_last_call` (date)
+- Updates `comms_last_date` on contacts when call is more recent
+
+---
+
+### Phase 5f: Daily Automated Sync — ACTIVE
+**Status:** Active (fixed 2026-03-03, originally set up 2026-02-24)
+**Wrapper:** `scripts/intelligence/daily_sync.sh`
+**Schedule:** launchd plist at `~/Library/LaunchAgents/co.truesteele.contacts-sync.plist` — 8am PT daily
+**Runtime:** ~20 minutes total
+
+**What syncs daily (4 steps, sequential):**
+
+| # | Data Source | Script | Flag | Scope | Time |
+|---|-------------|--------|------|-------|------|
+| 1 | Email (Gmail) | `gather_comms_history.py` | `--recent-days 3 --collect-only` | Last 3 days of threads across 5 Gmail accounts | ~18 min |
+| 2 | Calendar | `gather_calendar_meetings.py` | `--recent-days 7 --collect-only` | Last 7 days of events across 5 Calendar accounts | ~1 min |
+| 3 | SMS + Calls | `sync_phone_backup.py` | (auto-incremental) | Latest backup from Google Drive | ~1 min |
+| 4 | Deal Activities | `sync_deal_activities.py` | `--recent-days 7` | Tags recent comms to active CRM deals | ~1 min |
+
+**Google Workspace accounts (Steps 1-2):**
+- justinrsteele@gmail.com
+- justin@truesteele.com
+- justin@outdoorithm.com
+- justin@outdoorithmcollective.org
+- justin@kindora.co
+
+**How each step works:**
+
+1. **Email:** Adds `after:YYYY/MM/DD` to Gmail API queries so only recent threads are returned. Scans all ~2,400 contacts with email addresses against all 5 accounts (~2.3 contacts/sec). Saves new thread metadata to `contact_email_threads` table. Collection only — no LLM summarization.
+
+2. **Calendar:** Sets `timeMin` on Calendar API to only pull recent events. Pulls events from all 5 calendars, batch-matches attendee emails against contacts table. Saves to `contact_calendar_events` table. Collection only — no LLM summarization.
+
+3. **SMS + Calls:** Downloads latest backup XML files from Google Drive (`SMS_Calls_Backup` folder in justinrsteele@gmail.com), processes incrementally (only messages/calls newer than last sync cutoff stored in DB), matches phone numbers to contacts, deletes temp files after processing. No permanent local storage.
+
+4. **Deal Activities:** Scans all active CRM deals, finds recent emails/meetings/calls that match deal contacts, and inserts them as deal activity records. Deduplicates against existing activities.
+
+**Drive backup source (Step 3):**
+- Folder: `SMS_Calls_Backup` in justinrsteele@gmail.com's Google Drive
+- Files: `sms-YYYYMMDDHHMMSS.xml` (~5GB) + `calls-YYYYMMDDHHMMSS.xml` (~450KB)
+- Auto-uploaded daily from phone; Drive auto-deletes files >5 days old
+
+**Database tables written to:**
+- `contact_email_threads` — Gmail thread metadata (subject, date, snippet, account)
+- `contact_calendar_events` — Calendar event metadata (title, attendees, date, account)
+- `contact_sms_conversations` — SMS conversation data (messages array, phone numbers)
+- `contact_call_logs` — Call log entries (duration, type, phone number)
+- `deal_activities` — CRM deal activity timeline (email/meeting/call references)
+
+**What is NOT automated (run manually as needed):**
+- LLM summarization of emails/calendar/SMS → `rebuild_comms_summary.py`
+- LLM re-scoring (ask-readiness, tagging, closeness) → individual scoring scripts
+- Embedding regeneration → `generate_embeddings.py`
+
+**Error handling:**
+- Each step runs with `|| true` so a failure in one step doesn't block the others
+- The `.env` loader uses a safe line-by-line parser (not `export $(xargs)`) to handle special characters in values — dots in variable names, angle brackets, spaces, and `#` in quoted values are all skipped or handled correctly
+- `set -euo pipefail` catches other script-level errors
+
+**CLI:**
+```bash
+# Run full daily sync manually
+bash scripts/intelligence/daily_sync.sh
+
+# Individual steps
+python scripts/intelligence/gather_comms_history.py --recent-days 3 --collect-only
+python scripts/intelligence/gather_calendar_meetings.py --recent-days 7 --collect-only
+python scripts/intelligence/sync_phone_backup.py
+python scripts/intelligence/sync_deal_activities.py --recent-days 7
+
+# Phone backup variants
+python scripts/intelligence/sync_phone_backup.py --calls-only  # Calls only (fast)
+python scripts/intelligence/sync_phone_backup.py --sms-only    # SMS only
+python scripts/intelligence/sync_phone_backup.py --test        # 1 SMS conv + 10 calls
+
+# Verify launchd is loaded
+launchctl list | grep truesteele
+
+# Check today's log
+cat logs/daily_sync_$(date +%Y-%m-%d).log
+```
+
+**Logs:** `logs/daily_sync_YYYY-MM-DD.log` (auto-cleaned after 30 days)
+
+**Typical output (2026-03-03 first successful run):**
+- Email: 2,434 contacts scanned, 59 new threads found
+- Calendar: events collected from 5 accounts
+- SMS: 76 new messages, 6 conversations updated, 1 new conversation
+- Calls: 0 new (no new backup since last sync)
+- Deal Activities: 341 deals scanned, 56 activities inserted (44 emails, 12 meetings)
 
 ---
 
@@ -1409,7 +1762,11 @@ All enrichment pipelines have been run against the full database. Current state:
 | AI tags (LLM structured) | 2,937 / 2,937 (100%) | Complete |
 | Profile embeddings | 2,937 / 2,937 (100%) | Complete |
 | Interests embeddings | 2,933 / 2,937 (99.9%) | Complete (4 contacts with zero profile data) |
-| Communication history | 628 contacts | Complete |
+| Communication history (email) | 628 contacts | Complete |
+| Communication history (calendar) | 288 contacts, 1,857 events | Complete |
+| Communication history (SMS) | 147 contacts, 47,304 messages | Complete |
+| Communication history (calls) | 50 contacts, 785 calls | Complete |
+| Unified comms_summary (all 5 channels) | 1,242 contacts | Complete — rebuilt with `rebuild_comms_summary.py` |
 | Familiarity ratings | 2,937 / 2,937 (100%) | Complete (human-rated + backfilled) |
 | FEC donations | 2,937 / 2,937 (100%) | Complete — 325 verified donors, 292 GPT-rejected |
 | Real estate | 1,358 / 2,937 (46%) | Complete — 690 with Zestimates, 795 re-scraped |
@@ -1428,14 +1785,36 @@ All enrichment pipelines have been run against the full database. Current state:
 
 **Re-run commands (for future updates):**
 ```bash
+# Data collection
+python scripts/intelligence/gather_comms_history.py --collect-only   # Gmail thread collection
+python scripts/intelligence/gather_calendar_meetings.py --collect-only  # Calendar event collection
+python scripts/intelligence/sync_phone_backup.py                     # SMS + call sync from Google Drive
+bash scripts/intelligence/daily_sync.sh                              # Run all 3 above (daily at 8am PT)
+
+# Enrichment
 python scripts/intelligence/tag_contacts_gpt5m.py          # LLM tagging
 python scripts/intelligence/generate_embeddings.py          # Vector embeddings
 python scripts/intelligence/enrich_fec_donations.py         # FEC donations
 python scripts/intelligence/enrich_real_estate.py           # Real estate (Apify skip-trace)
 python scripts/intelligence/enrich_real_estate.py --source 411 --retry-rejected  # 411.com retry
 python scripts/intelligence/rescrape_zillow.py              # Re-scrape Zillow details (zpid-matched)
-python scripts/intelligence/score_overlap.py                # Structured overlap
+python scripts/intelligence/enrich_web_research.py --discover  # Web research for non-LinkedIn contacts
+
+# Scoring & analysis (run in this order)
+python scripts/intelligence/rebuild_comms_summary.py        # Unified comms_summary from all 5 channels
+python scripts/intelligence/score_comms_closeness.py        # Communication closeness (GPT-5 mini)
+python scripts/intelligence/score_overlap.py                # Structured institutional overlap
 python scripts/intelligence/score_ask_readiness.py --goal outdoorithm_fundraising  # Ask-readiness
+
+# LLM summarization (heavier, run manually)
+python scripts/intelligence/gather_comms_history.py --summarize-only  # Email thread summaries
+python scripts/intelligence/gather_calendar_meetings.py --summarize-only  # Meeting summaries
+
+# Campaign & outreach
+python scripts/intelligence/scaffold_campaign.py            # Campaign scaffolding
+python scripts/intelligence/write_campaign_copy.py          # Campaign copy generation
+python scripts/intelligence/write_personal_outreach.py      # Personal outreach messages
+python scripts/intelligence/generate_prospect_profile.py    # Prospect profile documents
 ```
 
 All scripts support `--test` (1 contact), `--batch N`, and `--start-from` flags for incremental runs.
@@ -1449,8 +1828,14 @@ All scripts support `--test` (1 contact), `--batch N`, and `--start-from` flags 
 | GPT-5 mini tagging (2,937 contacts) | ~$7 | Structured output, Phase 1 (run in batches) |
 | Embeddings (5,870 calls) | ~$0.04 | text-embedding-3-small, Phase 2 |
 | Gmail thread summarization (628 contacts) | ~$1.30 | GPT-5 mini structured output |
-| Email discovery (579 contacts) | ~$0.05 | GPT-5 mini verification |
-| **Total Phases 1-5** | **~$8.40** | |
+| Email discovery v1 (579 contacts) | ~$0.05 | GPT-5 mini verification (Gmail search) |
+| Email finder v2 (894 contacts) | ~$30 | ZeroBounce API + GPT-5 mini validation |
+| Calendar meeting summarization (288 contacts) | ~$1.15 | GPT-5 mini structured output |
+| SMS matching (147 contacts) | ~$0.11 | GPT-5 mini name matching |
+| Comms closeness scoring (1,242 contacts) | ~$3.50 | GPT-5 mini structured output |
+| Rebuild comms_summary | Free | Aggregation only, no LLM |
+| Phone backup sync (daily) | Free | XML parsing + DB upsert, no LLM |
+| **Total Phases 1-5** | **~$43** | Includes $30 email finder (ZeroBounce) |
 | FEC political donations (2,937 contacts) | ~$2 | Free OpenFEC API + $2 GPT verification |
 | Real estate — Apify batch Run 1 (551 contacts) | $5.31 | Apify skip-trace + Zillow detail |
 | Real estate — 411.com retry Run 2 (100 contacts) | ~$0.25 | curl_cffi (free) + GPT + Zillow detail |
@@ -1458,8 +1843,10 @@ All scripts support `--test` (1 contact), `--batch N`, and `--start-from` flags 
 | Real estate — Zillow re-scrape (794 contacts) | $2.38 | zpid-matched re-scrape after bug fix |
 | Structured overlap (1,949 contacts) | ~$3.00 | GPT-5 mini |
 | Ask-readiness scoring (2,937 contacts) | ~$8.50 | GPT-5 mini donor psychology (multiple runs) |
-| **Total Phase 6** | **~$24.50** | |
-| **Grand Total (all phases)** | **~$33** | |
+| Web research enrichment (39 contacts) | ~$0.11 | Perplexity sonar-pro + GPT-5 mini |
+| **Total Phase 6** | **~$24.55** | |
+| Influencer analysis — Kevin Brown (100 posts) | ~$0.80 | Apify posts + reactions + GPT matching + GPT content analysis |
+| **Grand Total (all phases)** | **~$69** | |
 
 The entire 6-phase pipeline costs less than a month of any commercial wealth screening tool.
 
@@ -1888,6 +2275,121 @@ The 51 remaining >50-donation contacts are **legitimate high-frequency donors** 
 #### Key File
 
 - `scripts/intelligence/enrich_fec_donations.py` — Full rewrite with GPT verification, exact matching, employment state extraction
+
+---
+
+### 14.16 Web Research Enrichment for Non-LinkedIn Contacts (2026-02-23)
+
+#### The Problem
+
+16 contacts had completely empty profiles (no headline, summary, company, position, city, state) because they lacked LinkedIn URLs — the Apify enrichment pipeline skipped them entirely. An additional ~23 contacts were LinkedIn-enriched but returned very thin data (no employment history, no education, no summary). Many of these are high-profile people with extensive public presence who simply don't use LinkedIn.
+
+**Impact:** Every downstream model (AI tagging, capacity scoring, ask-readiness) produced garbage for these contacts because the models had nothing to work with. Example: Quinn Delaney — co-founder of Akonadi Foundation, $26M+ in FEC political donations — was scored as "not_a_fit" with "unknown" capacity because her profile was empty.
+
+#### The Solution
+
+`scripts/intelligence/enrich_web_research.py` — a Perplexity-powered web research pipeline that:
+
+1. **Discovers** contacts needing enrichment (empty or thin profiles)
+2. **Researches** them via Perplexity sonar-pro (single focused query per contact)
+3. **Structures** the response with GPT-5 mini into database fields
+4. **Saves** to the contacts table (only fills empty fields, never overwrites existing data)
+5. **Re-scores** with AI tagging + ask-readiness (optional `--re-score` flag)
+
+#### Discovery Heuristics
+
+The `--discover` flag auto-finds contacts where web research would add value:
+- **Empty profiles:** No headline AND no summary
+- **Thin profiles:** Enriched but no employment AND no education AND no summary
+- **Placeholder headlines:** ".", "--", "---"
+- Excludes already web-researched contacts unless `--force`
+
+#### Pipeline Architecture
+
+```
+Contact → Perplexity sonar-pro (web search + synthesis)
+       → GPT-5 mini (extract structured fields)
+       → Confidence check (high/medium = save, low = skip)
+       → Supabase update (headline, summary, company, position, city, state)
+       → [optional] Re-run tag_contacts_gpt5m.py + score_ask_readiness.py
+```
+
+**Perplexity query** asks for: current role, career history, education, location, board memberships, achievements, philanthropy, and public profile. Identity-anchored with any known context (company, headline, comms history).
+
+**Confidence gating:** GPT-5 mini assigns high/medium/low confidence based on name uniqueness and corroborating details. Low-confidence results (common names, ambiguous matches) are skipped but raw research is saved to `perplexity_research_data` for manual review.
+
+#### Usage
+
+```bash
+# Preview what would be researched
+python enrich_web_research.py --discover --dry-run
+
+# Research a specific contact
+python enrich_web_research.py --ids 1933
+
+# Research all empty/thin profiles + re-run AI scoring
+python enrich_web_research.py --discover --re-score
+
+# Re-research already web-researched contacts
+python enrich_web_research.py --discover --force
+
+# Process N contacts
+python enrich_web_research.py --discover --batch 10
+```
+
+#### Results (First Run — 2026-02-23)
+
+| Metric | Value |
+|--------|-------|
+| Contacts discovered | 39 (16 empty + 23 thin) |
+| Profiles saved | 30 (including 1 manual pre-run) |
+| Low confidence skipped | 9 |
+| Errors | 0 |
+| Total cost | ~$0.11 |
+| Time | ~12 min (sequential Perplexity, 1.5s delay) |
+
+**Notable enrichments:**
+
+| Contact | Before Capacity | After Capacity | After Kindora |
+|---------|----------------|----------------|---------------|
+| Quinn Delaney (Akonadi Foundation) | unknown (0) | major_donor (95) | 82 |
+| Liz Simons (Heising-Simons Foundation) | unknown (0) | major_donor (90) | 80 |
+| James Cash (HBS Professor Emeritus) | unknown (5) | major_donor (85) | 65 |
+| Scott Budnick (Anti-Recidivism Coalition) | unknown (0) | major_donor (85) | 70 |
+| Jim Riddell (Paramount Resources) | unknown (0) | major_donor (88) | 20 |
+| Julián Castro (Former HUD Secretary) | unknown (0) | mid_level (60) | 85 |
+| Tim Silard (Rosenberg Foundation) | mid_level (45) | mid_level (55) | 88 |
+| Sheryl Wong (SF Foundation) | mid_level (55) | mid_level (60), inner_circle (90) | 88 |
+| Bryan Stevenson (EJI) | mid_level (55) | *(enriched separately)* | — |
+
+**9 skipped contacts** (low confidence) had common names with no disambiguating context: Mike Walker, Richard Steele, Kate Morgan, Marc Callaway, Leo Espinoza, Lauren Grayson, Khumra Foy, Kyana Rhaney, Cory Harris.
+
+#### Database Fields Updated
+
+- `headline`, `summary`, `company`, `position`, `city`, `state` — only if currently empty
+- `enrichment_source` → `'web_research'`
+- `enriched_at` → timestamp
+- `perplexity_research_data` → full raw research + structured output JSON
+- `perplexity_enriched_at` → timestamp
+- `perplexity_sources` → citation URLs from Perplexity
+
+#### Cost
+
+- **Perplexity sonar-pro:** ~$0.0075/contact (~$3/1M tokens, ~2,500 tokens/contact)
+- **GPT-5 mini structuring:** ~$0.001/contact
+- **Full discovery run (39 contacts):** ~$0.33
+- **Re-scoring (tagging + ask-readiness):** ~$0.10
+
+#### When to Re-run
+
+- After adding new contacts without LinkedIn URLs
+- After gmail-sweep imports (which create stub contacts)
+- Periodically to catch contacts whose public profiles have grown
+- When manually adding high-profile contacts by name
+
+#### Key File
+
+- `scripts/intelligence/enrich_web_research.py`
 
 ---
 

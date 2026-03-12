@@ -1,6 +1,6 @@
 # LinkedIn Enrichment: Master Reference
 
-**Last updated:** 2026-02-22
+**Last updated:** 2026-03-02
 
 This is the single source of truth for all LinkedIn enrichment at Kindora. It covers discovery, scraping, batch enrichment, URL normalization, failure handling, and production lessons learned.
 
@@ -27,13 +27,14 @@ This is the single source of truth for all LinkedIn enrichment at Kindora. It co
 15. [Cost Reference](#15-cost-reference)
 16. [Key Files](#16-key-files)
 17. [Production Run Log: Feb 2026](#17-production-run-log-feb-2026)
-18. [Network Intelligence Pipelines](#18-network-intelligence-pipelines-feb-2026) (incl. Pipeline Q: Article Reactions)
+18. [Network Intelligence Pipelines](#18-network-intelligence-pipelines-feb-2026) (Pipelines H–Y + Daily Sync + Campaign Tools)
+19. [Influencer Analysis Pipeline](#19-influencer-analysis-pipeline-z) (Pipeline Z)
 
 ---
 
 ## 1. System Overview
 
-Kindora uses seven pipelines for LinkedIn data. All share Apify as the core scraping provider.
+The contacts database (2,940 rows) is enriched through multiple pipelines. Pipelines A-G handle LinkedIn data via Apify. Pipelines H-Y handle network intelligence (AI tagging, embeddings, real estate, FEC, communications, scoring). Pipeline Z handles influencer content analysis. A daily sync keeps comms data fresh.
 
 | Pipeline | Purpose | Trigger | Scale |
 |----------|---------|---------|-------|
@@ -44,14 +45,38 @@ Kindora uses seven pipelines for LinkedIn data. All share Apify as the core scra
 | **E** | Bulk-enrich the contacts database | CLI script with concurrency | 1,000-10,000 contacts |
 | **F** | Import LinkedIn Connections.csv | CLI script | 1,000-10,000 contacts |
 | **G** | Bulk-scrape contact LinkedIn posts | CLI script with concurrency | 1,000-10,000 contacts |
+| **H** | AI tagging (GPT-5 mini) | CLI script | 2,400 contacts |
+| **I** | Vector embeddings | CLI script | 2,400 contacts |
+| **J** | Deduplication | CLI script | full DB |
+| **K** | Real estate enrichment | CLI script | 1,000-2,000 contacts |
+| **L** | FEC political donations | CLI script | 1,000-2,000 contacts |
+| **M** | Email communication history | CLI script | 5 Gmail accounts |
+| **N** | Ask-readiness scoring | CLI script | 2,900 contacts |
+| **O** | SMS communication history | CLI script | 1,000-3,000 convos |
 | **P** | Import LinkedIn DM messages | CLI script | 1,000-3,000 messages |
 | **Q** | Import LinkedIn article reactions | CLI script | 1,000-5,000 reactions |
+| **R** | Scrape LinkedIn post reactions | CLI script | 5,000-10,000 reactions |
+| **S** | Email finder (ZeroBounce) | CLI script | 500-1,000 contacts |
+| **T** | Web research (non-LinkedIn contacts) | CLI script | 30-100 contacts |
+| **U** | Comms summary aggregator | CLI script | full DB |
+| **V** | Comms closeness scoring (GPT) | CLI script | 1,200 contacts |
+| **W** | Calendar meeting history | CLI script | 5 Google accounts |
+| **X** | Phone backup sync (SMS + calls) | CLI / daily sync | incremental |
+| **Y** | Overlap scoring (GPT) | CLI script | 2,400 contacts |
+| **Z** | Influencer post analysis + reactor matching | CLI script | per influencer |
 
 **Shared infrastructure:**
 - **Apify** `harvestapi/linkedin-profile-scraper` — $0.004/profile
 - **Apify** `harvestapi/linkedin-profile-posts` — $0.002/post
-- **Supabase** — PostgreSQL + Storage + RLS
+- **Apify** `apimaestro/linkedin-post-reactions` — ~$0.003/post (reactions only)
+- **OpenAI GPT-5 mini** — structured output for tagging, scoring, validation ($0.002/call avg)
+- **OpenAI text-embedding-3-small** — 768d embeddings for semantic search
+- **ZeroBounce** — email verification ($0.008/credit)
+- **Perplexity sonar-pro** — web research for non-LinkedIn contacts
+- **Google Workspace MCP** — 5 Gmail/Calendar accounts for comms history
+- **Supabase** — PostgreSQL + pgvector + Storage + RLS
 - **URL normalization** — All pipelines should normalize URLs before sending to Apify
+- **Daily sync** — launchd at 8am PT for email, calendar, SMS+calls
 
 ---
 
@@ -178,7 +203,7 @@ python scripts/enrichment/enrich_camelback_experts.py --months 6    # custom win
 
 ## 6. Pipeline E: Bulk Contacts Enrichment
 
-Developed for the full contacts database (2,498 contacts). Uses concurrent batch processing for speed.
+Developed for the full contacts database (2,940 contacts as of Mar 2026). Uses concurrent batch processing for speed.
 
 **Script:** `scripts/enrichment/enrich_contacts_apify.py`
 
@@ -748,6 +773,72 @@ linkedin_article_reactions (
 
 Indexes: `contact_id`, `article_title`
 
+### Post reactions table (Pipeline R)
+
+```sql
+post_reactions (
+    id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    post_url TEXT NOT NULL,                    -- LinkedIn post URL
+    post_date TEXT,                            -- ISO date string
+    post_snippet TEXT,                         -- first 150 chars of post
+    reactor_name TEXT NOT NULL,                -- name as shown on LinkedIn
+    reactor_headline TEXT,
+    reactor_linkedin_urn TEXT NOT NULL,        -- urn:li:fsd_profile:ACoAAA...
+    reaction_type TEXT DEFAULT 'LIKE',         -- LIKE, EMPATHY, INTEREST, PRAISE, APPRECIATION, ENTERTAINMENT
+    contact_id INT REFERENCES contacts(id),   -- matched contact (nullable)
+    match_method TEXT,                         -- exact, fuzzy, gpt, unmatched
+    match_confidence FLOAT,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    UNIQUE(post_url, reactor_linkedin_urn)     -- upsert key
+)
+```
+
+Indexes: `contact_id`, `post_url`, `reactor_linkedin_urn`
+
+### Calendar events table (Pipeline W)
+
+```sql
+contact_calendar_events (
+    id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    contact_id integer REFERENCES contacts(id),
+    account_email text NOT NULL,           -- which Google account
+    event_id text NOT NULL,                -- Google Calendar event ID
+    event_summary text,
+    event_start timestamptz,
+    event_end timestamptz,
+    attendees jsonb,                       -- [{email, name, response_status}]
+    raw_data jsonb,
+    created_at timestamptz DEFAULT now(),
+    UNIQUE(account_email, event_id, contact_id)
+)
+```
+
+### Call logs table (Pipeline X)
+
+```sql
+contact_call_logs (
+    id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    contact_id integer REFERENCES contacts(id),
+    phone_number text NOT NULL,
+    call_date timestamptz NOT NULL,
+    duration_seconds integer,
+    call_type text,                        -- incoming, outgoing, missed
+    raw_data jsonb,
+    created_at timestamptz DEFAULT now()
+)
+```
+
+### Invalid emails blocklist (Pipeline S)
+
+```sql
+invalid_emails (
+    id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    email text NOT NULL UNIQUE,
+    reason text,                           -- bounced, invalid, catch-all-reject, etc.
+    created_at timestamptz DEFAULT now()
+)
+```
+
 ### Camelback tables (Pipeline D)
 
 | Table | Purpose |
@@ -755,6 +846,45 @@ Indexes: `contact_id`, `article_title`
 | `camelback_experts` | Cohort records + enriched profile data |
 | `camelback_expert_posts` | LinkedIn posts (unique on `linkedin_url, post_url`) |
 | `camelback_expert_search_profiles` | AI profiles + embeddings (unique on `expert_id`) |
+
+### Influencer tables (Pipeline Z)
+
+```sql
+influencer_posts (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    influencer_url TEXT NOT NULL,                -- normalized LinkedIn URL
+    influencer_name TEXT,                        -- scraped display name
+    post_url TEXT NOT NULL,
+    post_content TEXT,
+    post_date TIMESTAMPTZ,
+    engagement_likes INT DEFAULT 0,
+    engagement_comments INT DEFAULT 0,
+    engagement_shares INT DEFAULT 0,
+    engagement_total INT GENERATED ALWAYS AS (engagement_likes + engagement_comments + engagement_shares) STORED,
+    media_type TEXT,                             -- text, image, video, article, carousel
+    raw_data JSONB,
+    scraped_at TIMESTAMPTZ DEFAULT now(),
+    UNIQUE(influencer_url, post_url)
+)
+
+influencer_post_reactions (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    influencer_url TEXT NOT NULL,
+    post_url TEXT NOT NULL,
+    post_date TIMESTAMPTZ,
+    reactor_name TEXT NOT NULL,
+    reactor_headline TEXT,
+    reactor_linkedin_urn TEXT NOT NULL,
+    reaction_type TEXT DEFAULT 'LIKE',
+    contact_id INT REFERENCES contacts(id),
+    match_method TEXT,
+    match_confidence FLOAT,
+    created_at TIMESTAMPTZ DEFAULT now(),
+    UNIQUE(post_url, reactor_linkedin_urn)
+)
+```
+
+Indexes: `influencer_url` on both tables, `contact_id WHERE contact_id IS NOT NULL` on reactions.
 
 ---
 
@@ -776,13 +906,26 @@ FIRECRAWL_API_KEY           # Tier 1: Firecrawl agent
 OPENAI_API_KEY              # Tier 2: o4-mini deep research
 ```
 
+### Required for intelligence pipelines (H-Y)
+
+```bash
+OPENAI_APIKEY               # GPT-5 mini + embeddings (note: no underscore before KEY)
+SUPABASE_DB_PASSWORD        # Direct psycopg2 connection for bulk scripts
+ZEROBOUNCE_API_KEY          # Pipeline S: Email verification
+PERPLEXITY_APIKEY           # Pipeline T: Web research (sonar-pro)
+```
+
 ### Optional
 
 ```bash
 TOMBA_API_KEY               # Tomba email finder
 TOMBA_SECRET_KEY            # Tomba secret key
 ENRICH_LAYER_API_KEY        # Legacy Enrich Layer (superseded)
-OPENAI_APIKEY               # Pipeline D AI profiles (GPT-5-mini + embeddings)
+FEC_API_KEY                 # Pipeline L: OpenFEC donations
+PROXY_HOST                  # SmartProxy for ZeroBounce when Cloudflare blocks
+PROXY_PORT                  # SmartProxy port
+PROXY_USER                  # SmartProxy auth
+PROXY_PASS                  # SmartProxy auth
 ```
 
 ### Feature flags
@@ -803,12 +946,15 @@ TOMBA_VERIFY_ALL=false                          # Verify all Tomba emails (defau
 |---------|--------|------|
 | Apify | Profile scrape | $0.004 |
 | Apify | Post scrape | $0.002/post |
+| Apify | Post reactions (apimaestro) | ~$0.003/post |
 | Tavily | Web search | $0.001 |
 | Firecrawl | Agent search | $0.22 |
 | OpenAI o4-mini | Deep research | $0.36 |
 | Tomba | Email finder | $0.012 |
-| GPT-5-mini | AI profile | $0.002 |
+| GPT-5-mini | AI profile/tag/score | $0.002 |
 | text-embedding-3-small | Embedding | $0.00002 |
+| ZeroBounce | Email verification | $0.008/credit |
+| Perplexity sonar-pro | Web research | $0.003 |
 | Enrich Layer (legacy) | Profile | $0.024 |
 
 ### Production run costs
@@ -823,6 +969,13 @@ TOMBA_VERIFY_ALL=false                          # Verify all Tomba emails (defau
 | LinkedIn CSV import (Pipeline F) | 2,764 CSV → 527 new | free | ~10 sec |
 | New contacts enrichment (Pipeline E) | 611 | ~$2.25 | ~5 min |
 | Contact post scraping (Pipeline G) | 2,856 | ~$62.28 | ~18 min |
+| Post reactions scraping (Pipeline R) | 57 posts → 8,699 reactions | ~$11.50 | ~25 min |
+| Email finder run 1+2 (Pipeline S) | 358 emails found | ~$36 ZB credits | ~30 min |
+| Web research (Pipeline T) | 30 contacts enriched | ~$0.11 | ~5 min |
+| AI tagging (Pipeline H) | 2,402 contacts | ~$5 | ~8 min |
+| Ask-readiness scoring (Pipeline N) | 2,921 contacts | ~$6.80 (2 runs) | ~10 min |
+| Comms closeness scoring (Pipeline V) | ~1,200 contacts | ~$3 | ~5 min |
+| Influencer analysis — Kevin Brown (Pipeline Z) | 100 posts, 23,456 reactions | ~$0.80 | ~20 min |
 
 ---
 
@@ -1201,6 +1354,128 @@ python scripts/intelligence/import_article_reactions.py --match-only    # Re-run
 
 **Downstream usage:** `linkedin_reactions` JSONB is consumed by ask-readiness scoring (Pipeline N) as an engagement signal. Contacts who react to 3+ articles are considered warm even without other comms data. Reaction types indicate emotional intensity ('love'/'insightful' > 'like').
 
+### Pipeline R: LinkedIn Post Reactions
+
+**Script:** `scripts/intelligence/scrape_post_reactions.py`
+**Source:** `docs/LinkedIn/Justin Posts/Shares.csv` (LinkedIn's official post export)
+**Apify actor:** `apimaestro/linkedin-post-reactions`
+**Cost:** ~$10 for 57 posts + ~$1.50 GPT matching (8,700 reactions)
+
+Scrapes who reacted to each of Justin's LinkedIn posts using Apify, matches reactors to contacts via 3-pass matching (same as Pipeline Q), and stores ALL reactions — including unmatched reactors — for future identification as the contacts DB grows.
+
+```
+LinkedIn Shares.csv
+  │
+  ├── Parse CSV → extract post URLs + dates (filter by --since cutoff)
+  │
+  ├── Apify scraping (batches of 15 posts per actor run):
+  │   ├── apimaestro/linkedin-post-reactions with limit=100
+  │   ├── Pagination for posts with >100 reactions (page_number increment)
+  │   └── Raw reactor data: name, headline, URN, profile_url, reaction_type
+  │
+  ├── 3-pass contact matching:
+  │   ├── Pass 1: Exact name match (normalized, case-insensitive)
+  │   ├── Pass 2: Fuzzy match (difflib SequenceMatcher, threshold 0.85)
+  │   └── Pass 3: GPT-5 mini adjudication (50 concurrent workers)
+  │
+  ├── Deduplicate by (post_url, reactor_linkedin_urn) before save
+  │
+  └── Upsert into post_reactions table (batches of 200)
+```
+
+**CLI usage:**
+
+```bash
+python scripts/intelligence/scrape_post_reactions.py                    # All posts since Nov 2024
+python scripts/intelligence/scrape_post_reactions.py --limit 5          # Test with 5 posts
+python scripts/intelligence/scrape_post_reactions.py --since 2025-06-01 # Custom date cutoff
+python scripts/intelligence/scrape_post_reactions.py --dry-run           # Show what would be scraped
+python scripts/intelligence/scrape_post_reactions.py --match-only        # Re-run matching on existing DB data
+python scripts/intelligence/scrape_post_reactions.py --json-output f.json # Save raw reactions to JSON
+python scripts/intelligence/scrape_post_reactions.py --workers 50        # GPT workers (default 50)
+```
+
+**Apify actor details (`apimaestro/linkedin-post-reactions`):**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `post_urls` | string[] | required | LinkedIn post URLs (**snake_case**, NOT camelCase) |
+| `limit` | int | 100 | Max reactions per post per page |
+| `page_number` | int | 1 | Page for pagination (1-indexed) |
+| `reaction_type` | string | "ALL" | Filter: ALL, LIKE, EMPATHY, INTEREST, PRAISE, APPRECIATION, ENTERTAINMENT |
+
+**Reactor data structure** (per reaction item):
+
+```json
+{
+  "reactor": {
+    "name": "Jane Doe",
+    "headline": "VP of Impact at Foundation X",
+    "urn": "urn:li:fsd_profile:ACoAAA...",
+    "profile_url": "https://www.linkedin.com/in/ACoAAA..."
+  },
+  "reaction_type": "LIKE",
+  "input": "https://www.linkedin.com/feed/update/urn:li:ugcPost:...",
+  "total_reactions": 728
+}
+```
+
+**Key technical notes:**
+- Reactor `profile_url` uses URN format (`/in/ACoAAA...`), NOT vanity URLs — cannot match by URL, must match by name + headline
+- Pagination is necessary for viral posts: `total_reactions` in response indicates when more pages exist (total > limit)
+- Duplicate reactions appear across pagination boundaries — deduplicate by `(post_url, reactor_linkedin_urn)` before upsert
+- The `--match-only` flag re-runs the 3-pass matcher against existing DB data (useful after adding new contacts)
+
+**Production run: Feb 25, 2026**
+
+| Metric | Value |
+|--------|-------|
+| Posts scraped | 57 (since Nov 2024) |
+| Total reactions scraped | 8,733 |
+| After deduplication | 8,699 |
+| Exact match | 4,519 (51.7%) |
+| Fuzzy match | 683 (7.8%) |
+| GPT match | 197 (2.3%) |
+| Total matched to contacts | 5,399 (61.8%) |
+| Unmatched (stored for future) | 3,334 |
+| Unique contacts engaged | 1,308 |
+| Unique unmatched reactors | 2,274 |
+| Cost (Apify) | ~$10 |
+| Cost (GPT matching) | ~$1.50 |
+
+**Reaction type distribution:** LIKE (5,106), EMPATHY (1,505), PRAISE (1,367), INTEREST (518), APPRECIATION (232), ENTERTAINMENT (2)
+
+**Top posts by reactions:**
+
+| Reactions | Date | Post |
+|-----------|------|------|
+| 1,069 | 2024-11-20 | Leaving Google announcement |
+| 844 | 2024-12-04 | Baldwin quote |
+| 728 | 2025-08-18 | New position at Kindora |
+| 498 | 2024-12-18 | Founder announcement |
+| 497 | 2025-08-15 | Sweet Fingers / $100M post |
+| 453 | 2025-01-11 | Meta ends DEI programs |
+| 444 | 2025-06-30 | Harvard and UVA diplomas |
+| 433 | 2025-07-10 | Drove straight to trailhead |
+
+**vs Pipeline Q (Article Reactions):**
+
+| Dimension | Pipeline Q (Articles) | Pipeline R (Posts) |
+|-----------|----------------------|-------------------|
+| Source | Manual markdown copy-paste | Automated Apify scrape |
+| Content type | Long-form articles | Short-form posts |
+| Reactor identifier | Name + headline only | Name + headline + LinkedIn URN |
+| Match rate | 49.1% | 61.8% |
+| Unmatched stored? | Yes (in DB, no URN) | Yes (with URN for future matching) |
+| Reaction types | like, insightful, love, support, celebrate | LIKE, EMPATHY, PRAISE, INTEREST, APPRECIATION, ENTERTAINMENT |
+| Re-run matching | `--match-only` | `--match-only` |
+
+**Downstream usage:** Post reaction data is valuable for:
+- Identifying warm contacts who consistently engage (top reactors reacted to 25-39 posts)
+- Discovering potential new connections (2,274 unmatched reactors with headlines)
+- Enriching ask-readiness scoring with engagement signals
+- Understanding which content resonates with the network
+
 ### Pipeline N: Ask-Readiness Scoring
 
 **Script:** `scripts/intelligence/score_ask_readiness.py`
@@ -1271,6 +1546,21 @@ ask_readiness jsonb,              -- {goal_name: {score, tier, reasoning, ...}}
 -- LinkedIn Article Reactions (Pipeline Q)
 linkedin_reactions jsonb,         -- {total_reactions, reaction_types, articles_reacted_to[], article_count}
 
+-- Communication Summary (Pipeline U)
+comms_summary jsonb,              -- {channels, total_threads, last_contact, chronological_summary, ...}
+
+-- Comms Closeness (Pipeline V)
+comms_closeness text,             -- 'inner_circle', 'active', 'occasional', 'dormant', 'no_comms'
+comms_momentum text,              -- 'accelerating', 'steady', 'decelerating', 'stale', 'new'
+comms_reasoning text,             -- 1-2 sentence explanation
+
+-- Call Data (Pipeline X)
+comms_call_count integer,         -- total matched calls
+comms_last_call timestamptz,      -- most recent call
+
+-- Overlap Scoring (Pipeline Y)
+overlap_data jsonb,               -- {institutions[], overlap_score, ...}
+
 -- Familiarity (manual + AI)
 familiarity_rating integer,       -- 0-4
 familiarity_rated_at timestamptz,
@@ -1282,6 +1572,169 @@ oc_engagement jsonb,              -- {is_oc_donor, known_donor, crm_roles[], tot
 location_name text,               -- Raw LinkedIn location string
 ```
 
+### Pipeline S: Email Finder (ZeroBounce)
+
+**Script:** `scripts/intelligence/find_emails.py`
+**Cost:** ~$0.05/contact (~6.3 ZeroBounce credits/contact)
+**Results:** 358 new emails found across 2 runs, coverage 73% to 84.8% (2,494/2,940)
+
+Pipeline: company name to domain discovery (hardcoded map + DNS MX lookup) to email permutations (first.last, flast, etc.) to ZeroBounce verification to GPT-5 mini validation to save.
+
+**CLI usage:**
+
+```bash
+python scripts/intelligence/find_emails.py --dry-run -n 5         # Dry-run 5 contacts
+python scripts/intelligence/find_emails.py -n 50                  # Run on 50 contacts
+python scripts/intelligence/find_emails.py --ids 123,456          # Specific contacts
+python scripts/intelligence/find_emails.py --proxy                # Route through SmartProxy
+python scripts/intelligence/find_emails.py --skip-tomba           # Skip Tomba fallback
+python scripts/intelligence/find_emails.py --offset 100 -n 50    # Paginated batch
+```
+
+**Key details:**
+- **ZeroBounce API:** `api.zerobounce.net/v2/validate`, key in `ZEROBOUNCE_API_KEY`
+- **Credit conservation:** DNS MX pre-filter, early-stop on valid, catch-all 3-perm cap, non-catch-all 5-perm cap, bad domain detection
+- **Invalid emails blocklist:** `invalid_emails` table (2,092 entries) prevents re-assigning bounced emails
+- **Proxy support:** `--proxy` flag routes through SmartProxy (env vars `PROXY_*`) when Cloudflare blocks IP
+- **Cloudflare 1015 fix:** Detects HTTP 401/402/403 + Cloudflare error 1015, returns None immediately (no retry storm)
+
+### Pipeline T: Web Research Enrichment (Perplexity)
+
+**Script:** `scripts/intelligence/enrich_web_research.py`
+**Model:** Perplexity sonar-pro + GPT-5 mini structuring
+**Cost:** ~$0.004/contact
+
+For contacts without LinkedIn profiles (Quinn Delaney, Bryan Stevenson, James Cash, etc.). Perplexity searches the web, GPT-5 mini structures the results, and they get saved to the same enrichment columns as LinkedIn data.
+
+**CLI usage:**
+
+```bash
+python enrich_web_research.py --discover --dry-run       # Preview what would be researched
+python enrich_web_research.py --ids 1933                 # Research specific contact
+python enrich_web_research.py --discover                 # Auto-find empty/thin profiles
+python enrich_web_research.py --discover --re-score      # Research + re-run AI scoring
+python enrich_web_research.py --discover --force          # Re-research already researched
+```
+
+**Key details:**
+- **Discovery mode:** auto-finds contacts with no LinkedIn and thin profiles
+- **Confidence gating:** high/medium = save, low = skip (raw research saved for manual review)
+- **First run:** 39 discovered, 30 enriched, 9 skipped (low confidence)
+- **Perplexity rate limit:** ~50 RPM, script uses 1.5s sequential delay
+
+### Pipeline U: Communication Summary Aggregator
+
+**Script:** `scripts/intelligence/rebuild_comms_summary.py`
+**Cost:** Free (no API calls)
+
+Aggregates data from `contact_email_threads`, `contact_calendar_events`, `contact_call_logs`, and `contact_sms_conversations` into a single `comms_summary` JSONB on each contact. Produces per-channel breakdowns, a chronological summary, and unified last-contact dates.
+
+**CLI usage:**
+
+```bash
+python scripts/intelligence/rebuild_comms_summary.py --test          # Preview 5 contacts
+python scripts/intelligence/rebuild_comms_summary.py --contact-id 42 # Single contact
+python scripts/intelligence/rebuild_comms_summary.py --ids 1,2,3     # Specific contacts
+python scripts/intelligence/rebuild_comms_summary.py                 # Full run
+```
+
+**Results:** 1,242 contacts with `comms_summary` populated across 5 channels (email, LinkedIn DM, SMS, calendar, calls).
+
+### Pipeline V: Comms Closeness Scoring
+
+**Script:** `scripts/intelligence/score_comms_closeness.py`
+**Model:** GPT-5 mini (structured output)
+**Cost:** ~$3 for full run
+
+Uses `comms_summary` data to score each contact's communication closeness and momentum. Pure behavioral assessment (not subjective like familiarity_rating).
+
+**CLI usage:**
+
+```bash
+python scripts/intelligence/score_comms_closeness.py --test            # 5 contacts, no write
+python scripts/intelligence/score_comms_closeness.py --workers 150     # Full run
+python scripts/intelligence/score_comms_closeness.py --force           # Re-score already scored
+python scripts/intelligence/score_comms_closeness.py --contact-id 42   # Single contact
+python scripts/intelligence/score_comms_closeness.py --ids 1,2,3       # Specific contacts
+```
+
+**Output:** `comms_closeness` (inner_circle/active/occasional/dormant/no_comms), `comms_momentum` (accelerating/steady/decelerating/stale/new), `comms_reasoning` (1-2 sentence explanation).
+
+### Pipeline W: Calendar Meeting History
+
+**Script:** `scripts/intelligence/gather_calendar_meetings.py`
+**Source:** 5 Google Calendar accounts via Google Workspace MCP
+**Cost:** Free (API calls only)
+
+Event-centric approach: pulls ALL events per calendar, then batch-matches attendee emails to contacts. Stores in `contact_calendar_events` table. 288 contacts matched in first run.
+
+**CLI usage:**
+
+```bash
+python scripts/intelligence/gather_calendar_meetings.py --test              # 1 account, 100 events
+python scripts/intelligence/gather_calendar_meetings.py --collect-only      # All accounts, no LLM summary
+python scripts/intelligence/gather_calendar_meetings.py --summarize-only    # LLM summary from existing data
+python scripts/intelligence/gather_calendar_meetings.py --recent-days 7     # Only last 7 days (daily sync)
+python scripts/intelligence/gather_calendar_meetings.py --account EMAIL     # Single account
+python scripts/intelligence/gather_calendar_meetings.py --force             # Re-collect everything
+```
+
+### Pipeline X: Phone Backup Sync (SMS + Calls)
+
+**Script:** `scripts/intelligence/sync_phone_backup.py`
+**Source:** SMS Backup & Restore XML files from `SMS_Calls_Backup` folder in Google Drive
+**Cost:** Free
+
+Downloads latest SMS and call backup XML files from Drive, processes incrementally, matches phone numbers to contacts, and stores in `contact_sms_conversations` and `contact_call_logs`. SMS files are ~5GB each; call files are ~450KB.
+
+**CLI usage:**
+
+```bash
+python scripts/intelligence/sync_phone_backup.py                    # Full sync (SMS + calls)
+python scripts/intelligence/sync_phone_backup.py --calls-only       # Calls only (fast, no 5GB download)
+python scripts/intelligence/sync_phone_backup.py --sms-only         # SMS only
+python scripts/intelligence/sync_phone_backup.py --test             # 1 SMS conv + 10 calls
+python scripts/intelligence/sync_phone_backup.py --recent-days 7    # Override SMS cutoff
+```
+
+**Results:** 147 contacts with SMS data, 50 contacts with call data (785 calls matched).
+
+### Pipeline Y: Overlap Scoring
+
+**Script:** `scripts/intelligence/score_overlap.py`
+**Model:** GPT-5 mini (structured output)
+**Cost:** ~$4 for full run
+
+Identifies shared institutions (employers, schools, boards) between each contact and Justin, with temporal overlap detection. Embeds `JUSTIN_TIMELINE` constant with exact month/year dates for overlap judgment.
+
+**Output:** `overlap_data` JSONB with shared institutions, overlap periods, and relationship context.
+
+### Daily Sync Automation
+
+**Wrapper:** `scripts/intelligence/daily_sync.sh`
+**Schedule:** launchd at 8am PT daily (`~/Library/LaunchAgents/co.truesteele.contacts-sync.plist`)
+
+Runs three syncs sequentially:
+1. **Email:** `gather_comms_history.py --recent-days 3 --collect-only`
+2. **Calendar:** `gather_calendar_meetings.py --recent-days 7 --collect-only`
+3. **SMS + Calls:** `sync_phone_backup.py` (downloads from Drive, processes incrementally)
+
+Logs to `logs/daily_sync_YYYY-MM-DD.log`, auto-cleaned after 30 days.
+
+**Verify:** `launchctl list | grep truesteele`
+
+### Campaign Tools
+
+Three scripts for generating outreach at scale:
+
+| Script | Purpose |
+|--------|---------|
+| `scripts/intelligence/scaffold_campaign.py` | Creates campaign structure, selects contacts, generates send schedule |
+| `scripts/intelligence/write_campaign_copy.py` | GPT-5 mini generates personalized email copy per contact |
+| `scripts/intelligence/write_personal_outreach.py` | GPT-5 mini generates 1:1 outreach emails using full contact intelligence |
+
+All three use `--test`, `--batch`, `--workers`, `--force`, `--contact-id` flags.
+
 ### Key Files: Intelligence Scripts
 
 | File | Purpose |
@@ -1291,10 +1744,121 @@ location_name text,               -- Raw LinkedIn location string
 | `scripts/intelligence/deduplicate_contacts.py` | Pipeline J: Contact deduplication |
 | `scripts/intelligence/enrich_real_estate.py` | Pipeline K: Real estate enrichment |
 | `scripts/intelligence/rescrape_zillow.py` | Pipeline K: Zillow rescrape for existing addresses |
+| `scripts/intelligence/people_search_scraper.py` | Pipeline K: 411.com people search scraper |
 | `scripts/intelligence/enrich_fec_donations.py` | Pipeline L: FEC political donations |
 | `scripts/intelligence/gather_comms_history.py` | Pipeline M: Gmail communication history |
-| `scripts/intelligence/discover_emails.py` | Pipeline M: Email address discovery |
+| `scripts/intelligence/discover_emails.py` | Pipeline M: Email address discovery (legacy) |
 | `scripts/intelligence/score_ask_readiness.py` | Pipeline N: Ask-readiness scoring |
+| `scripts/intelligence/gather_sms_history.py` | Pipeline O: SMS communication history |
 | `scripts/import_linkedin_messages.py` | Pipeline P: LinkedIn DM message import |
 | `scripts/intelligence/import_article_reactions.py` | Pipeline Q: LinkedIn article reaction import + matching |
-| `scripts/intelligence/gather_sms_history.py` | Pipeline O: SMS communication history (see `docs/SMS_ENRICHMENT.md`) |
+| `scripts/intelligence/scrape_post_reactions.py` | Pipeline R: LinkedIn post reaction scraping + 3-pass matching |
+| `scripts/intelligence/find_emails.py` | Pipeline S: Email finder (ZeroBounce + GPT validation) |
+| `scripts/intelligence/enrich_web_research.py` | Pipeline T: Web research for non-LinkedIn contacts |
+| `scripts/intelligence/rebuild_comms_summary.py` | Pipeline U: Unified comms summary aggregator |
+| `scripts/intelligence/score_comms_closeness.py` | Pipeline V: Communication closeness scoring |
+| `scripts/intelligence/gather_calendar_meetings.py` | Pipeline W: Calendar meeting history |
+| `scripts/intelligence/sync_phone_backup.py` | Pipeline X: Phone backup sync (SMS + calls from Drive) |
+| `scripts/intelligence/score_overlap.py` | Pipeline Y: Temporal overlap scoring |
+| `scripts/intelligence/daily_sync.sh` | Daily sync wrapper (email + calendar + phone) |
+| `scripts/intelligence/scaffold_campaign.py` | Campaign scaffolding + contact selection |
+| `scripts/intelligence/write_campaign_copy.py` | Campaign email copy generation |
+| `scripts/intelligence/write_personal_outreach.py` | 1:1 personal outreach generation |
+| `scripts/intelligence/backfill_comms_fields.py` | Backfill comms aggregate columns |
+| `scripts/intelligence/analyze_influencer.py` | Pipeline Z: Influencer post scraping + reactor matching |
+| `scripts/intelligence/analyze_kevin_brown.py` | Pipeline Z: Kevin Brown content analysis (GPT-5 mini) |
+| `scripts/intelligence/contact_matcher.py` | Shared: 3-pass contact matcher (exact → fuzzy → GPT) |
+
+---
+
+## 19. Influencer Analysis Pipeline (Z)
+
+Analyzes any LinkedIn influencer's posts to understand what content works, who engages, and which of Justin's contacts overlap with their audience. Two scripts: a generic scraper/matcher (`analyze_influencer.py`) and a Kevin Brown-specific GPT content analysis (`analyze_kevin_brown.py`).
+
+### Script 1: `analyze_influencer.py` — Scrape + Match
+
+**4-phase pipeline:**
+
+1. **Scrape posts** — Apify `harvestapi/linkedin-profile-posts` (single run, `maxPosts` configurable)
+2. **Scrape reactions** — Apify `apimaestro/linkedin-post-reactions` (batched 15 posts/run, paginated for >100 reactions)
+3. **Match reactors to contacts** — uses `ContactMatcher` (3-pass: exact → fuzzy → GPT-5 mini)
+4. **Save + Report** — upsert to `influencer_posts` and `influencer_post_reactions`, print analysis
+
+**CLI:**
+
+```bash
+python analyze_influencer.py https://www.linkedin.com/in/kevinlbrown/
+python analyze_influencer.py kevinlbrown --months 6 --max-posts 100
+python analyze_influencer.py kevinlbrown --skip-reactions    # posts only
+python analyze_influencer.py kevinlbrown --report-only       # re-analyze from DB
+python analyze_influencer.py kevinlbrown --workers 50        # GPT matching workers
+```
+
+**Report includes:**
+- Post performance (top 10 by engagement, avg engagement, by media type, by length)
+- Posting frequency
+- Reactor analysis (unique reactors, top 25 most engaged, reaction type distribution)
+- Contacts overlap (which of Justin's contacts engage with this influencer — warm intro targets)
+- Engagement concentration (top 10% share)
+
+### Script 2: `analyze_kevin_brown.py` — GPT Content Analysis
+
+Runs GPT-5 mini structured output analysis on every post in the `influencer_posts` table for Kevin Brown. Five analysis steps, each runnable independently:
+
+```bash
+python analyze_kevin_brown.py --step catalog    # US-001: extract + metrics
+python analyze_kevin_brown.py --step themes     # US-002: theme/message analysis
+python analyze_kevin_brown.py --step rhetoric   # US-003: rhetorical device deep-dive
+python analyze_kevin_brown.py --step format     # US-004: length/format/timing
+python analyze_kevin_brown.py --step playbook   # US-005: synthesize signature patterns
+```
+
+**Per-post GPT analysis fields (33 total):**
+- Theme: `primary_theme`, `core_message`, `content_category`, `emotional_appeal`, `target_audience`
+- Rhetoric: `opening_hook`, `structural_pattern`, `rhetorical_devices[]`, `framing_technique`, `call_to_action`, `tone`
+- Format: `line_break_style`, `uses_emoji`, `uses_bold_unicode`, `has_hook_gap`
+
+**Outputs:**
+- `docs/kevin_brown_posts_catalog.json` — 100 posts with all 33 analysis fields (~288 KB)
+- `docs/KEVIN_BROWN_CONTENT_ANALYSIS.md` — strategic analysis + Kindora content strategy
+
+**Cost:** ~$0.05 total (100 posts × ~$0.0005/post GPT-5 mini)
+
+### Shared Module: `contact_matcher.py`
+
+Extracted from `scrape_post_reactions.py` for reuse across Pipelines R and Z.
+
+**Classes/functions:**
+- `ContactMatcher` — loads all contacts, runs 3-pass matching (exact → fuzzy → GPT-5 mini batch)
+- `normalize_name()`, `split_first_last()` — name normalization with suffix/emoji handling
+- `NameMatchResult` — Pydantic schema for GPT structured output
+- `GPT_MATCH_PROMPT` — few-shot prompt for GPT name adjudication
+
+Both `scrape_post_reactions.py` and `analyze_influencer.py` import from this module.
+
+### Production Run: Kevin L. Brown (Feb 2026)
+
+| Metric | Value |
+|--------|-------|
+| Posts scraped | 100 (Nov 2024 – Feb 2026) |
+| Total reactions | 23,456 |
+| Unique reactors | 13,167 |
+| Matched to contacts | 256 (warm intro targets) |
+| Avg engagement per post | 463 |
+| Top post engagement | 3,134 ("Communications Officer") |
+| Media split | 61 text (avg 539 eng), 39 carousel (avg 345 eng) |
+| Cost (Apify posts) | ~$0.20 |
+| Cost (Apify reactions) | ~$0.45 |
+| Cost (GPT matching) | ~$0.10 |
+| Cost (GPT content analysis) | ~$0.05 |
+| **Total cost** | **~$0.80** |
+
+### Key Findings (Kevin Brown Analysis)
+
+See `docs/KEVIN_BROWN_CONTENT_ANALYSIS.md` for the full strategic analysis. Top-level findings:
+
+1. **Advocacy beats education** — provocative identity-driven posts (avg 684 engagement) outperform educational content (avg 345) by 2x
+2. **Text > carousel** — text-only posts average 539 engagement vs 345 for carousels
+3. **Long posts win** — very long posts (1500+ chars) average 625 engagement vs 306 for short (<300)
+4. **Kevin's 5 signature moves:** provocative reframe, listicle manifesto, "let me tell you a story", the data flip, industry callout
+5. **256 of Justin's contacts** engage with Kevin's posts — these are warm intro targets who already follow nonprofit fundraising content

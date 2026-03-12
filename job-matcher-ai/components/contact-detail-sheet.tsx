@@ -168,6 +168,9 @@ interface ContactDetailSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUpdated?: () => void;
+  /** API prefix for contact/campaign routes. Defaults to '/api/network-intel' (Justin's tables).
+   *  For Sally's tables, pass '/api/network-intel/sally'. */
+  apiPrefix?: string;
 }
 
 const LIST_OPTIONS = [
@@ -326,6 +329,7 @@ export function ContactDetailSheet({
   open,
   onOpenChange,
   onUpdated,
+  apiPrefix = '/api/network-intel',
 }: ContactDetailSheetProps) {
   const [detail, setDetail] = useState<ContactDetail | null>(null);
   const [loading, setLoading] = useState(false);
@@ -347,7 +351,7 @@ export function ContactDetailSheet({
     setDetail(null);
 
     try {
-      const res = await fetch(`/api/network-intel/contact/${id}`);
+      const res = await fetch(`${apiPrefix}/contact/${id}`);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || `Failed to load contact (${res.status})`);
@@ -368,7 +372,7 @@ export function ContactDetailSheet({
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [apiPrefix]);
 
   useEffect(() => {
     if (open && contactId != null) {
@@ -429,7 +433,7 @@ export function ContactDetailSheet({
       let generationError = '';
       try {
         const genRes = await fetch(
-          `/api/network-intel/campaign/${contactId}/generate-outreach`,
+          `${apiPrefix}/campaign/${contactId}/generate-outreach`,
           { method: 'POST' }
         );
         if (!genRes.ok) {
@@ -446,7 +450,7 @@ export function ContactDetailSheet({
         setCampaignSaveError(generationError);
       }
     },
-    [fetchDetail]
+    [fetchDetail, apiPrefix]
   );
 
   const handleCampaignSave = useCallback(async () => {
@@ -456,7 +460,7 @@ export function ContactDetailSheet({
 
     try {
       // Update the list assignment
-      const patchRes = await fetch(`/api/network-intel/campaign/${detail.id}`, {
+      const patchRes = await fetch(`${apiPrefix}/campaign/${detail.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -469,7 +473,7 @@ export function ContactDetailSheet({
 
       // Handle sidelined
       if (isSidelined) {
-        const sidelineRes = await fetch(`/api/network-intel/campaign/${detail.id}`, {
+        const sidelineRes = await fetch(`${apiPrefix}/campaign/${detail.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -484,7 +488,7 @@ export function ContactDetailSheet({
         if (!sidelineRes.ok) throw new Error('Failed to save sideline reason');
       } else if (originalList === 'sidelined') {
         // Restore from sidelined
-        const restoreRes = await fetch(`/api/network-intel/campaign/${detail.id}`, {
+        const restoreRes = await fetch(`${apiPrefix}/campaign/${detail.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ section: 'sidelined', value: null }),
@@ -522,6 +526,7 @@ export function ContactDetailSheet({
     generateCampaignOutreach,
     fetchDetail,
     onUpdated,
+    apiPrefix,
   ]);
 
   return (

@@ -74,7 +74,7 @@ He **never** uses:
 - **Short paragraphs:** Rarely more than 3-4 sentences per paragraph. Often single-sentence paragraphs for emphasis.
 - **Punchy sentences:** Average sentence is 10-20 words. He is not a run-on writer.
 - **Comma usage:** Uses commas naturally but not excessively. Reads like spoken language.
-- **Minimal semicolons or dashes:** Prefers clean, direct sentence breaks.
+- **Minimal semicolons or dashes in email:** Prefers clean, direct sentence breaks. (Note: Justin uses em dashes more freely in long-form writing like LinkedIn posts and articles, but rarely in email. If drafting email, default to sentence breaks over em dashes.)
 - **Strategic long sentences:** Occasionally writes one longer compound sentence when painting a picture of the work, but these are the exception.
 - **Quick-reply mode:** In fast-moving threads, responses can be as short as 2-5 words: "12:05", "Just arrived", "Got you on the list!", "Sounds good Nicole, thanks"
 - **Exclamation marks:** Uses them more than average for a male executive, but always authentically. They signal genuine enthusiasm, not performative excitement. Often: "Thanks for testing Chelle!", "Signed!!", "Got my first contract done!!"
@@ -255,6 +255,7 @@ He does NOT use generic personalization like "I saw your LinkedIn post about..."
 - Often includes links to resources or docs
 - "Here are my thoughts" framing
 - When forwarding to Sally: "FYI" + brief context + specific question
+- **Longer strategy/update emails sometimes follow the "Steele Arc"** from the Writing Style Guide: specific context or observation → zoom out to systemic pattern → acknowledge tension or complexity → synthesis insight → forward momentum or call to action. Examples: the Year Up annual update (2012), the A-team "Get the Gang Back Together" email (2025), and research briefs like the sound stage analysis. If drafting a longer strategic email for Justin, this arc is a reliable skeleton.
 
 ### Consulting proposals:
 - "As promised, I've put together a quick draft proposal focused on the strategic needs you outlined."
@@ -384,6 +385,8 @@ Justin is unusually willing to share personal struggle in professional emails wh
 
 15. **The optimistic reframe:** When things don't work out, he reframes with genuine positivity: "This one didn't work out, but there will definitely be others :)" or "Got my first contract done!! Time to get to work and start getting a paycheck again :)"
 
+16. **Casual parenthetical asides:** Justin frequently breaks his own flow with a human aside in parentheses. These aren't afterthoughts — they're a voice marker that signals informality and self-awareness mid-sentence: "(how did we both become entrepreneurs!?)", "(not wedded to the name, just need to call it something for shorthand!)", "(pics here - for those of you who came, feel free to add your own photos)", "(I unfortunately messed up and missed that original window but have been picking up sites as people drop them)". They read like he's turning to the reader and dropping out of "email mode" for a beat.
+
 ---
 
 ## 14. Voice Differences Across Accounts
@@ -417,6 +420,7 @@ Justin is unusually willing to share personal struggle in professional emails wh
 - Uses "Best," as a sign-off more often here.
 - More structured and detailed when discussing scope, pricing, and deliverables.
 - Administrative emails to board members are clear and action-oriented.
+- **Register shift for consulting proposals:** Proposals and strategic follow-ups from this account shift noticeably closer to Justin's long-form writing voice (see Writing Style Guide). Sentences run longer (30-40 words), vocabulary is more polished ("I welcome your thoughts on how we might refine the scope"), and the overall arc follows the Steele Arc pattern (specific context → systemic framing → concrete proposal → forward motion). Casual check-ins and scheduling from this same account stay short and punchy. Don't apply the proposal register to everything sent from truesteele.com — match the email type.
 
 ### justin@outdoorithm.com (Outdoorithm LLC / Legacy)
 - **Operational and technical.** Used for vendor management, developer coordination.
@@ -553,6 +557,28 @@ Justin
 ```
 
 **Key principles:** Low-pressure. "Cheering you on regardless" signals this isn't transactional. Provides multiple engagement levels. Honest about where things stand.
+
+### Template 5: The Peer-to-Peer Introduction (Justin as connector)
+
+```
+[Name A] / [Name B],
+
+Quick intro that feels like strong alignment.
+
+[1 tight paragraph on Person A: what they're building, why it matters, a credibility anchor — specific numbers or commitments if available]
+
+[1 tight paragraph on Person B: what they do, why Justin trusts them, a values-based differentiator that goes beyond their title]
+
+Feels like potential fit on [shared values/mission/specific opportunity].
+
+I'll let you both take it from here.
+
+Best,
+
+Justin
+```
+
+**Key principles:** Justin gives each person a credible, specific paragraph — not a generic bio. He names the connection point explicitly ("values, mission, and the specific opportunity around X"). Then he exits cleanly: "I'll let you both take it from here." He does the work of framing the fit so neither person has to guess why they're being introduced. Under 150 words of body text.
 
 ---
 

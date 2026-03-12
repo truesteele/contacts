@@ -71,16 +71,18 @@ You are NOT measuring subjective closeness (that's captured separately). Focus O
 
 CHANNEL SIGNAL QUALITY HIERARCHY:
 Different communication channels carry different weight as relationship signals:
-1. **SMS** (highest signal) — Most intimate channel. Reserved for people you actually know. Implies phone number exchange, which is a trust signal.
-2. **1:1 Email** (high signal) — Direct, intentional communication. Requires knowing someone's email.
-3. **LinkedIn DM** (medium signal) — Direct but lower barrier. Platform-mediated. Common for professional networking without deep relationship.
-4. **Group Email** (low signal) — Shared context but not necessarily relationship. Being CC'd on a group thread is weak signal.
+1. **Phone calls** (highest signal) — Direct voice communication. Implies strong personal relationship and willingness to invest real-time attention.
+2. **SMS** (highest signal) — Most intimate text channel. Reserved for people you actually know. Implies phone number exchange, which is a trust signal.
+3. **Calendar meetings** (high signal) — Scheduled face-to-face or video meetings show deliberate investment of time. 1:1 meetings are stronger signals than group meetings.
+4. **1:1 Email** (high signal) — Direct, intentional communication. Requires knowing someone's email.
+5. **LinkedIn DM** (medium signal) — Direct but lower barrier. Platform-mediated. Common for professional networking without deep relationship.
+6. **Group Email** (low signal) — Shared context but not necessarily relationship. Being CC'd on a group thread is weak signal.
 
-When assessing closeness, weight SMS and 1:1 email threads much more heavily than group email threads. A contact with 2 SMS conversations and 3 1:1 emails is closer than a contact with 50 group email threads.
+When assessing closeness, weight phone calls, SMS, calendar meetings, and 1:1 email threads much more heavily than group email threads. A contact with phone calls and calendar meetings is definitively closer than a contact with 50 group email threads.
 
 CLOSENESS LABELS:
 
-- **active_inner_circle**: Frequent, recent, bidirectional communication across intimate channels (SMS, 1:1 email). This person is in regular active contact. Typically: multiple channels used, high bidirectional rate, last contact within 1-2 months, SMS or frequent 1:1 email present.
+- **active_inner_circle**: Frequent, recent, bidirectional communication across intimate channels (phone calls, SMS, calendar meetings, 1:1 email). This person is in regular active contact. Typically: multiple channels used, high bidirectional rate, last contact within 1-2 months, phone/SMS/meetings or frequent 1:1 email present.
 
 - **regular_contact**: Consistent communication pattern. Not daily, but reliably in touch — monthly or quarterly exchanges, mostly bidirectional. Typically: regular cadence over 6+ months, mostly bidirectional, last contact within 3-4 months.
 
@@ -107,7 +109,7 @@ ASSESSMENT RULES:
 2. Weight channels by signal quality: SMS > 1:1 email > LinkedIn DM > group email.
 3. Consider recency heavily — recent communication (last 3 months) is much more significant than old threads.
 4. Bidirectional communication is a much stronger signal than one-way.
-5. A small number of SMS or 1:1 email threads can outweigh many group email threads.
+5. A small number of phone calls, SMS, calendar meetings, or 1:1 email threads can outweigh many group email threads.
 6. For momentum, compare the chronological pattern — is activity increasing, steady, or declining?
 7. The reasoning should cite specific numbers from the data (e.g., "14 bidirectional email threads over 18 months, last contact 2 weeks ago").
 
@@ -119,11 +121,12 @@ OUTPUT: Return comms_closeness, comms_momentum, and comms_reasoning."""
 class CommsClosenessScorer:
     MODEL = "gpt-5-mini"
 
-    def __init__(self, test_mode=False, workers=150, force=False, contact_id=None):
+    def __init__(self, test_mode=False, workers=150, force=False, contact_id=None, ids=None):
         self.test_mode = test_mode
         self.workers = workers
         self.force = force
         self.contact_id = contact_id
+        self.ids = ids
         self.supabase: Optional[Client] = None
         self.openai: Optional[OpenAI] = None
         self.stats = {
@@ -175,6 +178,19 @@ class CommsClosenessScorer:
             )
             return result.data if result.data else []
 
+        if self.ids:
+            all_contacts = []
+            for i in range(0, len(self.ids), 100):
+                batch = self.ids[i:i + 100]
+                result = (
+                    self.supabase.table("contacts")
+                    .select(select_cols)
+                    .in_("id", batch)
+                    .execute()
+                )
+                all_contacts.extend(result.data)
+            return all_contacts
+
         while True:
             query = (
                 self.supabase.table("contacts")
@@ -224,20 +240,37 @@ class CommsClosenessScorer:
 
         # Per-channel breakdown
         channels = comms.get("channels", {})
-        for ch_name in ["sms", "email", "linkedin"]:
+        for ch_name in ["calls", "sms", "calendar", "email", "linkedin"]:
             ch = channels.get(ch_name)
             if not ch:
                 continue
-            parts.append(f"--- {ch_name.upper()} ---")
-            parts.append(f"  Threads: {ch.get('threads', 0)}")
-            parts.append(f"  Messages: {ch.get('messages', 0)}")
+            label = {"calls": "PHONE CALLS", "sms": "SMS", "calendar": "CALENDAR MEETINGS",
+                     "email": "EMAIL", "linkedin": "LINKEDIN"}.get(ch_name, ch_name.upper())
+            parts.append(f"--- {label} ---")
+            count_label = "Events" if ch_name == "calendar" else "Calls" if ch_name == "calls" else "Threads"
+            parts.append(f"  {count_label}: {ch.get('threads', 0)}")
+            if ch_name not in ("calendar", "calls"):
+                parts.append(f"  Messages: {ch.get('messages', 0)}")
             parts.append(f"  First: {ch.get('first_date', 'unknown')}")
             parts.append(f"  Last: {ch.get('last_date', 'unknown')}")
-            parts.append(f"  Bidirectional: {ch.get('bidirectional', 0)}")
-            parts.append(f"  Inbound only: {ch.get('inbound', 0)}")
-            parts.append(f"  Outbound only: {ch.get('outbound', 0)}")
-            if ch_name == "email":
-                parts.append(f"  Group threads: {ch.get('group_threads', 0)}")
+            if ch_name == "calls":
+                parts.append(f"  Incoming: {ch.get('inbound', 0)}")
+                parts.append(f"  Outgoing: {ch.get('outbound', 0)}")
+                parts.append(f"  Missed: {ch.get('missed', 0)}")
+                total_sec = ch.get('total_duration_seconds', 0)
+                if total_sec:
+                    parts.append(f"  Total duration: {total_sec // 60} minutes")
+            elif ch_name == "calendar":
+                parts.append(f"  Group meetings (3+ attendees): {ch.get('group_threads', 0)}")
+                total_min = ch.get('total_duration_minutes', 0)
+                if total_min:
+                    parts.append(f"  Total duration: {total_min} minutes")
+            else:
+                parts.append(f"  Bidirectional: {ch.get('bidirectional', 0)}")
+                parts.append(f"  Inbound only: {ch.get('inbound', 0)}")
+                parts.append(f"  Outbound only: {ch.get('outbound', 0)}")
+                if ch_name == "email":
+                    parts.append(f"  Group threads: {ch.get('group_threads', 0)}")
             parts.append("")
 
         # Chronological summary
@@ -463,13 +496,18 @@ def main():
                         help="Re-score contacts that already have comms_closeness")
     parser.add_argument("--contact-id", type=int, default=None,
                         help="Score a single contact by ID")
+    parser.add_argument("--ids", type=str, default=None,
+                        help="Comma-separated contact IDs to process")
     args = parser.parse_args()
+
+    ids = [int(x.strip()) for x in args.ids.split(",")] if args.ids else None
 
     scorer = CommsClosenessScorer(
         test_mode=args.test,
         workers=args.workers,
-        force=args.force,
+        force=args.force or bool(ids),
         contact_id=args.contact_id,
+        ids=ids,
     )
     success = scorer.run()
     sys.exit(0 if success else 1)

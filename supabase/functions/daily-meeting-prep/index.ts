@@ -46,8 +46,12 @@ interface AttendeeProfile {
   position?: string;
   company?: string;
   headline?: string;
+  summary?: string;
   location?: string;
   linkedinUrl?: string;
+  schools?: string[];
+  companiesWorked?: string[];
+  volunteerOrgs?: string[];
   commsCloseness?: string;
   commsMomentum?: string;
   commsChronological?: string;
@@ -601,6 +605,162 @@ async function researchPerson(name: string, email: string, company?: string): Pr
   }
 }
 
+async function researchOrganization(name: string, domain = ""): Promise<string> {
+  const apiKey = Deno.env.get("PERPLEXITY_APIKEY");
+  if (!apiKey) return "";
+
+  let query = `What is ${name}?`;
+  if (domain) query += ` (${domain})`;
+  query += " Mission, size, key programs, recent news, notable partnerships. Keep to 300 words.";
+
+  try {
+    const resp = await fetch("https://api.perplexity.ai/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: CONFIG.perplexityModel,
+        messages: [
+          { role: "system", content: "You are a research assistant. Provide a concise organizational profile in under 300 words." },
+          { role: "user", content: query },
+        ],
+        max_tokens: 600,
+      }),
+    });
+
+    if (!resp.ok) return `[Org research failed: ${resp.status}]`;
+    const data = await resp.json();
+    return data.choices?.[0]?.message?.content || "";
+  } catch (e) {
+    return `[Org research error: ${e}]`;
+  }
+}
+
+async function searchMeetingOrigin(
+  supabase: ReturnType<typeof createClient>,
+  accounts: GoogleAccount[],
+  attendeeNames: string[],
+  orgName = ""
+): Promise<string> {
+  const results: string[] = [];
+
+  // ── Source A: DB search ──────────────────────────────────────────────────
+  const searchTerms = attendeeNames.filter((n) => n && n.length > 2);
+  if (orgName && orgName.length > 2) searchTerms.push(orgName);
+
+  for (const term of searchTerms) {
+    try {
+      const { data } = await supabase
+        .from("contact_email_threads")
+        .select("subject, snippet, summary, last_message_date, account_email")
+        .or(`subject.ilike.%${term}%,snippet.ilike.%${term}%`)
+        .order("last_message_date", { ascending: false })
+        .limit(3);
+
+      if (data) {
+        for (const r of data) {
+          const d = String(r.last_message_date || "").slice(0, 10);
+          results.push(`[${d}] ${r.account_email}: ${r.subject || ""} — ${(r.snippet || "").slice(0, 200)}`);
+        }
+      }
+    } catch (e) {
+      console.warn(`[WARN] DB origin search failed for '${term}': ${e}`);
+    }
+  }
+
+  // ── Source B: Gmail live search (thread-based) ────────────────────────────
+  // Fetch threads, not individual messages. The original intro (first message
+  // in a thread) contains the introducer's name — the most valuable context.
+  const queryParts: string[] = [];
+  for (const name of attendeeNames) {
+    if (name && name.length > 2) queryParts.push(`"${name}"`);
+  }
+  if (orgName && orgName.length > 2) queryParts.push(`"${orgName}"`);
+
+  if (queryParts.length > 0) {
+    const gmailQuery = queryParts.join(" OR ");
+    const seenThreads = new Set<string>();
+
+    for (const account of accounts) {
+      try {
+        const listData = await googleGet(
+          "https://gmail.googleapis.com/gmail/v1/users/me/messages",
+          account.accessToken!,
+          { q: gmailQuery, maxResults: "5" }
+        );
+        const msgList = listData.messages || [];
+
+        // Collect unique thread IDs
+        const threadIds: string[] = [];
+        for (const msgRef of msgList) {
+          const tid = msgRef.threadId || msgRef.id;
+          if (!seenThreads.has(tid)) {
+            seenThreads.add(tid);
+            threadIds.push(tid);
+          }
+        }
+
+        // Fetch each thread and extract the first (original) message
+        for (const tid of threadIds.slice(0, 3)) {
+          try {
+            const thread = await googleGet(
+              `https://gmail.googleapis.com/gmail/v1/users/me/threads/${tid}`,
+              account.accessToken!,
+              { format: "metadata", metadataHeaders: "Subject,From,To,Date" }
+            );
+            const threadMsgs = thread.messages || [];
+            if (threadMsgs.length === 0) continue;
+
+            // First message = original intro / conversation starter
+            const firstMsg = threadMsgs[0];
+            const firstHeaders: Record<string, string> = {};
+            for (const h of firstMsg.payload?.headers || []) {
+              firstHeaders[h.name] = h.value;
+            }
+            const firstFrom = firstHeaders.From || "";
+            const firstSubject = firstHeaders.Subject || "";
+            const firstDate = (firstHeaders.Date || "").slice(0, 16);
+            const firstSnippet = (firstMsg.snippet || "").slice(0, 300);
+
+            // Most recent message for timeline context
+            const lastMsg = threadMsgs[threadMsgs.length - 1];
+            const lastHeaders: Record<string, string> = {};
+            for (const h of lastMsg.payload?.headers || []) {
+              lastHeaders[h.name] = h.value;
+            }
+            const lastDate = (lastHeaders.Date || "").slice(0, 16);
+            const msgCount = threadMsgs.length;
+
+            const entry = `[Thread: ${firstSubject}] Started ${firstDate} by ${firstFrom} — ${firstSnippet} (${msgCount} messages, last: ${lastDate})`;
+            results.push(entry);
+          } catch (e) {
+            console.warn(`[WARN] Gmail thread fetch failed for ${tid}: ${e}`);
+          }
+        }
+      } catch (e) {
+        console.warn(`[WARN] Gmail origin search failed for ${account.email}: ${e}`);
+      }
+    }
+  }
+
+  if (results.length === 0) return "";
+
+  // Deduplicate by thread subject
+  const seen = new Set<string>();
+  const unique: string[] = [];
+  for (const r of results) {
+    const key = r.includes("]") ? r.split("]")[0].toLowerCase() : r.slice(0, 60).toLowerCase();
+    if (!seen.has(key)) {
+      seen.add(key);
+      unique.push(r);
+    }
+  }
+
+  return unique.slice(0, 8).join("\n");
+}
+
 function guessNameFromEmail(email: string, displayName = ""): { first: string; last: string } {
   if (displayName && displayName.includes(" ")) {
     const parts = displayName.trim().split(/\s+/);
@@ -623,8 +783,9 @@ function guessNameFromEmail(email: string, displayName = ""): { first: string; l
 
 async function researchAttendees(
   event: CalendarEvent,
-  supabase: ReturnType<typeof createClient>
-): Promise<{ profiles: AttendeeProfile[]; comms: CommsHistory }> {
+  supabase: ReturnType<typeof createClient>,
+  accounts: GoogleAccount[] = []
+): Promise<{ profiles: AttendeeProfile[]; comms: CommsHistory; originContext: string; orgResearch: string }> {
   const external = getExternalAttendees(event);
   const profiles: AttendeeProfile[] = [];
   const allComms: CommsHistory = { emails: [], meetings: [] };
@@ -649,8 +810,12 @@ async function researchAttendees(
         position: (contact.enrich_current_title as string) || (contact.position as string) || "",
         company: (contact.enrich_current_company as string) || (contact.company as string) || "",
         headline: (contact.headline as string) || "",
+        summary: (contact.summary as string) || "",
         location: (contact.location_name as string) || (contact.city as string) || "",
         linkedinUrl: (contact.linkedin_url as string) || "",
+        schools: (contact.enrich_schools as string[]) || [],
+        companiesWorked: (contact.enrich_companies_worked as string[]) || [],
+        volunteerOrgs: (contact.enrich_volunteer_orgs as string[]) || [],
         commsCloseness: (contact.comms_closeness as string) || "unknown",
         commsMomentum: (contact.comms_momentum as string) || "unknown",
         taxonomy: (contact.taxonomy_classification as string) || "",
@@ -733,7 +898,33 @@ async function researchAttendees(
     }
   }
 
-  return { profiles, comms: allComms };
+  // ── Meeting origin context (DB + Gmail) ──────────────────────────────────
+  const attendeeNames = profiles.map((p) => p.name);
+  const orgNames = [...new Set(profiles.map((p) => p.company).filter(Boolean))] as string[];
+  const personalDomains = new Set(["gmail.com", "yahoo.com", "hotmail.com", "outlook.com", "icloud.com"]);
+  const orgDomains = [...new Set(
+    external.map((a) => a.email.split("@")[1]).filter((d) => d && !personalDomains.has(d))
+  )];
+  const primaryOrg = orgNames[0] || "";
+
+  console.log("     Searching for meeting origin context...");
+  const originContext = await searchMeetingOrigin(supabase, accounts, attendeeNames, primaryOrg);
+
+  // ── Organization research (Perplexity) ────────────────────────────────────
+  const orgResearchParts: string[] = [];
+  const researchedOrgs = new Set<string>();
+  for (const org of orgNames) {
+    if (org && !researchedOrgs.has(org)) {
+      researchedOrgs.add(org);
+      console.log(`     Researching organization: ${org}...`);
+      const research = await researchOrganization(org, orgDomains[0] || "");
+      if (research) orgResearchParts.push(`**${org}:** ${research}`);
+      await new Promise((r) => setTimeout(r, 1500)); // Perplexity rate limit
+    }
+  }
+  const orgResearch = orgResearchParts.join("\n\n");
+
+  return { profiles, comms: allComms, originContext, orgResearch };
 }
 
 // ── Memo Generation (Claude Sonnet 4.6) ─────────────────────────────────────
@@ -742,7 +933,9 @@ function buildMemoPrompt(
   event: CalendarEvent,
   profiles: AttendeeProfile[],
   comms: CommsHistory,
-  entityKey: string
+  entityKey: string,
+  originContext = "",
+  orgResearch = ""
 ): string {
   const entityCtx = ORG_CONTEXT[entityKey] || ORG_CONTEXT.truesteele;
 
@@ -761,8 +954,12 @@ function buildMemoPrompt(
     if (p.position) attendeeText += `- Title: ${p.position}\n`;
     if (p.company) attendeeText += `- Company: ${p.company}\n`;
     if (p.headline) attendeeText += `- Headline: ${p.headline}\n`;
+    if (p.summary) attendeeText += `- Bio/Summary: ${p.summary}\n`;
     if (p.location) attendeeText += `- Location: ${p.location}\n`;
     if (p.linkedinUrl) attendeeText += `- LinkedIn: ${p.linkedinUrl}\n`;
+    if (p.schools?.length) attendeeText += `- Education: ${p.schools.join(", ")}\n`;
+    if (p.companiesWorked?.length) attendeeText += `- Career history: ${p.companiesWorked.join(", ")}\n`;
+    if (p.volunteerOrgs?.length) attendeeText += `- Volunteer/Board: ${p.volunteerOrgs.join(", ")}\n`;
     if (p.commsCloseness) attendeeText += `- Relationship: ${p.commsCloseness} (momentum: ${p.commsMomentum || "?"})\n`;
     if (p.commsChronological) attendeeText += `- Comms history: ${p.commsChronological}\n`;
     if (p.sharedBackground?.length) attendeeText += `- SHARED BACKGROUND: ${p.sharedBackground.join("; ")}\n`;
@@ -791,44 +988,37 @@ function buildMemoPrompt(
     }
   }
 
-  return `Write a meeting prep memo for Justin Steele following this exact structure:
+  return `Write a meeting prep memo for Justin Steele. This will be read on mobile in under 2 minutes before the meeting. Every sentence must earn its place.
 
-## Meeting: [Title]
-**Time:** [time range and duration]
-**Location:** [location or video link]
-**Account:** [entity name]
+Follow this EXACT structure:
+
+## [Meeting Title]
+**${entityCtx.entity}** | [time] | [location/link]
 
 ### Attendees
-A markdown table with columns: Name, Title, Organization, Relationship
+Markdown table: Name | Role | Org | How We Connected
 
-### Key Profiles
-For each attendee, 3-5 bullet points covering:
-- Current role and career trajectory
-- Any shared background with Justin (HIGHLIGHT these prominently)
-- Communication history and relationship temperature
+### Who They Are
+For each attendee, 2-3 bullets MAX:
+- Current role + one-line career arc
+- Shared background with Justin (BOLD these — they're conversation gold)
+- Relationship temperature (warm/cold/new) with last touchpoint date if known
 
-### Meeting Purpose & Context
-- What this meeting is about (from description/calendly notes)
-- Organization background (what they do, size, recent news if known)
-- What prompted this meeting
+### Context
+In 3-5 sentences, cover:
+- Why this meeting is happening (use the origin context and description)
+- What their organization does and why it matters (use the org research)
+- Any stated agenda or questions from scheduling emails
 
-### Strategic Angle: [Entity Name]
-- Which of Justin's ventures this connects to and why
-- What Justin can offer them
-- What Justin should explore or ask for
+### Game Plan
+One sentence framing which Justin venture this connects to and why.
+Then 3 numbered probes — specific questions Justin should ask. Not generic. Each probe should:
+- Reference something specific about the attendee or their org
+- Surface information Justin needs to decide next steps
+- Where relevant, include an inline warning: (AVOID: [thing not to say/do])
 
-### Talking Points
-5 numbered, specific, actionable talking points with personalization hooks.
-Reference shared experiences, mutual connections, or recent events.
-Make these SPECIFIC not generic.
-
-### Landmines to Avoid
-2-3 specific things NOT to do or say
-
-### Desired Outcome
-- Best case
-- Minimum acceptable
-- Suggested follow-up action
+### Target Outcome
+2 sentences max: Best realistic outcome + specific next step to propose before the call ends.
 
 ---
 
@@ -852,26 +1042,36 @@ CONTEXT FOR THIS MEMO:
 ${attendeeText}
 
 **Communication History:**
-${commsText || "No prior communication history found with any attendee."}
+${commsText || "No prior communication history found."}
+
+**Meeting Origin Context (emails, intros, LinkedIn messages that led to this meeting):**
+${originContext || "No origin context found — this may be a cold or self-scheduled meeting."}
+
+**Organization Research:**
+${orgResearch || "No organization research available."}
 
 INSTRUCTIONS:
-- Write in a direct, practical style. No fluff.
-- Shared background items (same school, employer, board) are GOLD. Highlight them prominently.
-- Make talking points specific to THIS person and THIS meeting, not generic.
-- If there's a stated agenda or Calendly question, address it directly in the Strategic Angle.
-- Keep the whole memo scannable in under 2 minutes.`;
+- Write for a busy founder scanning on mobile. Be direct. No filler.
+- Shared background (same school, employer, board) is GOLD — bold it.
+- Every talking point must be specific to THIS person. If it could apply to any meeting, cut it.
+- Integrate warnings inline in the Game Plan, not as a separate section.
+- Use the origin context to explain HOW this meeting came about — who introduced whom, what was said.
+- Use the org research to give Justin real intel on the organization, not just the person.
+- Total memo should be under 600 words.`;
 }
 
 async function generateMemo(
   event: CalendarEvent,
   profiles: AttendeeProfile[],
   comms: CommsHistory,
-  entityKey: string
+  entityKey: string,
+  originContext = "",
+  orgResearch = ""
 ): Promise<string> {
   const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY not set");
 
-  const prompt = buildMemoPrompt(event, profiles, comms, entityKey);
+  const prompt = buildMemoPrompt(event, profiles, comms, entityKey, originContext, orgResearch);
 
   const resp = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -1301,13 +1501,15 @@ async function runPipeline(): Promise<{
     profiles: AttendeeProfile[];
     comms: CommsHistory;
     entityKey: string;
+    originContext: string;
+    orgResearch: string;
   }> = [];
 
   for (const ev of needsMemo) {
     console.log(`   Meeting: ${ev.summary || "Untitled"}`);
-    const { profiles, comms } = await researchAttendees(ev, supabase);
+    const { profiles, comms, originContext, orgResearch } = await researchAttendees(ev, supabase, accounts);
     const entityKey = ENTITY_MAP[ev._accountEmail] || "truesteele";
-    meetingData.push({ event: ev, profiles, comms, entityKey });
+    meetingData.push({ event: ev, profiles, comms, entityKey, originContext, orgResearch });
   }
 
   // 5. Generate memos
@@ -1316,7 +1518,7 @@ async function runPipeline(): Promise<{
   for (const md of meetingData) {
     console.log(`   Writing: ${md.event.summary || "Untitled"}...`);
     try {
-      const memoText = await generateMemo(md.event, md.profiles, md.comms, md.entityKey);
+      const memoText = await generateMemo(md.event, md.profiles, md.comms, md.entityKey, md.originContext, md.orgResearch);
       memos.push({ event: md.event, memoText });
       await new Promise((r) => setTimeout(r, 1000));
     } catch (e) {

@@ -421,6 +421,8 @@ SELECT_COLS = (
     "fec_donations, real_estate_data, "
     "comms_last_date, comms_thread_count, communication_history, "
     "comms_closeness, comms_momentum, comms_summary, "
+    "comms_meeting_count, comms_last_meeting, "
+    "comms_call_count, comms_last_call, "
     "enrich_employment, enrich_education, enrich_volunteering, "
     "known_donor, nonprofit_board_member, "
     "outdoor_environmental_affinity, outdoor_affinity_evidence, "
@@ -517,7 +519,9 @@ def summarize_comms(contact: dict) -> str:
     thread_count = contact.get("comms_thread_count", 0)
     closeness = contact.get("comms_closeness")
     momentum = contact.get("comms_momentum")
-    if not last_date and not thread_count:
+    meeting_count = contact.get("comms_meeting_count", 0)
+    call_count = contact.get("comms_call_count", 0)
+    if not last_date and not thread_count and not meeting_count and not call_count:
         return "No communication history"
     parts = []
     if closeness:
@@ -527,22 +531,32 @@ def summarize_comms(contact: dict) -> str:
     if last_date:
         parts.append(f"Last contact: {last_date}")
     if thread_count:
-        parts.append(f"Total threads: {thread_count}")
+        parts.append(f"Total threads/events/calls: {thread_count}")
 
     cs = parse_jsonb(contact.get("comms_summary"))
     if cs and isinstance(cs, dict):
         channels = cs.get("channels", {})
         ch_parts = []
-        for ch_name in ["email", "linkedin", "sms"]:
+        for ch_name in ["email", "linkedin", "sms", "calendar", "calls"]:
             ch = channels.get(ch_name)
             if not ch:
                 continue
             ch_threads = ch.get("threads", 0)
             ch_bidir = ch.get("bidirectional", 0)
             ch_last = (ch.get("last_date", "") or "")[:10]
-            label = {"email": "email", "linkedin": "LinkedIn", "sms": "SMS"}.get(ch_name, ch_name)
-            detail = f"{ch_threads} {label} ({ch_bidir} bidirectional"
-            detail += f", last: {ch_last})" if ch_last else ")"
+            label = {"email": "email", "linkedin": "LinkedIn", "sms": "SMS",
+                     "calendar": "meetings", "calls": "phone calls"}.get(ch_name, ch_name)
+            if ch_name == "calendar":
+                detail = f"{ch_threads} {label}"
+                detail += f" (last: {ch_last})" if ch_last else ""
+            elif ch_name == "calls":
+                incoming = ch.get("inbound", 0)
+                outgoing = ch.get("outbound", 0)
+                detail = f"{ch_threads} {label} ({incoming} in, {outgoing} out"
+                detail += f", last: {ch_last})" if ch_last else ")"
+            else:
+                detail = f"{ch_threads} {label} ({ch_bidir} bidirectional"
+                detail += f", last: {ch_last})" if ch_last else ")"
             ch_parts.append(detail)
         if ch_parts:
             parts.append(f"Channels: {'; '.join(ch_parts)}")

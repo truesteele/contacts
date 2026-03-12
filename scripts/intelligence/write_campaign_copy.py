@@ -264,6 +264,8 @@ SELECT_COLS = (
     "fec_donations, real_estate_data, "
     "comms_last_date, comms_thread_count, communication_history, "
     "comms_closeness, comms_momentum, comms_summary, "
+    "comms_meeting_count, comms_last_meeting, "
+    "comms_call_count, comms_last_call, "
     "enrich_employment, enrich_education, "
     "known_donor, nonprofit_board_member, "
     "outdoor_environmental_affinity, outdoor_affinity_evidence, "
@@ -299,8 +301,10 @@ def summarize_comms_brief(contact: dict) -> str:
     momentum = contact.get("comms_momentum")
     last_date = contact.get("comms_last_date")
     thread_count = contact.get("comms_thread_count", 0)
+    meeting_count = contact.get("comms_meeting_count", 0)
+    call_count = contact.get("comms_call_count", 0)
 
-    if not last_date and not thread_count:
+    if not last_date and not thread_count and not meeting_count and not call_count:
         return "No communication history"
 
     parts = []
@@ -311,17 +315,24 @@ def summarize_comms_brief(contact: dict) -> str:
     if last_date:
         parts.append(f"Last contact: {last_date}")
     if thread_count:
-        parts.append(f"Threads: {thread_count}")
+        parts.append(f"Threads/events/calls: {thread_count}")
 
-    # Check for SMS history (determines thank-you channel)
     cs = parse_jsonb(contact.get("comms_summary"))
     if cs and isinstance(cs, dict):
         channels = cs.get("channels", {})
+        # SMS history (determines thank-you channel)
         sms = channels.get("sms")
         if sms and sms.get("threads", 0) > 0:
             parts.append(f"Has SMS history ({sms['threads']} threads)")
+        # Calendar meetings
+        cal = channels.get("calendar")
+        if cal and cal.get("threads", 0) > 0:
+            parts.append(f"Has meeting history ({cal['threads']} meetings)")
+        # Phone calls
+        calls = channels.get("calls")
+        if calls and calls.get("threads", 0) > 0:
+            parts.append(f"Has phone history ({calls['threads']} calls)")
 
-    # Recent thread subjects from communication_history
     comms = parse_jsonb(contact.get("communication_history"))
     if comms and isinstance(comms, dict):
         summary = comms.get("relationship_summary", "")

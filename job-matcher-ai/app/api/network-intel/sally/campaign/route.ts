@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 export const runtime = 'edge';
 
 const SELECT_COLS =
-  'id, first_name, last_name, company, position, email, campaign_2026';
+  'id, first_name, last_name, company, position, email, email_2, campaign_2026';
 
 export async function GET() {
   try {
@@ -44,6 +44,7 @@ export async function GET() {
         company: c.company,
         position: c.position,
         email: c.email,
+        email_2: c.email_2,
         // Flattened scaffold fields
         list: scaffold.campaign_list || null,
         persona: scaffold.persona || null,
