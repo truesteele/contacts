@@ -18,9 +18,10 @@ import {
   Circle,
   Loader2,
   AlertTriangle,
-  StickyNote,
   Plus,
   X,
+  Pencil,
+  Info,
 } from 'lucide-react'
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -44,6 +45,14 @@ interface ProjectTask {
 // ── Constants ──────────────────────────────────────────────────────────
 
 const STATUS_CYCLE: ProjectTask['status'][] = ['todo', 'in_progress', 'done', 'blocked']
+
+function isTaskOverdue(task: ProjectTask): boolean {
+  if (!task.due_date || task.status === 'done') return false
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const due = new Date(task.due_date + 'T00:00:00')
+  return due < today
+}
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
   todo: {
@@ -299,19 +308,63 @@ function ProgressBar({ done, total }: { done: number; total: number }) {
   )
 }
 
+function FormattedNotes({ text }: { text: string }) {
+  // Render notes with basic formatting: paragraphs and bullet points
+  const blocks = text.split('\n\n')
+  return (
+    <div className="space-y-2">
+      {blocks.map((block, i) => {
+        const lines = block.split('\n')
+        // Check if this block is a list (lines starting with • or -)
+        const isList = lines.every((l) => /^[•\-\d]+[.)]?\s/.test(l.trim()) || l.trim() === '')
+        if (isList) {
+          return (
+            <ul key={i} className="space-y-1">
+              {lines
+                .filter((l) => l.trim())
+                .map((l, j) => (
+                  <li key={j} className="text-xs text-muted-foreground leading-relaxed flex gap-1.5">
+                    <span className="text-teal-400 mt-px flex-shrink-0">{'•'}</span>
+                    <span>{l.replace(/^[•\-]\s*/, '')}</span>
+                  </li>
+                ))}
+            </ul>
+          )
+        }
+        // Check for contract reference header
+        const isHeader = block.startsWith('CONTRACT:') || block.startsWith('CRITICAL') || block.startsWith('Section ')
+        return (
+          <p
+            key={i}
+            className={cn(
+              'text-xs leading-relaxed',
+              isHeader
+                ? 'font-semibold text-teal-800/80'
+                : 'text-muted-foreground'
+            )}
+          >
+            {block}
+          </p>
+        )
+      })}
+    </div>
+  )
+}
+
 function TaskRow({
   task,
   onUpdate,
   saving,
-  notesOpen,
-  onToggleNotes,
+  expanded,
+  onToggleExpand,
 }: {
   task: ProjectTask
   onUpdate: (id: string, updates: Partial<ProjectTask>) => void
   saving: boolean
-  notesOpen: boolean
-  onToggleNotes: (id: string) => void
+  expanded: boolean
+  onToggleExpand: (id: string) => void
 }) {
+  const [editing, setEditing] = useState(false)
   const [notesValue, setNotesValue] = useState(task.notes || '')
   const notesRef = useRef<HTMLTextAreaElement>(null)
 
@@ -320,10 +373,12 @@ function TaskRow({
   }, [task.notes])
 
   useEffect(() => {
-    if (notesOpen && notesRef.current) {
+    if (editing && notesRef.current) {
       notesRef.current.focus()
+      notesRef.current.style.height = 'auto'
+      notesRef.current.style.height = notesRef.current.scrollHeight + 'px'
     }
-  }, [notesOpen])
+  }, [editing])
 
   function toggleCheckbox() {
     const newStatus = task.status === 'done' ? 'todo' : 'done'
@@ -344,29 +399,58 @@ function TaskRow({
     if (notesValue !== (task.notes || '')) {
       onUpdate(task.id, { notes: notesValue || null })
     }
+    setEditing(false)
   }
+
+  const hasNotes = !!task.notes
+  const overdue = isTaskOverdue(task)
 
   return (
     <div>
-      <div className="group flex items-start gap-3 py-2.5 px-3 rounded-lg hover:bg-slate-50/60 transition-colors">
-        <button
-          onClick={toggleCheckbox}
-          className={cn('mt-0.5 flex-shrink-0 transition-colors', STATUS_CONFIG[task.status]?.color || 'text-slate-400',
-            'hover:text-teal-600 active:scale-90'
+      <div
+        className={cn(
+          'group flex items-start gap-3 py-2.5 px-3 rounded-lg transition-colors',
+          overdue ? 'bg-red-50/60 hover:bg-red-50/80' : expanded ? 'bg-slate-50/80' : 'hover:bg-slate-50/60',
+          hasNotes && 'cursor-pointer'
+        )}
+        onClick={() => {
+          if (hasNotes) onToggleExpand(task.id)
+        }}
+      >
+        {/* Expand indicator / checkbox */}
+        <div className="flex items-center gap-1 mt-0.5 flex-shrink-0">
+          {hasNotes && (
+            <span className="text-slate-300 w-3 flex-shrink-0">
+              {expanded ? (
+                <ChevronDown className="w-3 h-3" />
+              ) : (
+                <ChevronRight className="w-3 h-3" />
+              )}
+            </span>
           )}
-        >
-          {saving ? (
-            <Loader2 className="w-[18px] h-[18px] animate-spin" />
-          ) : task.status === 'done' ? (
-            <CheckCircle2 className="w-[18px] h-[18px]" />
-          ) : task.status === 'blocked' ? (
-            <AlertTriangle className="w-[18px] h-[18px]" />
-          ) : task.status === 'in_progress' ? (
-            <Clock className="w-[18px] h-[18px]" />
-          ) : (
-            <Circle className="w-[18px] h-[18px]" />
-          )}
-        </button>
+          {!hasNotes && <span className="w-3 flex-shrink-0" />}
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              toggleCheckbox()
+            }}
+            className={cn('flex-shrink-0 transition-colors', STATUS_CONFIG[task.status]?.color || 'text-slate-400',
+              'hover:text-teal-600 active:scale-90'
+            )}
+          >
+            {saving ? (
+              <Loader2 className="w-[18px] h-[18px] animate-spin" />
+            ) : task.status === 'done' ? (
+              <CheckCircle2 className="w-[18px] h-[18px]" />
+            ) : task.status === 'blocked' ? (
+              <AlertTriangle className="w-[18px] h-[18px]" />
+            ) : task.status === 'in_progress' ? (
+              <Clock className="w-[18px] h-[18px]" />
+            ) : (
+              <Circle className="w-[18px] h-[18px]" />
+            )}
+          </button>
+        </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className={cn('text-sm', task.status === 'done' && 'line-through text-muted-foreground')}>
@@ -377,50 +461,93 @@ function TaskRow({
                 {task.description}
               </span>
             )}
+            {hasNotes && !expanded && (
+              <Info className="w-3 h-3 text-teal-400/60" />
+            )}
           </div>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              onToggleNotes(task.id)
-            }}
-            className={cn(
-              'p-1 rounded transition-all',
-              notesOpen || task.notes
-                ? 'text-teal-600 bg-teal-50 hover:bg-teal-100'
-                : 'text-slate-300 hover:text-slate-500 opacity-0 group-hover:opacity-100'
-            )}
-            title={task.notes ? 'View notes' : 'Add notes'}
-          >
-            <StickyNote className="w-3.5 h-3.5" />
-          </button>
+        <div className="flex items-center gap-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
           {task.due_date && (
-            <span className="text-[11px] text-muted-foreground tabular-nums">
+            <span className={cn('text-[11px] tabular-nums flex items-center gap-1', overdue ? 'text-red-600 font-semibold' : 'text-muted-foreground')}>
               {new Date(task.due_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              {overdue && (
+                <span className="text-[9px] font-bold uppercase tracking-wider text-red-500 bg-red-100 px-1 py-0.5 rounded">
+                  Overdue
+                </span>
+              )}
             </span>
           )}
           <OwnerPill owner={task.owner} onSelect={changeOwner} saving={saving} />
           <StatusBadge status={task.status} onClick={cycleStatus} saving={saving} />
         </div>
       </div>
-      {notesOpen && (
-        <div className="ml-9 mr-3 mb-2 mt-0.5">
-          <textarea
-            ref={notesRef}
-            value={notesValue}
-            onChange={(e) => setNotesValue(e.target.value)}
-            onBlur={saveNotes}
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') {
-                setNotesValue(task.notes || '')
-                onToggleNotes(task.id)
-              }
-            }}
-            placeholder="Add a note..."
-            className="w-full text-xs text-muted-foreground bg-slate-50 border border-border/40 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-teal-200 focus:border-teal-300 placeholder:text-slate-300 transition-all"
-            rows={2}
-          />
+      {/* Expanded notes panel */}
+      {expanded && (
+        <div className="ml-10 mr-3 mb-3 mt-1">
+          <div className="bg-white border border-border/50 rounded-lg px-4 py-3 shadow-sm">
+            {editing ? (
+              <div className="space-y-2">
+                <textarea
+                  ref={notesRef}
+                  value={notesValue}
+                  onChange={(e) => {
+                    setNotesValue(e.target.value)
+                    e.target.style.height = 'auto'
+                    e.target.style.height = e.target.scrollHeight + 'px'
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      setNotesValue(task.notes || '')
+                      setEditing(false)
+                    }
+                  }}
+                  placeholder="Add context about this task..."
+                  className="w-full text-xs text-muted-foreground bg-slate-50/50 border border-border/40 rounded-md px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-teal-200 focus:border-teal-300 placeholder:text-slate-300 transition-all min-h-[60px]"
+                />
+                <div className="flex items-center gap-2 justify-end">
+                  <button
+                    onClick={() => {
+                      setNotesValue(task.notes || '')
+                      setEditing(false)
+                    }}
+                    className="text-xs text-slate-400 hover:text-slate-600 px-2 py-1 rounded transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={saveNotes}
+                    className="text-xs font-medium text-teal-700 bg-teal-50 px-3 py-1 rounded-md hover:bg-teal-100 transition-colors"
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+            ) : hasNotes ? (
+              <div>
+                <FormattedNotes text={task.notes!} />
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setEditing(true)
+                  }}
+                  className="flex items-center gap-1 mt-3 text-[10px] text-slate-400 hover:text-teal-600 transition-colors"
+                >
+                  <Pencil className="w-2.5 h-2.5" />
+                  Edit
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setEditing(true)
+                }}
+                className="text-xs text-slate-400 hover:text-teal-600 transition-colors"
+              >
+                + Add context...
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -500,9 +627,10 @@ function CollapsibleSection({
 }) {
   const [open, setOpen] = useState(defaultOpen)
   const doneCount = tasks.filter((t) => t.status === 'done').length
+  const overdueCount = tasks.filter(isTaskOverdue).length
 
   return (
-    <div className="border border-border/60 rounded-xl bg-white shadow-sm overflow-hidden">
+    <div className={cn('border rounded-xl bg-white shadow-sm overflow-hidden', overdueCount > 0 ? 'border-red-200' : 'border-border/60')}>
       <button
         onClick={() => setOpen(!open)}
         className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-slate-50/50 transition-colors"
@@ -512,6 +640,11 @@ function CollapsibleSection({
         </span>
         <span className="text-muted-foreground/70">{icon}</span>
         <span className="text-sm font-semibold text-foreground flex-1">{title}</span>
+        {overdueCount > 0 && (
+          <span className="text-[10px] font-bold text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-full">
+            {overdueCount} overdue
+          </span>
+        )}
         <span className="text-xs text-muted-foreground tabular-nums">
           {doneCount}/{tasks.length}
         </span>
@@ -536,15 +669,15 @@ function SubsectionGroup({
   tasks,
   onUpdate,
   savingTasks,
-  notesOpenId,
-  onToggleNotes,
+  expandedId,
+  onToggleExpand,
 }: {
   label: string
   tasks: ProjectTask[]
   onUpdate: (id: string, updates: Partial<ProjectTask>) => void
   savingTasks: Set<string>
-  notesOpenId: string | null
-  onToggleNotes: (id: string) => void
+  expandedId: string | null
+  onToggleExpand: (id: string) => void
 }) {
   const doneCount = tasks.filter((t) => t.status === 'done').length
   return (
@@ -561,8 +694,8 @@ function SubsectionGroup({
           task={task}
           onUpdate={onUpdate}
           saving={savingTasks.has(task.id)}
-          notesOpen={notesOpenId === task.id}
-          onToggleNotes={onToggleNotes}
+          expanded={expandedId === task.id}
+          onToggleExpand={onToggleExpand}
         />
       ))}
     </div>
@@ -577,7 +710,7 @@ export default function UpTogetherTracker() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [savingTasks, setSavingTasks] = useState<Set<string>>(new Set())
-  const [notesOpenId, setNotesOpenId] = useState<string | null>(null)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
   const [addingSection, setAddingSection] = useState<string | null>(null)
 
   const fetchTasks = useCallback(async () => {
@@ -685,8 +818,8 @@ export default function UpTogetherTracker() {
     }
   }, [])
 
-  function toggleNotes(id: string) {
-    setNotesOpenId((prev) => (prev === id ? null : id))
+  function toggleExpand(id: string) {
+    setExpandedId((prev) => (prev === id ? null : id))
   }
 
   const totalTasks = tasks.length
@@ -871,8 +1004,8 @@ export default function UpTogetherTracker() {
                     tasks={subs[subKey]}
                     onUpdate={updateTask}
                     savingTasks={savingTasks}
-                    notesOpenId={notesOpenId}
-                    onToggleNotes={toggleNotes}
+                    expandedId={expandedId}
+                    onToggleExpand={toggleExpand}
                   />
                 ))
               ) : (
@@ -882,8 +1015,8 @@ export default function UpTogetherTracker() {
                     task={task}
                     onUpdate={updateTask}
                     saving={savingTasks.has(task.id)}
-                    notesOpen={notesOpenId === task.id}
-                    onToggleNotes={toggleNotes}
+                    expanded={expandedId === task.id}
+                    onToggleExpand={toggleExpand}
                   />
                 ))
               )}
@@ -934,8 +1067,8 @@ export default function UpTogetherTracker() {
                       task={task}
                       onUpdate={updateTask}
                       saving={savingTasks.has(task.id)}
-                      notesOpen={notesOpenId === task.id}
-                      onToggleNotes={toggleNotes}
+                      expanded={expandedId === task.id}
+                      onToggleExpand={toggleExpand}
                     />
                   ))
                 )}

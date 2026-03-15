@@ -48,6 +48,14 @@ interface ProjectTask {
 
 const STATUS_CYCLE: ProjectTask['status'][] = ['todo', 'in_progress', 'done', 'blocked']
 
+function isTaskOverdue(task: ProjectTask): boolean {
+  if (!task.due_date || task.status === 'done') return false
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const due = new Date(task.due_date + 'T00:00:00')
+  return due < today
+}
+
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
   todo: {
     label: 'To Do',
@@ -321,6 +329,7 @@ function TaskRow({
   onToggleNotes: (id: string) => void
 }) {
   const [notesValue, setNotesValue] = useState(task.notes || '')
+  const [detailOpen, setDetailOpen] = useState(false)
   const notesRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
@@ -354,9 +363,11 @@ function TaskRow({
     }
   }
 
+  const overdue = isTaskOverdue(task)
+
   return (
     <div>
-      <div className="group flex items-start gap-3 py-2.5 px-3 rounded-lg hover:bg-slate-50/60 transition-colors">
+      <div className={cn('group flex items-start gap-3 py-2.5 px-3 rounded-lg transition-colors', overdue ? 'bg-red-50/60 hover:bg-red-50/80' : 'hover:bg-slate-50/60')}>
         <button
           onClick={toggleCheckbox}
           className={cn('mt-0.5 flex-shrink-0 transition-colors', STATUS_CONFIG[task.status]?.color || 'text-slate-400',
@@ -381,9 +392,22 @@ function TaskRow({
               {task.title}
             </span>
             {task.description && (
-              <span className="text-[11px] text-muted-foreground/70 bg-slate-100 px-1.5 py-0.5 rounded font-mono">
-                {task.description}
-              </span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setDetailOpen(!detailOpen)
+                }}
+                className={cn(
+                  'inline-flex items-center gap-0.5 text-[11px] font-medium transition-colors',
+                  detailOpen
+                    ? 'text-teal-600'
+                    : 'text-muted-foreground/50 hover:text-muted-foreground/80'
+                )}
+                title="Show details"
+              >
+                {detailOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                <span>details</span>
+              </button>
             )}
           </div>
         </div>
@@ -404,14 +428,26 @@ function TaskRow({
             <StickyNote className="w-3.5 h-3.5" />
           </button>
           {task.due_date && (
-            <span className="text-[11px] text-muted-foreground tabular-nums">
+            <span className={cn('text-[11px] tabular-nums flex items-center gap-1', overdue ? 'text-red-600 font-semibold' : 'text-muted-foreground')}>
               {new Date(task.due_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              {overdue && (
+                <span className="text-[9px] font-bold uppercase tracking-wider text-red-500 bg-red-100 px-1 py-0.5 rounded">
+                  Overdue
+                </span>
+              )}
             </span>
           )}
           <OwnerPill owner={task.owner} onSelect={changeOwner} saving={saving} />
           <StatusBadge status={task.status} onClick={cycleStatus} saving={saving} />
         </div>
       </div>
+      {detailOpen && task.description && (
+        <div className="ml-9 mr-3 mb-2 mt-0.5">
+          <div className="text-xs text-muted-foreground/80 bg-slate-50/80 border border-border/30 rounded-lg px-3 py-2.5 leading-relaxed whitespace-pre-line">
+            {task.description}
+          </div>
+        </div>
+      )}
       {notesOpen && (
         <div className="ml-9 mr-3 mb-2 mt-0.5">
           <textarea
@@ -508,9 +544,10 @@ function CollapsibleSection({
 }) {
   const [open, setOpen] = useState(defaultOpen)
   const doneCount = tasks.filter((t) => t.status === 'done').length
+  const overdueCount = tasks.filter(isTaskOverdue).length
 
   return (
-    <div className="border border-border/60 rounded-xl bg-white shadow-sm overflow-hidden">
+    <div className={cn('border rounded-xl bg-white shadow-sm overflow-hidden', overdueCount > 0 ? 'border-red-200' : 'border-border/60')}>
       <button
         onClick={() => setOpen(!open)}
         className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-slate-50/50 transition-colors"
@@ -520,6 +557,11 @@ function CollapsibleSection({
         </span>
         <span className="text-muted-foreground/70">{icon}</span>
         <span className="text-sm font-semibold text-foreground flex-1">{title}</span>
+        {overdueCount > 0 && (
+          <span className="text-[10px] font-bold text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-full">
+            {overdueCount} overdue
+          </span>
+        )}
         <span className="text-xs text-muted-foreground tabular-nums">
           {doneCount}/{tasks.length}
         </span>
