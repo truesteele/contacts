@@ -39,7 +39,7 @@ import {
   Filter,
   X,
   Send,
-  SendHorizonal,
+  SendHorizontal,
   MessageSquare,
   Clock,
   Plus,
@@ -47,6 +47,7 @@ import {
   AlertTriangle,
   ChevronDown,
   ChevronRight,
+  Download,
 } from 'lucide-react';
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -141,6 +142,37 @@ function formatCurrency(amount: number): string {
 
 function resolveEmail(c: CampaignContact): string | null {
   return c.personal_email || c.email || c.work_email || null;
+}
+
+function downloadCSV(contacts: CampaignContact[], filename: string) {
+  const escCSV = (v: string | null | undefined) => {
+    if (v == null) return '';
+    const s = String(v);
+    return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const headers = ['Name', 'Email', 'Company', 'Position', 'List', 'Persona', 'Capacity', 'Lifecycle', 'Ask Amount', 'Status', 'Donation Amount', 'Donated At'];
+  const rows = contacts.map((c) => [
+    escCSV(`${c.first_name} ${c.last_name}`),
+    escCSV(resolveEmail(c)),
+    escCSV(c.company),
+    escCSV(c.position),
+    escCSV(c.list),
+    escCSV(c.persona),
+    escCSV(c.capacity_tier),
+    escCSV(c.lifecycle),
+    c.ask_amount != null ? String(c.ask_amount) : '',
+    escCSV(getContactStatus(c)),
+    c.donation ? String(c.donation.amount) : '',
+    c.donation ? c.donation.donated_at : '',
+  ].join(','));
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 // ── Activity types ────────────────────────────────────────────────────
@@ -932,7 +964,7 @@ export default function CampaignPage() {
                         </>
                       ) : (
                         <>
-                          <SendHorizonal className="w-3.5 h-3.5" />
+                          <SendHorizontal className="w-3.5 h-3.5" />
                           {sendMethod === 'gmail_draft' ? `Draft All Unsent (${unsentCount})` : `Send All Unsent (${unsentCount})`}
                         </>
                       )}
@@ -1092,7 +1124,7 @@ export default function CampaignPage() {
                     </>
                   ) : (
                     <>
-                      <SendHorizonal className="w-3.5 h-3.5" />
+                      <SendHorizontal className="w-3.5 h-3.5" />
                       Send Email 1
                     </>
                   )}
@@ -1122,6 +1154,15 @@ export default function CampaignPage() {
                 <span className="text-xs text-muted-foreground ml-auto">
                   Showing {bcdFiltered.length} of {bcdAllContacts.length} contacts
                 </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs gap-1.5"
+                  onClick={() => downloadCSV(bcdFiltered, `campaign-contacts-${new Date().toISOString().slice(0, 10)}.csv`)}
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  Download CSV
+                </Button>
               </div>
 
               {/* Filter bar */}
