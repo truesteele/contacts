@@ -24,6 +24,8 @@ import {
   Search,
   Building2,
   UserCheck,
+  CalendarDays,
+  LayoutList,
 } from 'lucide-react'
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -126,6 +128,17 @@ const SECTION_LABELS: Record<string, string> = {
   'Open Questions': 'Open Questions',
 }
 
+const SECTION_COLORS: Record<string, { bg: string; text: string }> = {
+  'Discovery & Data': { bg: 'bg-indigo-100', text: 'text-indigo-700' },
+  'Institutional Funders': { bg: 'bg-amber-100', text: 'text-amber-700' },
+  'Individual Donors': { bg: 'bg-emerald-100', text: 'text-emerald-700' },
+  Dashboard: { bg: 'bg-violet-100', text: 'text-violet-700' },
+  Deliverables: { bg: 'bg-blue-100', text: 'text-blue-700' },
+  'Advisory Phase': { bg: 'bg-teal-100', text: 'text-teal-700' },
+  Meetings: { bg: 'bg-rose-100', text: 'text-rose-700' },
+  'Open Questions': { bg: 'bg-slate-200', text: 'text-slate-600' },
+}
+
 const TEAM_MEMBERS = [
   { name: 'Justin Steele', role: 'True Steele', initials: 'JS', color: 'bg-teal-600' },
   { name: 'Laura King', role: 'Chief Dev & Impact', initials: 'LK', color: 'bg-amber-500' },
@@ -160,6 +173,47 @@ function getCurrentWeek(): number {
   if (now < w3Start) return 2
   if (now < w3End) return 3
   return 4
+}
+
+// ── Date grouping for Timeline view ────────────────────────────────────
+
+type DateGroup = 'overdue' | 'today' | 'this_week' | 'next_week' | 'later' | 'no_date'
+
+const DATE_GROUP_ORDER: DateGroup[] = ['overdue', 'today', 'this_week', 'next_week', 'later', 'no_date']
+
+const DATE_GROUP_CONFIG: Record<DateGroup, { label: string; color: string; headerBg: string; borderClass: string }> = {
+  overdue: { label: 'Overdue', color: 'text-red-700', headerBg: 'bg-red-50', borderClass: 'border-red-200' },
+  today: { label: 'Today', color: 'text-teal-700', headerBg: 'bg-teal-50/60', borderClass: 'border-teal-200' },
+  this_week: { label: 'This Week', color: 'text-blue-700', headerBg: 'bg-blue-50/60', borderClass: 'border-blue-200' },
+  next_week: { label: 'Next Week', color: 'text-slate-700', headerBg: 'bg-slate-50/60', borderClass: 'border-border/60' },
+  later: { label: 'Later', color: 'text-slate-600', headerBg: '', borderClass: 'border-border/60' },
+  no_date: { label: 'No Due Date', color: 'text-slate-500', headerBg: '', borderClass: 'border-border/60' },
+}
+
+function getDateGroup(task: ProjectTask): DateGroup {
+  if (!task.due_date) return 'no_date'
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const due = new Date(task.due_date + 'T00:00:00')
+
+  if (task.status !== 'done' && due < today) return 'overdue'
+
+  const tomorrow = new Date(today)
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  if (due >= today && due < tomorrow) return 'today'
+
+  const endOfWeek = new Date(today)
+  const dayOfWeek = endOfWeek.getDay()
+  const daysUntilMonday = dayOfWeek === 0 ? 1 : 8 - dayOfWeek
+  endOfWeek.setDate(endOfWeek.getDate() + daysUntilMonday)
+  if (due < endOfWeek) return 'this_week'
+
+  const endOfNextWeek = new Date(endOfWeek)
+  endOfNextWeek.setDate(endOfNextWeek.getDate() + 7)
+  if (due < endOfNextWeek) return 'next_week'
+
+  return 'later'
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────
@@ -315,18 +369,29 @@ function ProgressBar({ done, total }: { done: number; total: number }) {
   )
 }
 
+function SectionPill({ section }: { section: string }) {
+  const colors = SECTION_COLORS[section] || { bg: 'bg-slate-100', text: 'text-slate-600' }
+  return (
+    <span className={cn('inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium leading-none', colors.bg, colors.text)}>
+      {section}
+    </span>
+  )
+}
+
 function TaskRow({
   task,
   onUpdate,
   saving,
   notesOpen,
   onToggleNotes,
+  showSection,
 }: {
   task: ProjectTask
   onUpdate: (id: string, updates: Partial<ProjectTask>) => void
   saving: boolean
   notesOpen: boolean
   onToggleNotes: (id: string) => void
+  showSection?: boolean
 }) {
   const [notesValue, setNotesValue] = useState(task.notes || '')
   const [detailOpen, setDetailOpen] = useState(false)
@@ -391,6 +456,7 @@ function TaskRow({
             <span className={cn('text-sm', task.status === 'done' && 'line-through text-muted-foreground')}>
               {task.title}
             </span>
+            {showSection && <SectionPill section={task.section} />}
             {task.description && (
               <button
                 onClick={(e) => {
@@ -619,6 +685,155 @@ function SubsectionGroup({
   )
 }
 
+// ── View Toggle ───────────────────────────────────────────────────────
+
+function ViewToggle({ mode, onChange }: { mode: 'timeline' | 'sections'; onChange: (m: 'timeline' | 'sections') => void }) {
+  return (
+    <div className="inline-flex items-center rounded-lg border border-border/60 bg-slate-100/80 p-0.5">
+      <button
+        onClick={() => onChange('timeline')}
+        className={cn(
+          'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all',
+          mode === 'timeline'
+            ? 'bg-white text-foreground shadow-sm'
+            : 'text-muted-foreground hover:text-foreground'
+        )}
+      >
+        <CalendarDays className="w-3.5 h-3.5" />
+        Timeline
+      </button>
+      <button
+        onClick={() => onChange('sections')}
+        className={cn(
+          'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all',
+          mode === 'sections'
+            ? 'bg-white text-foreground shadow-sm'
+            : 'text-muted-foreground hover:text-foreground'
+        )}
+      >
+        <LayoutList className="w-3.5 h-3.5" />
+        Sections
+      </button>
+    </div>
+  )
+}
+
+// ── Timeline View ─────────────────────────────────────────────────────
+
+function TimelineView({
+  tasks,
+  onUpdate,
+  savingTasks,
+  notesOpenId,
+  onToggleNotes,
+}: {
+  tasks: ProjectTask[]
+  onUpdate: (id: string, updates: Partial<ProjectTask>) => void
+  savingTasks: Set<string>
+  notesOpenId: string | null
+  onToggleNotes: (id: string) => void
+}) {
+  const [showCompleted, setShowCompleted] = useState(false)
+
+  const incompleteTasks = tasks.filter((t) => t.status !== 'done')
+  const completedTasks = tasks.filter((t) => t.status === 'done')
+
+  const groups: Record<DateGroup, ProjectTask[]> = {
+    overdue: [], today: [], this_week: [], next_week: [], later: [], no_date: [],
+  }
+  for (const task of incompleteTasks) {
+    groups[getDateGroup(task)].push(task)
+  }
+
+  for (const group of DATE_GROUP_ORDER) {
+    groups[group].sort((a, b) => {
+      if (!a.due_date && !b.due_date) return 0
+      if (!a.due_date) return 1
+      if (!b.due_date) return -1
+      const dateCompare = a.due_date.localeCompare(b.due_date)
+      if (dateCompare !== 0) return dateCompare
+      return a.section.localeCompare(b.section)
+    })
+  }
+
+  const nonEmptyGroups = DATE_GROUP_ORDER.filter((g) => groups[g].length > 0)
+
+  if (incompleteTasks.length === 0 && completedTasks.length === 0) {
+    return (
+      <div className="text-center py-12 text-muted-foreground text-sm">
+        No tasks yet
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      {nonEmptyGroups.map((group) => {
+        const groupTasks = groups[group]
+        const config = DATE_GROUP_CONFIG[group]
+        return (
+          <div key={group} className={cn('border rounded-xl bg-white shadow-sm overflow-hidden', config.borderClass)}>
+            <div className={cn('flex items-center gap-2 px-5 py-3', config.headerBg)}>
+              {group === 'overdue' && <AlertTriangle className={cn('w-4 h-4', config.color)} />}
+              {group === 'today' && <Target className={cn('w-4 h-4', config.color)} />}
+              {group === 'this_week' && <CalendarDays className={cn('w-4 h-4', config.color)} />}
+              {group === 'next_week' && <Calendar className={cn('w-4 h-4', config.color)} />}
+              {group === 'later' && <Clock className={cn('w-4 h-4', config.color)} />}
+              {group === 'no_date' && <Circle className={cn('w-4 h-4', config.color)} />}
+              <span className={cn('text-sm font-semibold', config.color)}>{config.label}</span>
+              <span className="text-xs text-muted-foreground/60 tabular-nums">{groupTasks.length}</span>
+            </div>
+            <div className="px-2 pb-3">
+              {groupTasks.map((task) => (
+                <TaskRow
+                  key={task.id}
+                  task={task}
+                  onUpdate={onUpdate}
+                  saving={savingTasks.has(task.id)}
+                  notesOpen={notesOpenId === task.id}
+                  onToggleNotes={onToggleNotes}
+                  showSection
+                />
+              ))}
+            </div>
+          </div>
+        )
+      })}
+
+      {completedTasks.length > 0 && (
+        <div className="border rounded-xl bg-white shadow-sm overflow-hidden border-border/60">
+          <button
+            onClick={() => setShowCompleted(!showCompleted)}
+            className="w-full flex items-center gap-2 px-5 py-3 text-left hover:bg-slate-50/50 transition-colors"
+          >
+            <span className="text-muted-foreground">
+              {showCompleted ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+            </span>
+            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+            <span className="text-sm font-semibold text-muted-foreground">Completed</span>
+            <span className="text-xs text-muted-foreground/60 tabular-nums">{completedTasks.length}</span>
+          </button>
+          {showCompleted && (
+            <div className="px-2 pb-3 border-t border-border/40">
+              {completedTasks.map((task) => (
+                <TaskRow
+                  key={task.id}
+                  task={task}
+                  onUpdate={onUpdate}
+                  saving={savingTasks.has(task.id)}
+                  notesOpen={notesOpenId === task.id}
+                  onToggleNotes={onToggleNotes}
+                  showSection
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Main Page Component ────────────────────────────────────────────────
 
 export default function SFEFTracker() {
@@ -628,6 +843,18 @@ export default function SFEFTracker() {
   const [error, setError] = useState<string | null>(null)
   const [savingTasks, setSavingTasks] = useState<Set<string>>(new Set())
   const [notesOpenId, setNotesOpenId] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState<'timeline' | 'sections'>('timeline')
+
+  // Persist view mode
+  useEffect(() => {
+    const saved = localStorage.getItem('sfef-tracker-view')
+    if (saved === 'timeline' || saved === 'sections') setViewMode(saved)
+  }, [])
+
+  function changeViewMode(mode: 'timeline' | 'sections') {
+    setViewMode(mode)
+    localStorage.setItem('sfef-tracker-view', mode)
+  }
   const [addingSection, setAddingSection] = useState<string | null>(null)
 
   const fetchTasks = useCallback(async () => {
@@ -851,6 +1078,11 @@ export default function SFEFTracker() {
         </div>
       </header>
 
+      {/* ── View Toggle + Sprint Timeline ─────────────────────────── */}
+      <div className="flex items-center justify-between">
+        <ViewToggle mode={viewMode} onChange={changeViewMode} />
+      </div>
+
       {/* ── Sprint Timeline ───────────────────────────────────────── */}
       <div className="bg-white border border-border/60 rounded-xl p-5 shadow-sm">
         <div className="flex items-center gap-2 mb-4">
@@ -885,129 +1117,144 @@ export default function SFEFTracker() {
         </div>
       </div>
 
-      {/* ── Sections ──────────────────────────────────────────────── */}
-      {SECTION_ORDER.map((sectionKey) => {
-        const sectionTasks = grouped[sectionKey] || []
-        const subs = getSubsections(sectionKey)
-        const subsKeys = Object.keys(subs).sort((a, b) => {
-          if (a === '_default') return -1
-          if (b === '_default') return 1
-          const aMin = Math.min(...(subs[a]?.map((t) => t.sort_order) || [0]))
-          const bMin = Math.min(...(subs[b]?.map((t) => t.sort_order) || [0]))
-          return aMin - bMin
-        })
-        const hasSubsections = subsKeys.length > 1 || (subsKeys.length === 1 && subsKeys[0] !== '_default')
+      {/* ── Timeline View ────────────────────────────────────────── */}
+      {viewMode === 'timeline' && (
+        <TimelineView
+          tasks={tasks}
+          onUpdate={updateTask}
+          savingTasks={savingTasks}
+          notesOpenId={notesOpenId}
+          onToggleNotes={toggleNotes}
+        />
+      )}
 
-        return (
-          <CollapsibleSection
-            key={sectionKey}
-            title={SECTION_LABELS[sectionKey] || sectionKey}
-            icon={SECTION_ICONS[sectionKey] || <FileText className="w-4 h-4" />}
-            tasks={sectionTasks}
-          >
-            <div className="mt-1">
-              {sectionTasks.length === 0 && addingSection !== sectionKey ? (
-                <p className="text-sm text-muted-foreground/60 py-4 text-center italic">
-                  No tasks yet
-                </p>
-              ) : hasSubsections ? (
-                subsKeys.map((subKey) => (
-                  <SubsectionGroup
-                    key={subKey}
-                    label={subKey === '_default' ? 'General' : subKey}
-                    tasks={subs[subKey]}
-                    onUpdate={updateTask}
-                    savingTasks={savingTasks}
-                    notesOpenId={notesOpenId}
-                    onToggleNotes={toggleNotes}
-                  />
-                ))
-              ) : (
-                sectionTasks.map((task) => (
-                  <TaskRow
-                    key={task.id}
-                    task={task}
-                    onUpdate={updateTask}
-                    saving={savingTasks.has(task.id)}
-                    notesOpen={notesOpenId === task.id}
-                    onToggleNotes={toggleNotes}
-                  />
-                ))
-              )}
-            </div>
-            {addingSection === sectionKey ? (
-              <AddTaskForm
-                section={sectionKey}
-                onAdd={(t) => {
-                  createTask(t.section, t.subsection ?? null, t.title)
-                  setAddingSection(null)
-                }}
-                onCancel={() => setAddingSection(null)}
-              />
-            ) : (
-              <button
-                onClick={() => setAddingSection(sectionKey)}
-                className="flex items-center gap-2 mt-2 px-3 py-1.5 text-xs text-slate-400 hover:text-teal-600 hover:bg-teal-50/50 rounded-md transition-colors w-full"
+      {/* ── Sections View ─────────────────────────────────────────── */}
+      {viewMode === 'sections' && (
+        <>
+          {SECTION_ORDER.map((sectionKey) => {
+            const sectionTasks = grouped[sectionKey] || []
+            const subs = getSubsections(sectionKey)
+            const subsKeys = Object.keys(subs).sort((a, b) => {
+              if (a === '_default') return -1
+              if (b === '_default') return 1
+              const aMin = Math.min(...(subs[a]?.map((t) => t.sort_order) || [0]))
+              const bMin = Math.min(...(subs[b]?.map((t) => t.sort_order) || [0]))
+              return aMin - bMin
+            })
+            const hasSubsections = subsKeys.length > 1 || (subsKeys.length === 1 && subsKeys[0] !== '_default')
+
+            return (
+              <CollapsibleSection
+                key={sectionKey}
+                title={SECTION_LABELS[sectionKey] || sectionKey}
+                icon={SECTION_ICONS[sectionKey] || <FileText className="w-4 h-4" />}
+                tasks={sectionTasks}
               >
-                <Plus className="w-3.5 h-3.5" />
-                Add task
-              </button>
-            )}
-          </CollapsibleSection>
-        )
-      })}
-
-      {/* Show any sections in data that aren't in SECTION_ORDER */}
-      {Object.keys(grouped)
-        .filter((s) => !SECTION_ORDER.includes(s))
-        .map((sectionKey) => {
-          const sectionTasks = grouped[sectionKey] || []
-          return (
-            <CollapsibleSection
-              key={sectionKey}
-              title={sectionKey}
-              icon={<FileText className="w-4 h-4" />}
-              tasks={sectionTasks}
-            >
-              <div className="mt-1">
-                {sectionTasks.length === 0 ? (
-                  <p className="text-sm text-muted-foreground/60 py-4 text-center italic">
-                    No tasks yet
-                  </p>
+                <div className="mt-1">
+                  {sectionTasks.length === 0 && addingSection !== sectionKey ? (
+                    <p className="text-sm text-muted-foreground/60 py-4 text-center italic">
+                      No tasks yet
+                    </p>
+                  ) : hasSubsections ? (
+                    subsKeys.map((subKey) => (
+                      <SubsectionGroup
+                        key={subKey}
+                        label={subKey === '_default' ? 'General' : subKey}
+                        tasks={subs[subKey]}
+                        onUpdate={updateTask}
+                        savingTasks={savingTasks}
+                        notesOpenId={notesOpenId}
+                        onToggleNotes={toggleNotes}
+                      />
+                    ))
+                  ) : (
+                    sectionTasks.map((task) => (
+                      <TaskRow
+                        key={task.id}
+                        task={task}
+                        onUpdate={updateTask}
+                        saving={savingTasks.has(task.id)}
+                        notesOpen={notesOpenId === task.id}
+                        onToggleNotes={toggleNotes}
+                      />
+                    ))
+                  )}
+                </div>
+                {addingSection === sectionKey ? (
+                  <AddTaskForm
+                    section={sectionKey}
+                    onAdd={(t) => {
+                      createTask(t.section, t.subsection ?? null, t.title)
+                      setAddingSection(null)
+                    }}
+                    onCancel={() => setAddingSection(null)}
+                  />
                 ) : (
-                  sectionTasks.map((task) => (
-                    <TaskRow
-                      key={task.id}
-                      task={task}
-                      onUpdate={updateTask}
-                      saving={savingTasks.has(task.id)}
-                      notesOpen={notesOpenId === task.id}
-                      onToggleNotes={toggleNotes}
-                    />
-                  ))
+                  <button
+                    onClick={() => setAddingSection(sectionKey)}
+                    className="flex items-center gap-2 mt-2 px-3 py-1.5 text-xs text-slate-400 hover:text-teal-600 hover:bg-teal-50/50 rounded-md transition-colors w-full"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Add task
+                  </button>
                 )}
-              </div>
-              {addingSection === sectionKey ? (
-                <AddTaskForm
-                  section={sectionKey}
-                  onAdd={(t) => {
-                    createTask(t.section, t.subsection ?? null, t.title)
-                    setAddingSection(null)
-                  }}
-                  onCancel={() => setAddingSection(null)}
-                />
-              ) : (
-                <button
-                  onClick={() => setAddingSection(sectionKey)}
-                  className="flex items-center gap-2 mt-2 px-3 py-1.5 text-xs text-slate-400 hover:text-teal-600 hover:bg-teal-50/50 rounded-md transition-colors w-full"
+              </CollapsibleSection>
+            )
+          })}
+
+          {/* Show any sections in data that aren't in SECTION_ORDER */}
+          {Object.keys(grouped)
+            .filter((s) => !SECTION_ORDER.includes(s))
+            .map((sectionKey) => {
+              const sectionTasks = grouped[sectionKey] || []
+              return (
+                <CollapsibleSection
+                  key={sectionKey}
+                  title={sectionKey}
+                  icon={<FileText className="w-4 h-4" />}
+                  tasks={sectionTasks}
                 >
-                  <Plus className="w-3.5 h-3.5" />
-                  Add task
-                </button>
-              )}
-            </CollapsibleSection>
-          )
-        })}
+                  <div className="mt-1">
+                    {sectionTasks.length === 0 ? (
+                      <p className="text-sm text-muted-foreground/60 py-4 text-center italic">
+                        No tasks yet
+                      </p>
+                    ) : (
+                      sectionTasks.map((task) => (
+                        <TaskRow
+                          key={task.id}
+                          task={task}
+                          onUpdate={updateTask}
+                          saving={savingTasks.has(task.id)}
+                          notesOpen={notesOpenId === task.id}
+                          onToggleNotes={toggleNotes}
+                        />
+                      ))
+                    )}
+                  </div>
+                  {addingSection === sectionKey ? (
+                    <AddTaskForm
+                      section={sectionKey}
+                      onAdd={(t) => {
+                        createTask(t.section, t.subsection ?? null, t.title)
+                        setAddingSection(null)
+                      }}
+                      onCancel={() => setAddingSection(null)}
+                    />
+                  ) : (
+                    <button
+                      onClick={() => setAddingSection(sectionKey)}
+                      className="flex items-center gap-2 mt-2 px-3 py-1.5 text-xs text-slate-400 hover:text-teal-600 hover:bg-teal-50/50 rounded-md transition-colors w-full"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Add task
+                    </button>
+                  )}
+                </CollapsibleSection>
+              )
+            })}
+        </>
+      )}
     </div>
   )
 }
