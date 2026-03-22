@@ -21,3 +21,11 @@ Started: 2026-03-21
 - GPT-5 mini took ~42s for 1 contact (expected, cold start), should be ~1s at scale with 150 workers
 - The existing Pydantic schema (AskReadinessResult) works perfectly for investment scoring — suggested_ask_range naturally maps to check size
 - Input context ~6K tokens per contact, output ~1.8K tokens
+
+### Iteration 2 — US-002 (2026-03-21)
+**What:** Created API route at `job-matcher-ai/app/api/network-intel/kindora-angel/route.ts`. Copied from ask-readiness route with these changes: default goal = `kindora_angel_investment`, removed `ai_outdoorithm_fit` and `oc_engagement` from SELECT_COLS and response mapping.
+**Test result:** `npx tsc --noEmit` passes cleanly — no type errors.
+**Learnings:**
+- The route is a near-exact copy of ask-readiness — only differences are default goal, removed OC-specific columns, and error message text
+- PATCH endpoint defaults to `kindora_angel_investment` goal key for tier updates
+- No new dependencies needed
