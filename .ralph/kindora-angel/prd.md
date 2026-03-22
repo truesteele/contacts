@@ -153,7 +153,7 @@ Create a new API route at `job-matcher-ai/app/api/network-intel/kindora-angel/ro
 
 ### US-003: Create UI Page for Kindora Angel Prospects
 **Priority:** 3
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Create a new UI page at `job-matcher-ai/app/tools/kindora-angel/page.tsx` for browsing and filtering Kindora angel investment prospects.
@@ -185,7 +185,7 @@ Create a new UI page at `job-matcher-ai/app/tools/kindora-angel/page.tsx` for br
 
 ### US-004: Add Homepage Link
 **Priority:** 4
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Add a card for Kindora Angel Prospects to the homepage dashboard.
@@ -205,7 +205,7 @@ Add a card for Kindora Angel Prospects to the homepage dashboard.
 
 ### US-005: Create Angel Investor Scoring Framework Doc
 **Priority:** 5
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Create a reference document for the angel investor scoring framework at `docs/Kindora/ANGEL_INVESTOR_SCORING_FRAMEWORK.md`.
@@ -224,7 +224,7 @@ Create a reference document for the angel investor scoring framework at `docs/Ki
 
 ### US-006: Run Full Scoring and Verify Results
 **Priority:** 6
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Run the angel investment scoring on all contacts and verify the results.

@@ -29,3 +29,47 @@ Started: 2026-03-21
 - The route is a near-exact copy of ask-readiness — only differences are default goal, removed OC-specific columns, and error message text
 - PATCH endpoint defaults to `kindora_angel_investment` goal key for tier updates
 - No new dependencies needed
+
+### Iteration 3 — US-003 (2026-03-21)
+**What:** Created UI page at `job-matcher-ai/app/tools/kindora-angel/page.tsx`. Copied from ask-readiness page with these changes:
+- Removed `ai_outdoorithm_fit`, `oc_engagement` from interface and all OC-specific UI (OC Fit filter, OC engagement badges, OC Fit in expanded details)
+- Changed API endpoint to `/api/network-intel/kindora-angel`
+- Renamed "Ask Range" → "Check Size" in expanded details and CSV export
+- Changed icon from Heart to TrendingUp with violet color scheme
+- Changed title to "Kindora Angel Prospects"
+- Updated CSV filename to `kindora_angel_prospects_...`
+- Removed `filterFit` state and OC Fit filter dropdown
+**Test result:** `npx tsc --noEmit` passes cleanly — no type errors.
+**Learnings:**
+- The page is ~905 lines, nearly identical structure to ask-readiness minus OC-specific code
+- Removed 5 filter-related items (filterFit state, its inclusion in activeFilterCount, clearAllFilters, the filter dropdown, and the OC Fit filter logic in filteredAndSorted)
+- No new dependencies needed — all lucide-react icons and shadcn/ui components already available
+
+### Iteration 4 — US-004 (2026-03-21)
+**What:** Added Kindora Angel Prospects card to homepage TOOLS array. Imported TrendingUp icon, used violet/fuchsia gradient accent. Placed after Ask Readiness card.
+**Test result:** `npx tsc --noEmit` passes cleanly.
+**Learnings:**
+- TOOLS array is simple: title, description, href, icon, accent, iconColor, optional badge/large
+- Violet/fuchsia gradient differentiates from existing cards (green for Ask Readiness, indigo for Pipeline)
+
+### Iteration 5 — US-005 (2026-03-21)
+**What:** Created `docs/Kindora/ANGEL_INVESTOR_SCORING_FRAMEWORK.md` — reference doc for the angel investor scoring framework. Covers all five dimensions with signal tables, tier definitions, data sources, interpretation guidance, and output field mapping.
+**Learnings:**
+- Doc is ~160 lines, concise and actionable — designed for quick reference when reviewing scoring results
+- Aligned all signal definitions and tier ranges with the INVESTOR_SYSTEM_PROMPT in score_ask_readiness.py
+- Included data source columns for each dimension so Justin can trace scoring back to raw data
+
+### Iteration 6 — US-006 (2026-03-21)
+**What:** Ran full angel investment scoring on all 2,943 contacts. Verified results via Supabase SQL queries.
+**Results:**
+- 2,943 contacts scored, 0 errors (10 retried successfully)
+- Tier distribution: ready_now=126, cultivate_first=2,020, long_term=410, not_a_fit=387
+- Score range: 5-95, average 58.0
+- Cost: $5.98, runtime: ~17 minutes (1,028s)
+- Top 5 ready_now: Hector Mujica (95), Brigitte Hoyer Gosselink (93), Mitch Kapor (92), Jacquelline Fuller (92), Rosita Najmi (92)
+- not_a_fit examples verified: cold contacts with no relationship and low capacity signals
+**Learnings:**
+- Distribution matches PRD expectations: ~4.3% ready_now, ~68.6% cultivate_first — reflects that most contacts need cultivation before an angel ask
+- Cost was ~$6 vs PRD estimate of $3-4 — higher because 2,943 contacts scored (not ~2,400), and investor prompt is longer than donor prompt
+- All 10 initial errors were transient (rate limits) and succeeded on retry with 4 workers
+- Top results are dominated by familiarity 3-4 contacts with Google.org/HBS/Year Up overlap — exactly the warm, mission-aligned, high-capacity profile expected
