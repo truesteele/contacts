@@ -9,6 +9,7 @@ import {
   Search,
   MapPin,
   Heart,
+  TrendingUp,
   Mountain,
   Columns3,
   ArrowUpRight,
@@ -68,6 +69,15 @@ const TOOLS = [
     icon: Heart,
     accent: 'from-green-500/10 to-emerald-500/5',
     iconColor: 'text-green-600',
+  },
+  {
+    title: 'Kindora Angel Prospects',
+    description:
+      'Angel investor prospect scoring for Kindora\'s $200K-$400K raise. AI-scored across financial capacity, mission alignment, relationship warmth, and investment sophistication.',
+    href: '/tools/kindora-angel',
+    icon: TrendingUp,
+    accent: 'from-violet-500/10 to-fuchsia-500/5',
+    iconColor: 'text-violet-600',
   },
   {
     title: 'Pipeline',
