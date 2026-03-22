@@ -1,0 +1,23 @@
+# Ralph Progress Log
+Loop: kindora-angel
+Started: 2026-03-21
+---
+
+## Codebase Patterns
+- score_ask_readiness.py: GOAL_CONTEXTS dict at ~line 75, SYSTEM_PROMPT at ~line 92, uses openai.responses.parse() with Pydantic schema
+- ask-readiness API route: job-matcher-ai/app/api/network-intel/ask-readiness/route.ts — edge runtime, supabase client, pagination
+- ask-readiness UI page: job-matcher-ai/app/tools/ask-readiness/page.tsx — shadcn/ui components, sortable table, CSV export
+- Homepage: job-matcher-ai/app/page.tsx — TOOLS array with title, description, href, icon, accent, iconColor
+
+---
+
+## Iteration Log
+
+### Iteration 1 — US-001 (2026-03-21)
+**What:** Added `kindora_angel_investment` goal to GOAL_CONTEXTS dict and created comprehensive INVESTOR_SYSTEM_PROMPT with five-dimension angel investor psychology framework. Modified `score_contact()` to route to the investor prompt when goal == "kindora_angel_investment".
+**Test result:** Scored 1 contact (Jeanne Byrd Adams) — got cultivate_first (68), check size $10K-$25K. Output uses investor language throughout (SAFE mechanics, accredited status, founding-investor invitation). No donor/gift language.
+**Learnings:**
+- The prompt routing is a simple conditional — `INVESTOR_SYSTEM_PROMPT if self.goal == "kindora_angel_investment" else SYSTEM_PROMPT`
+- GPT-5 mini took ~42s for 1 contact (expected, cold start), should be ~1s at scale with 150 workers
+- The existing Pydantic schema (AskReadinessResult) works perfectly for investment scoring — suggested_ask_range naturally maps to check size
+- Input context ~6K tokens per contact, output ~1.8K tokens
