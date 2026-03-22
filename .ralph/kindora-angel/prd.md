@@ -247,7 +247,7 @@ Run the angel investment scoring on all contacts and verify the results.
 
 ### US-007: Deploy to Vercel
 **Priority:** 7
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Deploy the new API route and UI page to production.

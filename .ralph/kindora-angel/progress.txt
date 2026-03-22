@@ -73,3 +73,14 @@ Started: 2026-03-21
 - Cost was ~$6 vs PRD estimate of $3-4 — higher because 2,943 contacts scored (not ~2,400), and investor prompt is longer than donor prompt
 - All 10 initial errors were transient (rate limits) and succeeded on retry with 4 workers
 - Top results are dominated by familiarity 3-4 contacts with Google.org/HBS/Year Up overlap — exactly the warm, mission-aligned, high-capacity profile expected
+
+### Iteration 7 — US-007 (2026-03-22)
+**What:** Deployed to Vercel production. Verified account was `justin-outdoorithm`, ran `npx vercel --prod --yes --scope true-steele` from `job-matcher-ai/` dir.
+**Results:**
+- Build succeeded: 30 static pages, all API routes compiled (including `/api/network-intel/kindora-angel`)
+- `/tools/kindora-angel` page built at 6.94 kB (169 kB first load)
+- Production URL: `steele-contacts.vercel.app` — page loads (redirects to login as expected with auth middleware)
+- Build time: ~2 minutes
+**Learnings:**
+- No token swap needed — `justin-outdoorithm` was already active
+- Edge runtime warnings about Supabase using Node.js APIs are pre-existing and don't affect functionality
