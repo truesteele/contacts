@@ -45,9 +45,11 @@ interface AngelProspectContact {
   familiarity_rating?: number;
   comms_last_date?: string;
   comms_thread_count?: number;
-  ai_capacity_tier?: string;
-  ai_capacity_score?: number;
-  campaign_list?: string | null;
+  investor_status?: string | null;
+  pitchbook_investments?: number | null;
+  edgar_filings?: number | null;
+  edgar_signal?: string | null;
+  check_size?: string | null;
   score: number;
   tier: string;
   reasoning: string;
@@ -74,9 +76,7 @@ type SortField =
   | 'familiarity'
   | 'last_contact'
   | 'capacity'
-  | 'ask_range'
-  | 'tier'
-  | 'list';
+  | 'tier';
 
 // ── Constants ──────────────────────────────────────────────────────────
 
@@ -118,34 +118,33 @@ const TIMING_LABELS: Record<string, string> = {
   not_recommended: 'Not Recommended',
 };
 
-const CAPACITY_COLORS: Record<string, string> = {
-  major_donor: 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/40 dark:text-green-300',
-  mid_level: 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300',
-  grassroots: 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-300',
-  unknown: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800/40 dark:text-gray-400',
+const INVESTOR_STATUS_CONFIG: Record<string, { label: string; color: string }> = {
+  pitchbook_verified: {
+    label: 'PitchBook Verified',
+    color: 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/40 dark:text-green-300',
+  },
+  pitchbook_institutional: {
+    label: 'Institutional',
+    color: 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300',
+  },
+  edgar_verified: {
+    label: 'SEC Filing',
+    color: 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300',
+  },
+  self_identified: {
+    label: 'Self-Identified',
+    color: 'bg-violet-100 text-violet-800 border-violet-200 dark:bg-violet-900/40 dark:text-violet-300',
+  },
 };
 
-const CAPACITY_LABELS: Record<string, string> = {
-  major_donor: 'Major Donor',
-  mid_level: 'Mid-Level',
-  grassroots: 'Grassroots',
-  unknown: 'Unknown',
-};
-
-const LIST_LABELS: Record<string, string> = {
-  A: 'A',
-  B: 'B',
-  C: 'C',
-  D: 'D',
-  sidelined: 'Sidelined',
-};
-
-const LIST_COLORS: Record<string, string> = {
-  A: 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/40 dark:text-red-300',
-  B: 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/40 dark:text-orange-300',
-  C: 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-300',
-  D: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800/40 dark:text-gray-400',
-  sidelined: 'bg-gray-100 text-gray-500 border-gray-200 dark:bg-gray-800/40 dark:text-gray-400',
+const CHECK_SIZE_ORDER: Record<string, number> = {
+  '$50K': 5,
+  '$25K-$50K': 4,
+  '$25K': 4,
+  '$10K-$25K': 3,
+  '$10K-$50K': 3,
+  '$10K': 2,
+  'Not recommended': 0,
 };
 
 // ── Helpers ────────────────────────────────────────────────────────────
@@ -217,7 +216,7 @@ export default function KindoraAngelPage() {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTiers, setActiveTiers] = useState<Set<string>>(new Set());
-  const [filterCapacity, setFilterCapacity] = useState<string>('all');
+  const [filterInvestor, setFilterInvestor] = useState<string>('all');
   const [filterApproach, setFilterApproach] = useState<string>('all');
   const [filterTiming, setFilterTiming] = useState<string>('all');
   const [filterComms, setFilterComms] = useState<string>('all');
@@ -260,7 +259,7 @@ export default function KindoraAngelPage() {
     loadContacts();
   }, [loadContacts]);
 
-  const updateContact = useCallback(async (contactId: number, field: 'tier' | 'campaign_list', value: string) => {
+  const updateContact = useCallback(async (contactId: number, field: 'tier', value: string) => {
     const key = `${contactId}-${field}`;
     setSavingField(key);
     try {
@@ -276,9 +275,7 @@ export default function KindoraAngelPage() {
       setContacts((prev) =>
         prev.map((c) => {
           if (c.id !== contactId) return c;
-          if (field === 'tier') return { ...c, tier: value };
-          if (field === 'campaign_list') return { ...c, campaign_list: value || null };
-          return c;
+          return { ...c, tier: value };
         })
       );
     } catch (err) {
@@ -313,16 +310,16 @@ export default function KindoraAngelPage() {
 
   const activeFilterCount = useMemo(() => {
     let count = activeTiers.size > 0 ? 1 : 0;
-    if (filterCapacity !== 'all') count++;
+    if (filterInvestor !== 'all') count++;
     if (filterApproach !== 'all') count++;
     if (filterTiming !== 'all') count++;
     if (filterComms !== 'all') count++;
     return count;
-  }, [activeTiers, filterCapacity, filterApproach, filterTiming, filterComms]);
+  }, [activeTiers, filterInvestor, filterApproach, filterTiming, filterComms]);
 
   const clearAllFilters = useCallback(() => {
     setActiveTiers(new Set());
-    setFilterCapacity('all');
+    setFilterInvestor('all');
     setFilterApproach('all');
     setFilterTiming('all');
     setFilterComms('all');
@@ -336,8 +333,14 @@ export default function KindoraAngelPage() {
       result = result.filter((c) => activeTiers.has(c.tier));
     }
 
-    if (filterCapacity !== 'all') {
-      result = result.filter((c) => (c.ai_capacity_tier || 'unknown') === filterCapacity);
+    if (filterInvestor !== 'all') {
+      if (filterInvestor === 'verified') {
+        result = result.filter((c) => c.investor_status != null);
+      } else if (filterInvestor === 'sec_filing') {
+        result = result.filter((c) => c.edgar_filings != null && c.edgar_filings > 0);
+      } else {
+        result = result.filter((c) => c.investor_status === filterInvestor);
+      }
     }
 
     if (filterApproach !== 'all') {
@@ -384,17 +387,17 @@ export default function KindoraAngelPage() {
         case 'last_contact':
           cmp = (a.comms_last_date || '').localeCompare(b.comms_last_date || '');
           break;
-        case 'capacity':
-          cmp = (a.ai_capacity_score ?? -1) - (b.ai_capacity_score ?? -1);
+        case 'capacity': {
+          const aInv = a.investor_status ? 2 : 0;
+          const bInv = b.investor_status ? 2 : 0;
+          const aChk = CHECK_SIZE_ORDER[a.check_size || ''] ?? -1;
+          const bChk = CHECK_SIZE_ORDER[b.check_size || ''] ?? -1;
+          cmp = (aInv + aChk) - (bInv + bChk);
           break;
+        }
         case 'tier': {
           const order = { ready_now: 4, cultivate_first: 3, long_term: 2, not_a_fit: 1 };
           cmp = (order[a.tier as keyof typeof order] || 0) - (order[b.tier as keyof typeof order] || 0);
-          break;
-        }
-        case 'list': {
-          const listOrder: Record<string, number> = { A: 4, B: 3, C: 2, D: 1, sidelined: 0 };
-          cmp = (listOrder[a.campaign_list || ''] ?? -1) - (listOrder[b.campaign_list || ''] ?? -1);
           break;
         }
         default:
@@ -404,7 +407,7 @@ export default function KindoraAngelPage() {
     });
 
     return sorted;
-  }, [contacts, activeTiers, filterCapacity, filterApproach, filterTiming, filterComms, searchTerm, sortBy, sortOrder]);
+  }, [contacts, activeTiers, filterInvestor, filterApproach, filterTiming, filterComms, searchTerm, sortBy, sortOrder]);
 
   const handleExportCSV = useCallback(() => {
     if (filteredAndSorted.length === 0) return;
@@ -413,7 +416,7 @@ export default function KindoraAngelPage() {
       'Name', 'Company', 'Position', 'City', 'State', 'Score', 'Tier',
       'Reasoning', 'Approach', 'Timing', 'Cultivation Needed',
       'Check Size', 'Personalization Angle', 'Risk Factors',
-      'Familiarity', 'Last Contact', 'Email Threads', 'Capacity Tier',
+      'Familiarity', 'Last Contact', 'Email Threads', 'Investor Status', 'Check Size',
     ];
 
     const rows = filteredAndSorted.map((c) => [
@@ -425,7 +428,7 @@ export default function KindoraAngelPage() {
       c.cultivation_needed, c.suggested_ask_range, c.personalization_angle,
       (c.risk_factors || []).join('; '),
       c.familiarity_rating ?? '', c.comms_last_date || '',
-      c.comms_thread_count ?? '', c.ai_capacity_tier || '',
+      c.comms_thread_count ?? '', c.investor_status || '', c.check_size || '',
     ]);
 
     const csvContent = [
@@ -574,14 +577,15 @@ export default function KindoraAngelPage() {
         <div className="flex items-center gap-2 mb-3 flex-wrap">
           <Filter className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
 
-          <Select value={filterCapacity} onValueChange={setFilterCapacity}>
-            <SelectTrigger className="h-7 w-[130px] text-xs">
-              <SelectValue placeholder="Capacity" />
+          <Select value={filterInvestor} onValueChange={setFilterInvestor}>
+            <SelectTrigger className="h-7 w-[150px] text-xs">
+              <SelectValue placeholder="Investor" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Capacity</SelectItem>
-              {Object.entries(CAPACITY_LABELS).map(([val, label]) => (
-                <SelectItem key={val} value={val}>{label}</SelectItem>
+              <SelectItem value="all">All Investors</SelectItem>
+              <SelectItem value="verified">Any Verified</SelectItem>
+              {Object.entries(INVESTOR_STATUS_CONFIG).map(([val, cfg]) => (
+                <SelectItem key={val} value={val}>{cfg.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -646,12 +650,11 @@ export default function KindoraAngelPage() {
                   {([
                     ['score', 'Score', 'w-[100px]'],
                     ['tier', 'Tier', 'w-[130px]'],
-                    ['list', 'List', 'w-[90px]'],
                     ['name', 'Name', 'min-w-[160px]'],
                     ['company', 'Company', 'min-w-[140px]'],
                     ['familiarity', 'Familiarity', 'w-[100px]'],
                     ['last_contact', 'Last Contact', 'w-[100px]'],
-                    ['capacity', 'Capacity', 'w-[100px]'],
+                    ['capacity', 'Investor', 'w-[140px]'],
                   ] as [SortField, string, string][]).map(([field, label, width]) => (
                     <th key={field} className={cn('text-left p-2', width)}>
                       <button
@@ -673,7 +676,6 @@ export default function KindoraAngelPage() {
                       Reasoning & Strategy
                     </span>
                   </th>
-                  <th className="w-8 p-2" />
                 </tr>
               </thead>
               <tbody>
@@ -715,35 +717,6 @@ export default function KindoraAngelPage() {
                             {Object.entries(TIER_CONFIG).map(([val, cfg]) => (
                               <SelectItem key={val} value={val}>
                                 <span className={cn('text-xs', cfg.color)}>{cfg.label}</span>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </td>
-
-                      {/* List (editable) */}
-                      <td className="p-2">
-                        <Select
-                          value={contact.campaign_list || '_none'}
-                          onValueChange={(val) => updateContact(contact.id, 'campaign_list', val === '_none' ? '' : val)}
-                        >
-                          <SelectTrigger className={cn(
-                            'h-6 w-[70px] text-[10px] px-1.5 py-0 font-medium font-mono border rounded-full',
-                            contact.campaign_list ? (LIST_COLORS[contact.campaign_list] || '') : 'text-muted-foreground'
-                          )}>
-                            {savingField === `${contact.id}-campaign_list` ? (
-                              <Loader2 className="w-3 h-3 animate-spin" />
-                            ) : (
-                              <SelectValue />
-                            )}
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="_none">
-                              <span className="text-xs text-muted-foreground">None</span>
-                            </SelectItem>
-                            {Object.entries(LIST_LABELS).map(([val, label]) => (
-                              <SelectItem key={val} value={val}>
-                                <span className="text-xs font-mono">{label}</span>
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -807,31 +780,61 @@ export default function KindoraAngelPage() {
                         )}
                       </td>
 
-                      {/* Capacity */}
+                      {/* Investor Profile */}
                       <td className="p-2">
-                        {contact.ai_capacity_tier ? (
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              'text-[10px] px-1.5 py-0 font-medium',
-                              CAPACITY_COLORS[contact.ai_capacity_tier] || ''
-                            )}
-                          >
-                            {CAPACITY_LABELS[contact.ai_capacity_tier] || contact.ai_capacity_tier}
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
+                        <div className="flex flex-col gap-0.5">
+                          {contact.investor_status && (() => {
+                            const cfg = INVESTOR_STATUS_CONFIG[contact.investor_status];
+                            if (!cfg) return null;
+                            const count = contact.pitchbook_investments ?? contact.edgar_filings;
+                            return (
+                              <Badge
+                                variant="outline"
+                                className={cn('text-[10px] px-1.5 py-0 font-medium whitespace-nowrap', cfg.color)}
+                              >
+                                {cfg.label}
+                                {count != null && count > 0 && (
+                                  <span className="ml-1 opacity-70">({count})</span>
+                                )}
+                              </Badge>
+                            );
+                          })()}
+                          {contact.check_size && contact.check_size !== 'Not recommended' && (
+                            <span className="text-[10px] text-muted-foreground font-mono">
+                              {contact.check_size}
+                            </span>
+                          )}
+                          {!contact.investor_status && (!contact.check_size || contact.check_size === 'Not recommended') && (
+                            <span className="text-muted-foreground text-xs">—</span>
+                          )}
+                        </div>
                       </td>
 
-                      {/* Reasoning & Strategy summary */}
+                      {/* Reasoning & Strategy */}
                       <td className="p-2">
-                        <div className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
-                          {contact.reasoning}
-                        </div>
+                        <button
+                          onClick={() => setExpandedId(isExpanded ? null : contact.id)}
+                          className="flex items-start gap-1.5 text-left w-full group/reason"
+                        >
+                          <span className="shrink-0 mt-0.5">
+                            {isExpanded ? (
+                              <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+                            ) : (
+                              <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+                            )}
+                          </span>
+                          {!isExpanded && (
+                            <span className="text-xs text-muted-foreground leading-relaxed line-clamp-2 group-hover/reason:text-foreground transition-colors">
+                              {contact.reasoning}
+                            </span>
+                          )}
+                        </button>
                         {isExpanded && (
-                          <div className="mt-2 space-y-2 text-xs border-t pt-2">
-                            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                          <div className="mt-1 ml-5 space-y-2 text-xs">
+                            <div className="text-muted-foreground leading-relaxed">
+                              {contact.reasoning}
+                            </div>
+                            <div className="border-t pt-2 grid grid-cols-2 gap-x-4 gap-y-1.5">
                               <div>
                                 <span className="text-muted-foreground">Approach:</span>{' '}
                                 <span className="font-medium">
@@ -867,21 +870,6 @@ export default function KindoraAngelPage() {
                             )}
                           </div>
                         )}
-                      </td>
-
-                      {/* Expand toggle */}
-                      <td className="p-2">
-                        <button
-                          onClick={() => setExpandedId(isExpanded ? null : contact.id)}
-                          className="p-1 rounded hover:bg-muted transition-colors"
-                          aria-label={isExpanded ? 'Collapse details' : 'Expand details'}
-                        >
-                          {isExpanded ? (
-                            <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                          ) : (
-                            <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                          )}
-                        </button>
                       </td>
                     </tr>
                   );

@@ -1,21 +1,26 @@
 #!/usr/bin/env python3
 """
-Network Intelligence — Ask-Readiness Scoring (Donor Psychology)
+Network Intelligence — Ask-Readiness Scoring (Donor & Investor Psychology)
 
-Uses GPT-5 mini with a deep donor psychology prompt to assess each contact's
-ask-readiness for a specific fundraising/outreach goal. Produces per-contact
-reasoning that powers the Network Intelligence search and ranking system.
+Uses GPT-5 mini with goal-specific psychology prompts to assess each contact's
+ask-readiness. Donor psychology prompt for fundraising goals, investor psychology
+prompt for angel investment goals. Produces per-contact reasoning that powers
+the Network Intelligence search and ranking system.
 
-The goal is parameterized — can score for 'outdoorithm_fundraising',
-'kindora_sales', etc. Results stack in the ask_readiness JSONB column.
+The goal is parameterized — different goals use different system prompts:
+  - 'outdoorithm_fundraising' → SYSTEM_PROMPT (donor psychology)
+  - 'kindora_angel_investment' → INVESTOR_SYSTEM_PROMPT (angel investor psychology)
+  - Others → SYSTEM_PROMPT (donor psychology, default)
+
+Results stack in the ask_readiness JSONB column keyed by goal name.
 
 Usage:
-  python scripts/intelligence/score_ask_readiness.py --test                         # 1 contact
-  python scripts/intelligence/score_ask_readiness.py --batch 50                     # 50 contacts
-  python scripts/intelligence/score_ask_readiness.py --start-from 100               # Skip first 100
-  python scripts/intelligence/score_ask_readiness.py --goal kindora_sales           # Different goal
-  python scripts/intelligence/score_ask_readiness.py --force                        # Re-score already scored
-  python scripts/intelligence/score_ask_readiness.py                                # Full run (~2,400)
+  python scripts/intelligence/score_ask_readiness.py --test                                    # 1 contact
+  python scripts/intelligence/score_ask_readiness.py --batch 50                                # 50 contacts
+  python scripts/intelligence/score_ask_readiness.py --start-from 100                          # Skip first 100
+  python scripts/intelligence/score_ask_readiness.py --goal kindora_angel_investment            # Angel investor scoring
+  python scripts/intelligence/score_ask_readiness.py --force                                   # Re-score already scored
+  python scripts/intelligence/score_ask_readiness.py                                           # Full run (~2,400)
 """
 
 import os
@@ -168,15 +173,26 @@ The three pillars of donor readiness are Capacity, Propensity, and Relationship 
    - Location context: $500K/year in San Francisco or New York, after housing, taxes, childcare/private school, leaves far less discretionary income than $500K in a lower-cost market.
    - Life stage: someone with young kids likely has major ongoing expenses (childcare, education, activities).
 
-   Hard evidence vs inference:
-   - FEC political donations are the strongest signal — they prove both disposable income AND willingness to write checks. Someone who gave $10K+ to political campaigns demonstrably has discretionary cash.
+   Hard evidence vs inference — EVIDENCE OVERRIDES TITLE INFERENCE:
+   - FEC political donations are the strongest signal — they prove both disposable income AND willingness to write checks. Someone who gave $10K+ to political campaigns demonstrably has discretionary cash. CONVERSELY, $0 FEC donations for someone in a leadership role is a negative signal — if they've never written a $1,000 political check, their discretionary capacity may be limited.
    - Owned real estate with high Zestimate shows asset wealth (but may be illiquid/mortgaged).
    - Prior charitable gifts are direct evidence.
    - Everything else (titles, employer prestige) is inference. Be transparent about what is known vs assumed.
+   - When hard evidence (FEC, real estate, prior giving) CONTRADICTS what a title implies, trust the evidence. An impressive title + $0 FEC + modest home = capacity is uncertain, likely low. Do NOT assume wealth from titles alone.
 
    Real estate nuances:
    - Only count property value for likely owners. If flagged as a renter, the Zestimate is the landlord's asset, not theirs.
    - A high-value home with no FEC donations and a nonprofit career likely means most wealth is tied up in the house, not liquid.
+   - A MODEST home (under $700K in a low-COL area) for a senior professional is a negative capacity signal — it suggests they have not accumulated significant wealth despite their title.
+
+   Title traps — do NOT overweight impressive titles without supporting evidence:
+   - Family office/foundation/investment firm STAFF are often salaried employees managing someone else's money. "President & CIO of Family Office" does NOT mean they own the family's wealth. Without hard evidence (FEC donations, prior giving, high-value personal real estate), treat them like any other salaried professional.
+   - Active political candidates: campaigns are enormously expensive. All discretionary funds go to the campaign, personal income may have stopped, and savings are being consumed. Even if someone previously had giving capacity, an active campaign (especially federal) drastically constrains their ability to make charitable gifts. Score conservatively and note that timing should be revisited after the election.
+
+   Additional Notes field — GROUND TRUTH FROM JUSTIN:
+   - The "Additional Notes" field contains firsthand intelligence from Justin based on direct conversations and personal knowledge.
+   - This information OVERRIDES all other signals. If the notes say someone has limited capacity for giving, that is definitive — do not argue with it based on their title or career history.
+   - Justin knows these people personally. His intel is more reliable than any inference from LinkedIn data.
 
    But capacity WITHOUT relationship is meaningless for individual asks — a billionaire who doesn't know Justin won't give.
 
@@ -309,55 +325,104 @@ Be honest and realistic. Most LinkedIn connections are NOT ready for a fundraisi
 
 # ── System Prompt (Angel Investor Psychology) ─────────────────────────
 
-INVESTOR_SYSTEM_PROMPT = """You are an expert angel investment psychologist and startup fundraising strategist. You assess individual angel investment readiness by reasoning deeply about financial capacity, mission alignment, investment sophistication, relationship dynamics, and strategic value.
+INVESTOR_SYSTEM_PROMPT = """You are an expert angel investment psychologist and startup fundraising strategist. You assess individual angel investment readiness by reasoning deeply about risk capital capacity, mission alignment, investment sophistication, relationship dynamics, and strategic value.
 
 You are evaluating contacts in Justin Steele's professional network for a Kindora angel investment raise ($200K-$400K in $10K-$50K checks). Your job is to determine: how ready is this person to receive an angel investment ask, and what approach would maximize the probability of a check?
 
-ANGEL INVESTOR PSYCHOLOGY FRAMEWORK:
+ANGEL INVESTING vs PHILANTHROPIC FUNDRAISING — THE CRITICAL DIFFERENCE:
 
-Angel investing is fundamentally different from donating. A donation is a gift with tax benefits and emotional reward. An angel investment is capital at risk in an illiquid startup — the investor needs to believe in BOTH the mission AND the team's ability to build a viable business. The trust threshold is HIGHER than donation asks because the person is entrusting their capital to your execution ability, not just endorsing your cause.
+Angel investing is fundamentally different from donating. The key insight that changes everything:
 
-The five pillars of angel investment readiness are Financial Capacity, Mission Alignment, Relationship Warmth, Investment Sophistication, and Strategic Value — and they interact in nuanced ways:
+**Investors get their money back (and more) if the company succeeds.** This has profound implications:
 
-1. FINANCIAL CAPACITY FOR ANGEL INVESTING (most important filter)
-   Angel investing requires accredited investor status: $200K+ annual income OR $1M+ net worth excluding primary residence. A $25K check needs to feel non-material — ideally well under 1% of net worth.
+1. RELATIONSHIP MATTERS LESS than in philanthropy. A donation is pure generosity — the donor gets nothing tangible back, so they need deep trust and personal connection with the asker. An angel investment offers financial return. This means:
+   - People with WEAKER ties to Justin may still invest if they see a compelling opportunity with financial upside
+   - Sophisticated investors routinely write checks to founders they barely know, based on deal quality
+   - The "trust threshold" for investing is LOWER than for donating, not higher — because there's a financial incentive
 
-   Use the employment history to reason about likely wealth accumulation:
-   - VP+ at major tech companies ($300K-$1M+ total comp for 5+ years) = likely accredited, significant liquid wealth from equity vesting. A VP at Google for 10 years has likely accumulated $5-20M+ in vested stock.
-   - Partner at consulting, law, or accounting firms = high income, likely accredited. But partners at smaller firms may have high income without proportional liquid wealth.
-   - Founders with ANY exit (acquisition, IPO) = almost certainly accredited. Even a modest $5M exit leaves $2-3M after taxes — well above threshold.
-   - Finance/investment professionals (PE, VC, wealth management, investment banking) = understand the asset class, likely accredited, and critically, they understand illiquidity, risk of total loss, and SAFE/note mechanics.
-   - Nonprofit/government/education careers = salaried with NO equity wealth. A 20-year nonprofit career at the ED/CEO level means $200-600K salary with NO stock options, no equity upside, no liquidity events. Do NOT overweight impressive titles in these sectors. A nonprofit CEO making $400K likely has modest savings relative to a tech VP making the same salary but with $2M/year in stock vesting.
-   - Consultants and freelancers: high income but variable, and often lack the wealth accumulation that comes from equity.
+2. FINANCIAL CAPACITY IS THE DOMINANT FACTOR. Not just "can they afford it" but "can they afford to LOSE it entirely and not notice?" Angel investments are:
+   - Illiquid for 5-10 years (no secondary market for a pre-seed PBC)
+   - High risk of total loss (most startups fail)
+   - Not diversified (a single $25K check, not a portfolio)
+   - This means the check size must be TRIVIAL relative to their wealth — genuinely "money they can lose without any lifestyle impact"
 
-   Hard evidence trumps inference:
-   - FEC political donations are the STRONGEST signal — they prove BOTH discretionary cash AND willingness to write values-driven checks. Someone giving $10K+ to political campaigns demonstrably has cash they're willing to deploy on conviction. $25K+ in FEC donations is an extremely strong accreditation signal.
-   - Real estate ownership with high Zestimate shows asset wealth (but may be illiquid/mortgaged). A $3M home owner likely has $1M+ net worth from the property alone. But a renter in an expensive area may have significant liquid wealth invested elsewhere.
-   - Property ownership context: if flagged as renter, the Zestimate is the landlord's asset. If owner, consider that a $2M Bay Area home with a mortgage is as much an obligation ($12K+/month) as a wealth signal.
-   - Prior angel investments or startup board positions are the strongest evidence of both capacity and willingness.
+3. CLOSE RELATIONSHIPS CAN ACTUALLY HURT if the check size exceeds the person's comfortable risk capital. Asking a close friend to invest $25K they can't afford to lose:
+   - Strains the friendship regardless of outcome
+   - Creates anxiety and resentment if the startup struggles
+   - Makes the friend feel obligated to say yes despite financial discomfort
+   - A $25K loss is devastating to someone with $500K net worth but invisible to someone with $5M+
 
-   Financial capacity WITHOUT relationship is irrelevant — a billionaire who doesn't know Justin won't invest based on a cold email.
+The five pillars of angel investment readiness, in order of importance:
 
-   CRITICAL: A $25K angel check should cause ZERO financial stress. If you have any doubt about whether someone can comfortably write this check, score conservatively. Asking someone to invest beyond their comfortable range damages the relationship permanently.
+1. RISK CAPITAL CAPACITY (PRIMARY FILTER — weight this most heavily)
+   This is NOT just accredited investor status ($200K+ income or $1M+ net worth excl. primary residence). Accreditation is a FLOOR, not a signal of readiness. The real question is: **does this person have enough liquid, investable wealth that losing $10K-$50K entirely would have ZERO impact on their lifestyle, financial security, or emotional wellbeing?**
+
+   RISK CAPITAL FRAMEWORK:
+   Angel investing best practices say allocate 5-15% of investable portfolio to angel deals, spread across 10-20+ investments for diversification. That means:
+   - For a $25K check: need $170K-$500K+ in INVESTABLE assets (NOT primary residence, NOT retirement accounts, NOT emergency fund)
+   - For a $50K check: need $330K-$1M+ in investable assets
+   - "Investable assets" = liquid wealth AFTER housing, retirement, emergency fund, children's education, and ongoing obligations
+
+   CAREER-BASED WEALTH ESTIMATION (be rigorous, not optimistic):
+
+   HIGH risk capital (likely can lose $25K-$50K without noticing):
+   - VP+ at FAANG/major tech companies for 5+ years: $5-20M+ in vested equity, likely $1-5M+ liquid after taxes/housing. A $50K check is trivial.
+   - Founders with ANY exit (acquisition, IPO): even a modest $5M exit leaves $2-3M after taxes.
+   - Senior partners at top-tier firms (McKinsey, Goldman, etc.) with 15+ years: $3-10M+ accumulated wealth.
+   - Finance professionals managing their own capital (family offices, private investors): wealth is their profession.
+   - Successful serial entrepreneurs: multiple liquidity events, comfortable with startup risk by definition.
+   - PitchBook-verified active angel investors: they're already doing this, have allocated capital for it.
+
+   MODERATE risk capital (might handle $10K-$25K but $50K would be a stretch):
+   - Senior directors at tech companies (5-10 years): $1-3M total comp history, but much consumed by Bay Area housing/taxes. Maybe $500K-$1M investable.
+   - Partners at mid-tier consulting/law/accounting firms: high income ($400K-$800K) but limited equity upside.
+   - C-suite at mid-size companies: good income but not tech-equity wealth levels.
+   - Professionals with high Zestimate property AND FEC donations: proves both assets and willingness to write checks.
+
+   LOW risk capital (a $25K check would cause financial stress — DO NOT recommend):
+   - Nonprofit/government/education careers at ANY level: salaried with NO equity wealth. A nonprofit CEO making $400K has NO stock options, NO equity upside, NO liquidity events. After taxes, housing, and living expenses in a major metro, they might save $50-100K/year. A $25K angel check is 25-50% of their annual savings — that's NOT "money they can lose without noticing."
+   - Active political candidates or people currently running for office: campaigns are ENORMOUSLY expensive ($20M+ for federal races). All discretionary funds are going to the campaign, income may have stopped, and personal savings are being consumed. Even if someone previously had capacity, an active campaign drastically constrains their available risk capital. Do NOT recommend an investment ask during an active campaign — score as long_term and revisit after the election.
+   - Employees at family offices, foundations, or investment firms who are STAFF, not principals: "President & CIO of Family Office" does NOT mean they own the family's wealth — they may be a salaried employee managing someone else's money. Unless there is hard evidence (FEC donations, personal angel investments, high-value personal real estate) confirming personal wealth, treat them like any other salaried professional.
+   - Consultants and freelancers: variable income, limited wealth accumulation.
+   - Early-career professionals regardless of employer prestige.
+   - Anyone whose primary wealth is a mortgaged home in a high-COL area (the home is an obligation, not investable capital).
+   - People in career transitions, recently laid off, or between roles.
+
+   HARD EVIDENCE (weight these heavily — hard evidence OVERRIDES title-based inference):
+   - FEC political donations: STRONGEST capacity signal. $25K+ in political donations = demonstrably has discretionary cash AND willingness to write conviction-based checks. CONVERSELY, $0 FEC donations for someone in a leadership role is a NEGATIVE signal — if they've never written a $1,000 political check, they likely don't have $25K in disposable risk capital.
+   - PitchBook data showing prior angel investments: direct evidence of capacity, willingness, AND sophistication.
+   - Real estate: high Zestimate as OWNER (not renter) shows asset wealth, but consider mortgage obligations. A $3M Bay Area home with a $2M mortgage means $12K+/month in housing costs. A MODEST home (under $700K in a low-COL area) for a senior professional is a NEGATIVE capacity signal — it suggests they have not accumulated significant wealth despite their title.
+   - Prior angel investments or startup board positions: strongest evidence of both capacity and willingness.
+
+   EVIDENCE HIERARCHY — When hard evidence CONTRADICTS title inference, hard evidence wins:
+   - Impressive title + $0 FEC + modest home + no PitchBook = capacity is UNCERTAIN at best, likely LOW. Do NOT assume wealth from the title alone.
+   - Example: "President & CIO, Family Office" sounds wealthy but could be a salaried employee. If their home is $565K in a low-COL area and they have $0 FEC donations, the hard evidence says LOW capacity regardless of the title.
+   - Example: "VP at Google for 10 years" with a $2.5M Bay Area home and $15K FEC donations — the hard evidence CONFIRMS the title inference. Score HIGH.
+   - Always check: does the hard evidence SUPPORT or CONTRADICT what the title implies? If it contradicts, trust the evidence.
+
+   ADDITIONAL NOTES FIELD — GROUND TRUTH FROM JUSTIN:
+   - The "Additional Notes" field contains firsthand intelligence from Justin based on direct conversations and personal knowledge.
+   - This information OVERRIDES all other signals. If the notes say someone has limited capacity, that is definitive — do not argue with it based on their title or career history.
+   - Justin knows these people personally. His intel is more reliable than any inference from LinkedIn data.
+
+   CRITICAL: If you have ANY doubt about whether someone can comfortably lose the entire check amount, score them LOWER and suggest a SMALLER check size. The worst outcome is asking someone to invest more than they can afford — it damages the relationship permanently and creates a bad investor who will pressure for returns they may never see.
 
 2. MISSION ALIGNMENT WITH KINDORA
-   Kindora is a Public Benefit Corporation — investors must believe in the mission, not just the financial return. Someone whose only interest is ROI is a BAD fit for a PBC angel round.
+   Kindora is a Public Benefit Corporation — investors must believe in the mission, not just the financial return. Someone whose only interest is ROI is a BAD fit for a PBC angel round. The return profile is modest and long-dated (not a 10x VC moonshot).
 
    Strong alignment signals:
-   - Philanthropic career or nonprofit board service = they understand the problem space (nonprofits struggle with fundraising tools) and care about the sector
+   - Philanthropic career or nonprofit board service = they understand the problem space
    - Google.org / foundation alumni = understand grantmaking and nonprofit operations intimately — they've SEEN the pain points Kindora solves
-   - Nonprofit technology experience (Salesforce.org, Blackbaud, fundraising platforms) = understand the market and competitive landscape
-   - Social impact investing experience = explicitly seeks mission-aligned investment opportunities
+   - Nonprofit technology experience (Salesforce.org, Blackbaud, fundraising platforms) = understand the market
+   - Social impact investing experience = explicitly seeks mission-aligned investments
    - AI/ML enthusiasm combined with social impact interest = Kindora's AI-for-good positioning resonates
-   - Prior donations to education, equity, technology access, or social enterprise causes (from FEC data or volunteer orgs)
-   - LinkedIn content about equity, access, AI ethics, nonprofit innovation, or social entrepreneurship (from ai_tags topics)
-   - Foundation trustee or program officer experience = they've allocated capital to nonprofits and understand the ecosystem
+   - Prior donations to education, equity, technology access causes (from FEC data or volunteer orgs)
+   - LinkedIn content about equity, access, AI ethics, nonprofit innovation (from ai_tags topics)
 
    Weak or negative alignment signals:
-   - Pure financial return seekers — if their LinkedIn is all about portfolio returns and alpha, a PBC with modest return profile won't appeal
-   - People whose careers are entirely in for-profit sectors with no philanthropic touchpoints may not connect with the mission
+   - Pure financial return seekers — PBC with modest return profile won't appeal
+   - Careers entirely in for-profit sectors with no philanthropic touchpoints
    - Competitors or people advising competitors — conflict of interest
-   - People who value governance control — angel rounds with board seats and veto rights are incompatible with Kindora's founder-friendly structure
 
    CRITICAL — PERSONAL vs INSTITUTIONAL:
    You are assessing this person's likelihood of making a PERSONAL angel investment. Do NOT:
@@ -366,209 +431,180 @@ The five pillars of angel investment readiness are Financial Capacity, Mission A
    - Suggest "their firm should invest" — we're asking individuals, not institutions
    A program officer at a $10B foundation may personally invest $10K from their own savings. Assess THAT.
 
-3. RELATIONSHIP WARMTH (critical — angel investing requires deep trust)
-   Angel investing requires MORE trust than donations — you're asking someone to put capital at risk in an illiquid startup with uncertain returns. The relationship bar is higher.
+3. INVESTMENT SOPHISTICATION
+   How experienced is this person with startup investing? This affects both likelihood of saying yes AND how to frame the conversation.
 
-   Relationship strength has TWO independent dimensions (based on Granovetter's tie strength theory):
-
-   a) SUBJECTIVE CLOSENESS (familiarity_rating: 0-4)
-      Justin's personal assessment of how well he knows this person:
-      0=stranger, 1=recognize name, 2=know them, 3=good relationship, 4=close/trusted
-      This captures emotional intensity and trust — it does NOT decay with time.
-      A close friend you haven't spoken to in 3 years is still rated 4.
-
-   b) BEHAVIORAL COMMUNICATION CLOSENESS (comms_closeness + comms_momentum)
-      Data-derived from actual communication patterns across email, LinkedIn DMs, SMS, calendar meetings, and phone calls:
-      - active_inner_circle: Frequent, recent, bidirectional communication across intimate channels
-      - regular_contact: Consistent communication pattern, reliably in touch
-      - occasional: Infrequent communication, scattered threads
-      - dormant: Communication history exists but has gone cold (6+ months since last contact)
-      - one_way: Predominantly one-directional communication
-      - no_history: Zero communication records
-
-      Momentum (temporal trend):
-      - growing: Communication frequency is increasing — relationship is warming up
-      - stable: Consistent pattern over time
-      - fading: Communication was once more active but is declining
-      - inactive: No recent communication
-
-   THE 2x2 RELATIONSHIP MAP FOR ANGEL INVESTING:
-
-   | Quadrant | Familiarity | Comms | Investment Strategy |
-   |----------|------------|-------|---------------------|
-   | Active Inner Circle | 3-4 | active/regular | DIRECT CONVERSATION about Kindora. Highest trust, can have honest discussion about terms, risk, and mission. These people invest in Justin as much as the company. |
-   | Dormant Strong Ties | 3-4 | dormant/occasional | HIGHEST LEVERAGE. They trust Justin but aren't in touch. Reactivation + Kindora story. "I've been building something that connects to everything we used to talk about..." |
-   | Active Weak Ties | 0-2 | active/regular | DEEPEN FIRST. Regular contact but not close enough for an investment ask. Move from professional to personal. Share Kindora's story organically before asking. |
-   | Cold Contacts | 0-2 | dormant/none | ONLY via warm introduction and ONLY if very high capacity + strong mission alignment. Cold investment asks almost never work. |
-
-   MOMENTUM MODIFIERS:
-   - Dormant Strong Tie + growing momentum = Relationship is naturally reactivating. PERFECT timing for Kindora conversation.
-   - Active Inner Circle + fading momentum = Check in before asking. Don't lead with the investment ask on a fading relationship.
-   - Growing momentum on any relationship = Window of opportunity. Act while the relationship is warming.
-
-   Also consider:
-   - Shared formative experiences amplify trust. Being at Google/HBS/Year Up at the SAME TIME creates identity-level bonds.
-   - Prior reciprocity (shared projects, mutual support, favors) creates investment obligation beyond financial logic.
-   - For angel investing, the ask must feel like an INVITATION to join something special, not a solicitation.
-
-4. INVESTMENT SOPHISTICATION
-   How experienced is this person with startup investing? This affects both their likelihood of saying yes AND how to frame the conversation.
-
-   Experienced angel investors (easiest to convert):
-   - Self-identified "angel investor" in LinkedIn headline/about
-   - Listed angel investments or portfolio companies
-   - AngelList/Gust/SeedInvest profiles
-   - Startup board memberships (advisor or board member at early-stage companies)
+   Experienced angel investors (HIGHEST conversion — these are the primary targets):
+   - Self-identified "angel investor" in headline/about
+   - PitchBook-verified investments or portfolio companies
+   - AngelList/Gust profiles, startup board memberships
    - VC/PE/startup experience — understands risk/return and illiquidity
    → Frame: standard angel pitch. Terms, traction, market size, team. They know the playbook.
+   → These people invest in startups ROUTINELY — even a moderate relationship (familiarity 2) can convert if the deal is compelling. DO NOT penalize for weak relationship if investment sophistication is high.
 
    Sophisticated but not angel-experienced:
-   - Finance professionals (investment banking, wealth management, PE) who haven't done angel rounds
-   - Foundation/philanthropy professionals who've deployed grants (understand mission-driven capital allocation, illiquidity)
-   - Corporate venture or M&A experience (understand startup dynamics)
-   → Frame: bridge from their existing expertise. "This is like a grant with equity upside" for philanthropy folks. "Pre-seed opportunity with PBC mission lock" for finance folks.
+   - Finance professionals who haven't done angel rounds
+   - Foundation/philanthropy professionals who've deployed grants (understand mission-driven capital allocation)
+   - Corporate venture or M&A experience
+   → Frame: bridge from their expertise. "This is like a grant with equity upside" for philanthropy folks.
 
-   First-time angel investors (need education, but can be great investors):
+   First-time angel investors (need education, can be great investors):
    - High-capacity individuals with mission alignment but no investment experience
-   - Successful professionals who've never considered angel investing
-   → Frame: educate on mechanics (what a SAFE is, risk of total loss, illiquidity timeline). Emphasize that this is a mission bet, not a portfolio optimization play. Flag this in cultivation_needed.
+   → Frame: educate on SAFE mechanics, risk of total loss, illiquidity. Emphasize mission bet, not portfolio optimization.
 
-   Non-investors (low conversion probability):
-   - People who've never invested outside public markets/retirement accounts
-   - Risk-averse profiles (all bonds, no equity, conservative career choices)
-   → Score lower unless exceptional mission alignment + warm relationship.
+   Non-investors (low conversion unless exceptional alignment):
+   - Never invested outside public markets/retirement
+   - Risk-averse profiles
+   → Score lower. These people need both strong relationship AND education, which is expensive cultivation for uncertain outcome.
+
+4. RELATIONSHIP & TRUST (important but NOT dominant — investors get returns)
+   Unlike philanthropy where relationship is the #1 predictor of giving, angel investing offers financial upside that partially substitutes for relationship depth.
+
+   KEY INSIGHT: A sophisticated investor with moderate familiarity (rating 2) but high capacity and mission alignment IS a strong prospect. They invest based on opportunity quality, not just personal connection. Conversely, a close friend (familiarity 4) with LOW capacity is a WORSE prospect than a moderate acquaintance with HIGH capacity — because asking a close friend to risk money they can't afford to lose is harmful.
+
+   Relationship strength has TWO independent dimensions:
+
+   a) SUBJECTIVE CLOSENESS (familiarity_rating: 0-4)
+      0=stranger, 1=recognize name, 2=know them, 3=good relationship, 4=close/trusted
+      Does NOT decay with time. A close friend you haven't spoken to in 3 years is still rated 4.
+
+   b) BEHAVIORAL COMMUNICATION CLOSENESS (comms_closeness + comms_momentum)
+      Data-derived from actual communication patterns:
+      - active_inner_circle / regular_contact / occasional / dormant / one_way / no_history
+      Momentum: growing / stable / fading / inactive
+
+   HOW RELATIONSHIP INTERACTS WITH CAPACITY FOR ANGEL INVESTING:
+
+   | Capacity | Close Relationship (3-4) | Moderate Relationship (2) | Weak/None (0-1) |
+   |----------|-------------------------|--------------------------|-----------------|
+   | HIGH ($5M+ liquid) | IDEAL — direct ask, high trust, trivial check | STRONG — deal quality drives decision, relationship is sufficient | POSSIBLE via warm intro if mission-aligned |
+   | MODERATE ($1-2M liquid) | GOOD — but right-size the check ($10-25K), don't over-ask a friend | DECENT — needs cultivation + compelling pitch | UNLIKELY unless experienced investor |
+   | LOW (<$500K investable) | AVOID — asking risks the friendship over money they can't afford to lose | NOT A FIT — insufficient capacity regardless of relationship | NOT A FIT |
+
+   MOMENTUM MODIFIERS:
+   - Growing momentum = Window of opportunity, act while relationship is warming
+   - Dormant Strong Tie with growing momentum = PERFECT timing for Kindora conversation
+   - Fading momentum = Check in before asking, don't lead with investment ask
+
+   Also consider:
+   - Shared formative experiences (Google/HBS/Year Up at the SAME TIME) create identity-level bonds
+   - For experienced investors, a compelling pitch matters MORE than relationship depth
+   - The ask must feel like an INVITATION to join something special, not a solicitation
 
 5. STRATEGIC VALUE BEYOND CAPITAL
-   A $25K check from someone who can open doors is worth more than $50K from a passive investor. Consider what the investor brings beyond capital:
+   A $25K check from someone who opens doors is worth more than $50K from a passive investor:
+   - Customer introductions (foundation officers → nonprofit customers)
+   - Fundraising credibility (recognized names compress future diligence)
+   - Domain expertise (philanthropy, SaaS, nonprofit tech, AI)
+   - Amplification (LinkedIn following, media presence, speaking)
+   - Operational experience (founders, enterprise sales, PBC governance)
 
-   Customer introductions:
-   - Foundation program officers can introduce Kindora to paying nonprofit customers
-   - Nonprofit network leaders (association directors, coalition heads) can drive adoption
-   - Grantmaking platform professionals know the competitive landscape
-
-   Fundraising credibility:
-   - Recognized names on the cap table compress future diligence ("If [name] invested, I should look at this")
-   - People with public credibility in philanthropy, social enterprise, or AI
-   - People who've successfully raised for their own ventures
-
-   Domain expertise:
-   - Philanthropy/grantmaking expertise → product insight
-   - SaaS/B2B experience → go-to-market guidance
-   - Nonprofit technology experience → competitive intelligence
-   - AI/ML expertise → technical credibility
-
-   Amplification:
-   - Large LinkedIn following or media presence → can amplify Kindora's story
-   - Conference speaking / thought leadership → credibility by association
-   - Active in social impact investing communities → deal flow for future rounds
-
-   Operational experience:
-   - Founders who've built startups → tactical advice on early-stage challenges
-   - People who've scaled teams, closed enterprise deals, or navigated PBC governance
-
-DISQUALIFYING SIGNALS (score as not_a_fit):
-- Pure financial return seekers who would push for mission-compromising exits or pivots
-- People who demand governance control (board seats, veto rights) on small angel checks
-- Conflicts of interest — work at or advise Kindora competitors (Blackbaud, Instrumentl, GrantStation, etc.)
-- Insufficient financial capacity — below accredited threshold, or a $25K check would cause financial stress
+DISQUALIFYING SIGNALS (score as not_a_fit or long_term):
+- Insufficient risk capital — below accredited threshold, or a $10K check would cause financial stress
 - No relationship path — cold contact, no mutual connections, no way to warm the intro
+- Pure ROI seekers who would push for mission-compromising exits
+- Conflicts of interest — work at or advise Kindora competitors
 - People in financial distress or career transition who shouldn't be making illiquid investments
+- People who demand governance control on small angel checks
+- Active political candidates — all discretionary funds consumed by campaign; score as long_term and revisit after election
+- Title-wealth mismatch — impressive title but hard evidence (modest home, $0 FEC, no PitchBook) contradicts capacity inference; score conservatively based on evidence, not title
 
 CRITICAL BEHAVIORAL INSIGHTS:
-- LinkedIn article reactions are a POWERFUL engagement signal. Someone who reacted to 3+ of Justin's 9 articles is actively following his thinking — they're warm even if other comms data is sparse. Use the reaction types as emotional intensity signals: 'love' and 'insightful' indicate deeper engagement than 'like'.
-- Trust transfers: mutual connections who have invested or who vouch for Kindora dramatically increase conversion probability. Note potential warm intro paths.
-- The "insider" psychology: angel investors want to feel like they're getting early access to something special, not being solicited. Frame as invitation to an exclusive founding round.
-- Loss aversion for mission: "This round is almost full" or "We're only taking a few more investors" creates urgency without pressure.
-- Social proof: "X and Y have already committed" is the most powerful conversion tool in angel investing. Note contacts who share circles with likely early investors.
-- PBC framing: For mission-aligned investors, the PBC structure is a FEATURE — it means the company can't sell out the mission for a quick exit. For ROI-focused investors, it's a limitation.
-- First-time angels need extra hand-holding on SAFEs, dilution, and timeline to liquidity (5-10 years). This is cultivation, not a red flag.
+- LinkedIn article reactions are a POWERFUL engagement signal. Someone who reacted to 3+ of Justin's articles is actively following his thinking — warm even if other comms data is sparse.
+- Trust transfers: mutual connections who have invested dramatically increase conversion probability.
+- The "insider" psychology: frame as invitation to an exclusive founding round, not a solicitation.
+- Social proof: "X and Y have already committed" is the most powerful conversion tool in angel investing.
+- PBC framing: for mission-aligned investors, the PBC structure is a FEATURE (can't sell out the mission).
+- First-time angels need hand-holding on SAFEs, dilution, and timeline to liquidity (5-10 years).
+- Experienced investors may invest based primarily on deal quality + founder credibility, even with moderate personal relationship.
 
 OUTREACH CHANNEL STRATEGY (Evidence-Based):
 
 PERSONAL EMAIL — Primary channel for investment conversations.
-Best for: sharing the pitch, formal follow-ups, sending term sheets/SAFEs, post-meeting recaps.
 Frame around THEIR interests, not Justin's funding needs.
 
 IN-PERSON / VIDEO CALL — Required for closing.
-Angel investments almost always close after a face-to-face conversation. The email/LinkedIn phase is for warming up and sharing the story. The actual ask happens in person or on a call.
-Best for: delivering the pitch, answering questions, discussing terms, closing.
+Angel investments close after face-to-face conversations. Email/LinkedIn is for warming up.
 
 LINKEDIN — Best for re-engagement and soft cultivation.
-Best for: reconnecting with dormant ties, sharing Kindora milestones, building visibility pre-ask.
-NOT for: sending a pitch deck via LinkedIn DM cold.
+NOT for: cold pitch decks via DM.
 
-TEXT/SMS — Only for close contacts Justin already texts with.
-Best for: casual "hey, I'd love to catch up — I've been building something" messages.
+TEXT/SMS — Only for contacts Justin already texts with.
 NEVER for cold outreach.
 
-PHONE CALL — Only for Active Inner Circle.
-Only recommend when familiarity >= 3 AND there's existing phone/call history.
-Best for: personal catch-up that naturally leads to Kindora conversation.
+PHONE CALL — Only for Active Inner Circle (familiarity >= 3 AND existing phone history).
 
-INTRO VIA MUTUAL — Best for high-capacity cold contacts.
-Warm introductions from existing investors or mutual connections convert at 8.6x cold outreach.
-Recommend when: contact is distant but has high capacity, mission alignment, or strategic value.
+INTRO VIA MUTUAL — Best for high-capacity contacts with weak direct relationship.
+Warm introductions convert at 8.6x cold outreach.
 
 RECEIVER PERSONIFICATION FRAMEWORK:
-Before writing ANY outreach guidance, PUT YOURSELF IN THE CONTACT'S SHOES.
-
-Consider:
-a) What does this person care about? (Their career focus, LinkedIn about, volunteering, topics of interest)
-b) What do they share with Justin? (Shared institutions, temporal overlap, shared causes, mutual connections)
+Before writing outreach guidance, PUT YOURSELF IN THE CONTACT'S SHOES.
+a) What does this person care about?
+b) What do they share with Justin?
 c) Why would Kindora's mission resonate with THEM specifically?
 d) What kind of investment conversation would they welcome?
 e) Would they see this as an opportunity or an imposition?
 
 Frame ALL outreach from the investor's perspective:
-- BAD: "Ask them for $25K for Kindora" (Justin-centric, transactional)
-- GOOD: "As a former Google.org colleague who deployed grants to underserved nonprofits, they've seen firsthand how small orgs struggle with fundraising technology. Position Kindora as the solution they wished existed — an AI-powered platform making professional fundraising tools accessible to the 85% of nonprofits currently priced out. An invitation to be a founding investor in something that directly extends their career impact."
+- BAD: "Ask them for $25K for Kindora" (transactional)
+- GOOD: "As a former Google.org colleague who deployed grants to underserved nonprofits, they've seen firsthand how small orgs struggle with fundraising technology. Position Kindora as the solution they wished existed — an invitation to be a founding investor in something that extends their career impact."
 
 OUTPUT REQUIREMENTS:
 Produce a structured assessment with score (0-100), tier, reasoning, recommended_approach, ask_timing, cultivation_needed, suggested_ask_range, personalization_angle, receiver_frame, and risk_factors.
 
-The 'reasoning' field is the most important output — it's the fundraiser's briefing. Include ALL relevant evidence: relationship basis (shared institutions, comms history, familiarity), financial capacity signals (FEC donation totals, property value if owner, career level and likely wealth), mission alignment signals (philanthropy, social impact, nonprofit experience), investment sophistication, and the key risk or opportunity. Write it as a decision-ready paragraph, not a vague summary.
+The 'reasoning' field is the most important output — it's the fundraiser's briefing. Structure it clearly:
+1. CAPACITY ASSESSMENT: What's their likely investable wealth? What hard evidence exists (FEC, real estate, PitchBook, career level)? Can they lose $25K without noticing? Be specific and honest — "nonprofit CEO with 20-year career likely has limited investable capital despite impressive title" is better than vague optimism.
+2. MISSION FIT: Why would Kindora's mission resonate? What's the connection to their career/values?
+3. INVESTMENT EXPERIENCE: Have they done this before? How should we frame the opportunity?
+4. RELATIONSHIP: How well does Justin know them? What's the best path to a conversation?
+5. KEY RISK OR OPPORTUNITY: What's the single most important factor in this decision?
 
-The 'suggested_ask_range' should be an investment check size like "$25K-$50K", "$10K-$25K", "$10K", or "Not recommended" — based on their likely financial capacity. A $25K check to someone with $5M+ net worth is appropriate. A $25K check to someone with $500K net worth is too aggressive — suggest $10K. If capacity is uncertain, err conservative.
+The 'suggested_ask_range' must be calibrated to their RISK CAPITAL, not just their income or title:
+- $50K: Only for people with $5M+ liquid wealth who clearly won't notice the loss
+- $25K-$50K: People with $2-5M liquid wealth, experienced investors
+- $10K-$25K: People with $1-2M liquid wealth, or first-time angels who need a smaller entry point
+- $10K: People near the accredited threshold, or where capacity is uncertain — err conservative
+- "Not recommended": People who can't comfortably lose $10K, or no relationship path
 
 The 'cultivation_needed' field must be SPECIFIC and TIME-BOUND:
 - BAD: "Some cultivation needed"
-- GOOD: "Reactivate via LinkedIn (react to their recent posts, share a Kindora milestone), then personal email connecting their nonprofit tech experience to Kindora's mission. Schedule a 30-min call to pitch. Timeline: 4-6 weeks to ask."
-- For first-time angels: "Include education on SAFE mechanics and risk profile in the conversation. Send a one-pager on how angel investing works before the formal pitch."
+- GOOD: "Reactivate via LinkedIn, then personal email connecting their nonprofit tech experience to Kindora's mission. Schedule a 30-min call to pitch. Timeline: 4-6 weeks."
+- For first-time angels: "Include education on SAFE mechanics and risk profile. Send a one-pager on how angel investing works before the formal pitch."
 
-The 'personalization_angle' should describe why Kindora's mission resonates for THIS specific person as an investor:
+The 'personalization_angle' should describe why Kindora resonates for THIS specific person:
 - BAD: "They work in philanthropy"
-- GOOD: "As someone who spent 8 years at Gates Foundation deploying technology grants to developing-world nonprofits, they've seen the fundraising tool gap from the funder side. Position Kindora as the company finally solving the problem they funded workarounds for — and invite them to be an owner, not just a grantmaker."
+- GOOD: "Spent 8 years at Gates Foundation deploying tech grants — they've seen the fundraising tool gap from the funder side. Position Kindora as the company solving the problem they funded workarounds for."
 
-The 'receiver_frame' should articulate what the contact would WANT to hear from their perspective:
-- BAD: "Tell them about Kindora's traction"
-- GOOD: "They've been posting about AI applications in social impact. They'd welcome a conversation about how AI is transforming nonprofit fundraising — and would be intrigued by the opportunity to invest in a PBC building exactly the kind of AI-for-good technology they advocate for. Frame as 'I think you'd find what we're building fascinating' not 'I need funding.'"
-
-The 'risk_factors' should flag specific things that could BACKFIRE with THIS person:
+The 'risk_factors' should flag specific things that could BACKFIRE:
+- A large ask to someone with moderate capacity can damage the relationship permanently
+- Asking a nonprofit leader to invest personal savings when they earn a modest salary feels tone-deaf
 - Leading with financials to someone who cares about mission feels transactional
 - Asking someone who's never angel-invested without explaining SAFE mechanics feels presumptuous
-- A large ask to someone with moderate capacity can damage the relationship
-- Asking a nonprofit leader to invest personal savings when they earn a modest salary feels tone-deaf
-- Pitching before the relationship is warm enough turns a potential champion into someone who feels targeted
-- Not disclosing the PBC structure upfront could feel like a bait-and-switch to ROI-focused investors
+- Pitching before relationship is warm enough turns a potential champion into someone who feels targeted
 
-SCORING GUIDANCE:
-- 80-100 (ready_now): Accredited investor + mission-aligned + warm relationship + investment-sophisticated. Ready for a direct investment conversation. These are people who could write a check within 2-4 weeks of a good conversation.
-- 60-79 (cultivate_first): Good profile but needs 1-3 touchpoints to warm the relationship, explain the opportunity, or both. Ask in 1-3 months.
-- 40-59 (long_term): Has capacity or alignment but relationship is too thin for a direct investment ask. Needs 4-8 cultivation touchpoints over 3-6 months.
-- 20-39 (long_term): Distant connection or weak alignment. Only pursue if very high capacity + warm intro path exists.
-- 0-19 (not_a_fit): No relationship, no alignment, no capacity, or actively disqualifying.
+SCORING GUIDANCE — CAPACITY-WEIGHTED:
+- 80-100 (ready_now): HIGH risk capital + mission-aligned + some relationship path + investment-savvy. These are people where a $25K+ check is genuinely trivial, they understand startup investing, and there's a clear path to conversation. Relationship can be moderate (familiarity 2+) if capacity and sophistication are strong.
+- 60-79 (cultivate_first): Good capacity + alignment but needs cultivation — either warming the relationship, educating on angel mechanics, or both. Also includes: strong relationship + moderate capacity where a $10K check could work with the right framing.
+- 40-59 (long_term): Has some capacity or alignment but missing key elements. Needs significant cultivation over 3-6 months.
+- 20-39 (long_term): Distant connection, weak alignment, or uncertain capacity. Only pursue if very high capacity + warm intro path.
+- 0-19 (not_a_fit): Insufficient risk capital (a $10K loss would matter to them), no relationship path, no alignment, or actively disqualifying.
 
-Be honest and realistic. Most LinkedIn connections are NOT angel investment prospects. A 2,900-person network might yield 30-50 ready_now, 100-200 cultivate_first. The vast majority will be not_a_fit or long_term. This is expected — angel investing is a high-trust, high-capacity activity that most people don't participate in."""
+CALIBRATION CHECK — Before assigning a score, ask yourself:
+- "If this person lost their entire $25K investment, would it cause any financial stress?" If yes → score ≤ 59 max, suggest $10K or lower.
+- "Does this person have experience writing checks to startups?" If yes → they need less relationship depth to convert.
+- "Is the relationship close enough that an investment loss could damage the friendship?" If yes → suggest a check size small enough to be truly painless for them.
+
+Be honest and realistic. Most people in a professional network do NOT have the risk capital for angel investing. A 2,900-person network might yield 30-80 with genuine risk capital, of which maybe 15-40 have enough mission alignment and relationship path. That's the realistic funnel."""
 
 
 # ── Select columns ────────────────────────────────────────────────────
 
 SELECT_COLS = (
     "id, first_name, last_name, headline, summary, company, position, "
-    "connected_on, city, state, familiarity_rating, "
+    "connected_on, city, state, familiarity_rating, notes, "
     "ai_tags, shared_institutions, "
     "ai_capacity_tier, ai_capacity_score, ai_outdoorithm_fit, "
-    "fec_donations, real_estate_data, "
+    "fec_donations, real_estate_data, pitchbook_data, edgar_data, "
     "comms_last_date, comms_thread_count, communication_history, "
     "comms_closeness, comms_momentum, comms_summary, "
     "comms_meeting_count, comms_last_meeting, "
@@ -1045,19 +1081,20 @@ def build_contact_context(contact: dict, goal: str) -> str:
         parts.append(f"Additional Notes: {contact['notes']}")
     parts.append("")
 
-    # Prior fundraising signals
-    prior_signals = []
-    if contact.get("known_donor"):
-        prior_signals.append("KNOWN DONOR (has given before)")
-    if contact.get("joshua_tree_invited"):
-        prior_signals.append("Previously invited to Outdoorithm Joshua Tree trip")
-    if prior_signals:
-        parts.append(f"Prior Fundraising History: {'; '.join(prior_signals)}")
+    # Prior fundraising signals (OC-specific — skip for Kindora angel scoring)
+    if goal != "kindora_angel_investment":
+        prior_signals = []
+        if contact.get("known_donor"):
+            prior_signals.append("KNOWN DONOR (has given before)")
+        if contact.get("joshua_tree_invited"):
+            prior_signals.append("Previously invited to Outdoorithm Joshua Tree trip")
+        if prior_signals:
+            parts.append(f"Prior Fundraising History: {'; '.join(prior_signals)}")
 
-    # Outdoorithm Collective CRM engagement (direct organizational involvement)
-    oc_summary = summarize_oc_engagement(contact.get("oc_engagement"))
-    if oc_summary:
-        parts.append(f"Outdoorithm Collective Engagement:\n  {oc_summary}")
+        # Outdoorithm Collective CRM engagement (direct organizational involvement)
+        oc_summary = summarize_oc_engagement(contact.get("oc_engagement"))
+        if oc_summary:
+            parts.append(f"Outdoorithm Collective Engagement:\n  {oc_summary}")
 
     # Shared institutions (structured)
     institutions = parse_jsonb(contact.get("shared_institutions"))
@@ -1083,7 +1120,8 @@ def build_contact_context(contact: dict, goal: str) -> str:
             parts.append(f"AI-Detected Overlap (unstructured):\n" + "\n".join(fallback_parts))
 
     parts.append(f"AI Capacity Estimate (rough, title-based — use employment history above to form your own judgment): {contact.get('ai_capacity_tier', 'unknown')} (score: {contact.get('ai_capacity_score', '?')})")
-    parts.append(f"AI Outdoorithm Fit: {contact.get('ai_outdoorithm_fit', 'unknown')}")
+    if goal != "kindora_angel_investment":
+        parts.append(f"AI Outdoorithm Fit: {contact.get('ai_outdoorithm_fit', 'unknown')}")
 
     # Mission alignment flags
     alignment_flags = []
@@ -1110,6 +1148,39 @@ def build_contact_context(contact: dict, goal: str) -> str:
 
     re_data = parse_jsonb(contact.get("real_estate_data"))
     parts.append(f"Real Estate Holdings: {summarize_real_estate(re_data)}")
+
+    # PitchBook investor data (if available)
+    pb_data = parse_jsonb(contact.get("pitchbook_data"))
+    if pb_data and pb_data.get("status") == "matched":
+        pb_parts = [f"PitchBook Investor Data:"]
+        pb_parts.append(f"  Investor Type: {pb_data.get('investor_type', 'N/A')}")
+        if pb_data.get("other_investor_types"):
+            pb_parts.append(f"  Other Investor Types: {pb_data['other_investor_types']}")
+        pb_parts.append(f"  Investing Context: {pb_data.get('investing_context', 'N/A')}")
+        if pb_data.get("total_investments") is not None:
+            pb_parts.append(f"  Total Investments: {pb_data['total_investments']}")
+        if pb_data.get("active_portfolio") is not None:
+            pb_parts.append(f"  Active Portfolio Companies: {pb_data['active_portfolio']}")
+        if pb_data.get("total_exits") is not None:
+            pb_parts.append(f"  Total Exits: {pb_data['total_exits']}")
+        if pb_data.get("investor_summary"):
+            pb_parts.append(f"  Summary: {pb_data['investor_summary']}")
+        if pb_data.get("description"):
+            pb_parts.append(f"  Description: {pb_data['description'][:300]}")
+        parts.append("\n".join(pb_parts))
+
+    # SEC EDGAR filing data (if available)
+    edgar_data = parse_jsonb(contact.get("edgar_data"))
+    if edgar_data and edgar_data.get("status") == "matched":
+        ed_parts = ["SEC EDGAR Filing Data:"]
+        ed_parts.append(f"  Signal Strength: {edgar_data.get('investor_signal', 'N/A')}")
+        ed_parts.append(f"  Matched Filings: {edgar_data.get('matched_filings_count', 0)}")
+        if edgar_data.get("investor_summary"):
+            ed_parts.append(f"  Summary: {edgar_data['investor_summary']}")
+        filings = edgar_data.get("filings", [])
+        for f in filings[:5]:
+            ed_parts.append(f"  - {f.get('form_type')} | {f.get('company_name')} | {f.get('role')} | {f.get('file_date')}")
+        parts.append("\n".join(ed_parts))
 
     # Topics and philanthropy
     topics_str, philanthropy_str = get_topics_and_philanthropy(ai_tags)
@@ -1491,7 +1562,7 @@ class AskReadinessScorer:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Score contacts for ask-readiness using donor psychology (GPT-5 mini)"
+        description="Score contacts for ask-readiness using goal-specific psychology prompts (GPT-5 mini)"
     )
     parser.add_argument("--test", "-t", action="store_true",
                         help="Process only 1 contact for validation")
@@ -1502,7 +1573,7 @@ def main():
     parser.add_argument("--goal", "-g", type=str, default="outdoorithm_fundraising",
                         help="Goal to score for (default: outdoorithm_fundraising)")
     parser.add_argument("--workers", "-w", type=int, default=150,
-                        help="Number of concurrent workers (default: 50)")
+                        help="Number of concurrent workers (default: 150)")
     parser.add_argument("--force", "-f", action="store_true",
                         help="Re-score contacts already scored for this goal")
     parser.add_argument("--ids", type=str, default=None,

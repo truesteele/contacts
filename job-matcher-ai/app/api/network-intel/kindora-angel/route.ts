@@ -6,8 +6,10 @@ export const runtime = 'edge';
 const SELECT_COLS =
   'id, first_name, last_name, company, position, city, state, headline, ' +
   'familiarity_rating, comms_last_date, comms_thread_count, ' +
-  'ai_capacity_tier, ai_capacity_score, ' +
-  'ask_readiness, campaign_2026';
+  'pitchbook_data, edgar_data, ' +
+  'ask_readiness';
+
+const INVESTOR_KEYWORDS = /\b(angel invest|venture capital|investor|managing partner|general partner|founding partner|private equity|family office|venture partner)\b/i;
 
 export async function GET(req: NextRequest) {
   const goal = req.nextUrl.searchParams.get('goal') || 'kindora_angel_investment';
@@ -40,8 +42,20 @@ export async function GET(req: NextRequest) {
       })
       .map((c) => {
         const goalData = c.ask_readiness[goal];
-        const campaign = c.campaign_2026 || {};
-        const scaffold = campaign.scaffold || {};
+        const pb = c.pitchbook_data;
+        const pbMatched = pb && typeof pb === 'object' && pb.status === 'matched';
+        const pbPersonal = pbMatched && (pb.investing_context === 'personal' || pb.investing_context === 'both');
+        const ed = c.edgar_data;
+        const edMatched = ed && typeof ed === 'object' && ed.status === 'matched';
+        const edSignal = edMatched ? (ed.investor_signal || 'weak') : null;
+        const selfIdentified = INVESTOR_KEYWORDS.test(c.headline || '') || INVESTOR_KEYWORDS.test(c.position || '');
+
+        let investor_status: string | null = null;
+        if (pbPersonal) investor_status = 'pitchbook_verified';
+        else if (pbMatched) investor_status = 'pitchbook_institutional';
+        else if (edMatched && (edSignal === 'strong' || edSignal === 'moderate')) investor_status = 'edgar_verified';
+        else if (selfIdentified) investor_status = 'self_identified';
+
         return {
           id: c.id,
           first_name: c.first_name,
@@ -54,9 +68,11 @@ export async function GET(req: NextRequest) {
           familiarity_rating: c.familiarity_rating,
           comms_last_date: c.comms_last_date,
           comms_thread_count: c.comms_thread_count,
-          ai_capacity_tier: c.ai_capacity_tier,
-          ai_capacity_score: c.ai_capacity_score,
-          campaign_list: scaffold.campaign_list || null,
+          investor_status,
+          pitchbook_investments: pbMatched ? (pb.total_investments ?? null) : null,
+          edgar_filings: edMatched ? (ed.matched_filings_count ?? ed.filings?.length ?? null) : null,
+          edgar_signal: edSignal,
+          check_size: goalData.suggested_ask_range || null,
           score: goalData.score,
           tier: goalData.tier,
           reasoning: goalData.reasoning,
@@ -96,7 +112,7 @@ export async function PATCH(req: NextRequest) {
     const body = await req.json();
     const { contact_id, field, value, goal } = body as {
       contact_id: number;
-      field: 'tier' | 'campaign_list';
+      field: 'tier';
       value: string;
       goal?: string;
     };
@@ -130,37 +146,6 @@ export async function PATCH(req: NextRequest) {
       const { error: updateErr } = await supabase
         .from('contacts')
         .update({ ask_readiness: ar })
-        .eq('id', contact_id);
-
-      if (updateErr) throw new Error(updateErr.message);
-
-      return Response.json({ ok: true, field, value });
-    }
-
-    if (field === 'campaign_list') {
-      const validLists = ['A', 'B', 'C', 'D', 'sidelined', ''];
-      if (!validLists.includes(value)) {
-        return Response.json({ error: `campaign_list must be one of: ${validLists.join(', ')}` }, { status: 400 });
-      }
-
-      const { data: contact, error: fetchErr } = await supabase
-        .from('contacts')
-        .select('campaign_2026')
-        .eq('id', contact_id)
-        .single();
-
-      if (fetchErr || !contact) {
-        return Response.json({ error: 'Contact not found' }, { status: 404 });
-      }
-
-      const campaign = contact.campaign_2026 || {};
-      const scaffold = campaign.scaffold || {};
-      scaffold.campaign_list = value || null;
-      campaign.scaffold = scaffold;
-
-      const { error: updateErr } = await supabase
-        .from('contacts')
-        .update({ campaign_2026: campaign })
         .eq('id', contact_id);
 
       if (updateErr) throw new Error(updateErr.message);
