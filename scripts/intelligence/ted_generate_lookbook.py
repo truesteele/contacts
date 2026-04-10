@@ -392,8 +392,9 @@ def generate_full_card(person, tier_num):
     <div style="font-size:11px;color:#94a3b8;margin-top:4px;font-style:italic">Tap to copy. Edit to make it yours.</div>
   </div>'''
 
-    # Justin's context box (for T1 and T2 only)
-    card_html += f'''
+    # Justin's context box (only for Justin's connections)
+    if person.get('justin_connection'):
+        card_html += f'''
   <div class="justin-context-box">
     <strong>JUSTIN'S CONTEXT</strong>
     <textarea data-contact="{h(name)}" placeholder="Add relationship context, notes, or history..." oninput="saveContext(this)"></textarea>
