@@ -21,7 +21,7 @@ Her recent LinkedIn posts show someone engaged with community-level change: she'
 **Ambitious partnership vision:** Autumn could become OC's most powerful local champion. The near-term ask is an EBCF grant ($25-50K) through their inclusive economies or movement infrastructure funding streams. But think bigger: Autumn could help OC become a *case study* for what community-centered grantmaking looks like, a nonprofit born from the community it serves, led by a Black woman and ordained faith leader, using public lands as civic infrastructure. She could connect OC to EBCF's donor-advised fund holders, many of whom are East Bay families looking for exactly this kind of hyperlocal, high-impact investment. She could bring her FSG "collective impact" lens to help OC think about how its model scales through partnership rather than replication. And as a mother of three in Oakland, she might just want to bring her own family on a trip, making her not just a funder but a participant, which is the most powerful conversion in OC's playbook.""",
 
 # TED App Message
-"""Autumn. I'm Sally Steele, mom of two, ordained minister from Oakland and co-founder of Outdoorithm Collective. I know you lead community investment at EBCF and live in Oakland with your three kids. We take Oakland families camping. Strangers show up. Family leaves. Something happens around the fire. Justin mentioned you. Coffee this week?"""
+"""Autumn. I'm Sally Steele, mom of four, ordained minister from Oakland and co-founder of Outdoorithm Collective. I know you lead community investment at EBCF and live in Oakland with your three kids. We take Oakland families camping. Strangers show up. Family leaves. Something happens around the fire. Justin mentioned you. Coffee this week?"""
 ),
 
 "Sara Lomelin": (
@@ -33,7 +33,7 @@ Sara's entire life's work is about proving that philanthropy doesn't belong to t
 
 **Ambitious partnership vision:** Sara could help OC build a "Giving Circle for Coming Alive", a collective giving vehicle where 20-30 donors each contribute $1,000-$2,500 to sponsor families for an entire camping season. Philanthropy Together has the infrastructure, the playbook, and the community to make this happen nationally. Sara could also feature OC as a case study in her TED-adjacent talks about what happens when philanthropy gets proximate, when funders don't just write checks but sleep under the same stars as the families they support. Imagine a Philanthropy Together giving circle that doesn't just fund OC trips but *goes on* one. That's the kind of radical proximity that Sara preaches. She could also connect OC to her GivingTuesday board work for a national campaign moment. And as a San Francisco mom who values "reinventing yourself," she's exactly the kind of person who would personally resonate with the Come Alive frame, the invitation to stop optimizing and start living.""",
 
-"""Sara, I'm Sally Steele. Oakland mom of two, ordained minister and co-founder of Outdoorithm Collective. Your TED talk "You, the imperfect you, can change the world" landed with me. We take families camping. Parents who've never slept outside watching their kids fall in love with nature. Something happens around the fire. The giving circles you built feel like the spiritual cousin of that. Coffee this week?"""
+"""Sara, I'm Sally Steele. Oakland mom of four, ordained minister and co-founder of Outdoorithm Collective. Your TED talk "You, the imperfect you, can change the world" landed with me. We take families camping. Parents who've never slept outside watching their kids fall in love with nature. Something happens around the fire. The giving circles you built feel like the spiritual cousin of that. Coffee this week?"""
 ),
 
 "Tulaine Montgomery": (
@@ -57,7 +57,7 @@ Both Sally and Aishatu are in Justin's network (Aishatu is also Sally's LinkedIn
 
 **Ambitious partnership vision:** Aishatu could become OC's partner in extending the Come Alive experience to families affected by incarceration, one of the most underserved and disconnected populations in America. Imagine "Coming Home to Nature", a joint Impact Justice x OC program where families of formerly incarcerated individuals experience 48-hour camping trips as part of their reintegration journey. The healing dimensions of OC's model (rest, community, movement, nourishment) directly address the trauma of incarceration. Aishatu's Food in Prison work could connect to OC's communal nourishment dimension. Her wellness retreat expertise could help OC design more trauma-informed programming. And her AmeriCorps program could provide trip leaders and community guides who bring lived experience to the campfire. This is the kind of cross-pollination that makes both organizations stronger.""",
 
-"""Aishatu, I'm Sally Steele. I'm an ordained minister from Oakland and a mom of two, and I started Outdoorithm because my family came alive in nature. Your Homecoming Project and the retreats you host keep pulling at me. We take families camping. Strangers show up. Family leaves. Something happens around the fire. Find me this week?"""
+"""Aishatu, I'm Sally Steele. I'm an ordained minister from Oakland and a mom of four, and I started Outdoorithm because my family came alive in nature. Your Homecoming Project and the retreats you host keep pulling at me. We take families camping. Strangers show up. Family leaves. Something happens around the fire. Find me this week?"""
 ),
 
 "Nicole Taylor": (
@@ -68,7 +68,7 @@ Nicole controls enormous philanthropic flows through SVCF's donor-advised funds 
 **Ambitious partnership vision:** Nicole is a gateway to Silicon Valley's philanthropic wealth. SVCF manages billions in donor-advised funds, and many of those fund holders are tech leaders and their families looking for meaningful, local giving opportunities. OC could become a featured grantee in SVCF's place-based giving programs. Nicole could connect OC to SVCF's corporate philanthropy pipeline, imagine Google, Apple, and Meta employees bringing their families on OC camping trips as a corporate wellness + community engagement initiative. Her East Bay roots mean she'd understand immediately why OC matters for the families she used to serve at EBCF. The ultimate play: get OC into SVCF's "community endowment" model for sustained, multi-year funding rather than one-off grants.""",
 
 """Nicole,
-I'm Sally Steele, an ordained minister and mom of two from Oakland. You led East Bay Community Foundation, where Autumn McDonald now works. We take families camping. Forty-eight hours. Strangers show up. Family leaves. Parents who've never slept outside watch their kids fall in love with nature. Something happens around the fire. Coffee this week?"""
+I'm Sally Steele, an ordained minister and mom of four from Oakland. You led East Bay Community Foundation, where Autumn McDonald now works. We take families camping. Forty-eight hours. Strangers show up. Family leaves. Parents who've never slept outside watch their kids fall in love with nature. Something happens around the fire. Coffee this week?"""
 ),
 
 "Crystal Yang": (
@@ -78,7 +78,7 @@ Her position makes her a unique connector between OC and the TED philanthropic e
 
 **Ambitious partnership vision:** The long game here is big. OC's Come Alive model, using the most ancient human technology (fire, nature, community) to heal the most modern human disease (isolation, disconnection, numbness), is exactly the kind of counterintuitive, evidence-backed idea that the Audacious Project funds. Sally's story is TED-ready: an ordained faith leader who discovered that sleeping under stars with strangers across race and class lines produces the social bonds that research says predict economic mobility. Crystal could help Sally understand the Audacious Project pathway, advise on how to frame OC's impact data for this audience, and connect her to the donor community that funds these bets. Even before an Audacious application, Crystal could introduce Sally to TED donors who are personally passionate about nature, family, equity, or community, many of whom are at this very conference.""",
 
-"""Crystal, I'm an ordained minister from Oakland and a mom of two. Justin connected us on LinkedIn. I started Outdoorithm because my family came alive camping. We run 107 family trips. Something happens around the fire. You lead TED's Audacious Project donor community. Can we meet and talk about what your donors call audacious? Coffee this week?"""
+"""Crystal, I'm an ordained minister from Oakland and a mom of four. Justin connected us on LinkedIn. I started Outdoorithm because my family came alive camping. We run 107 family trips. Something happens around the fire. You lead TED's Audacious Project donor community. Can we meet and talk about what your donors call audacious? Coffee this week?"""
 ),
 
 "Erika Radhansson": (
@@ -88,7 +88,7 @@ Her model mirrors OC's: both organizations use existing public infrastructure (d
 
 **Ambitious partnership vision:** Erika could help OC think about its scaling model through a Reach Out & Read lens: what if pediatricians prescribed nature alongside books? What if OC camping trips became part of a "social prescription" model where community health workers refer isolated families to OC the way they refer them to food banks or housing assistance? Erika's experience scaling a simple intervention to 4.9 million children through clinical partnerships is exactly the playbook OC needs for national expansion. She could also explore a direct programmatic partnership: Reach Out & Read families who receive books at their pediatric visit also receive an invitation to an OC camping trip, books around the campfire. The shared infrastructure (families, pediatric touchpoints, community health) creates natural synergy.""",
 
-"""Erika, I'm Sally Steele, an ordained minister from Oakland and a mom of two. You led brand at Common Sense Media, helping kids and families make sense of the always-on digital world. We take families camping for 48 hours. Parents who've never slept outside watching their kids fall in love with nature. Something happens around the fire. Coffee this week?"""
+"""Erika, I'm Sally Steele, an ordained minister from Oakland and a mom of four. You led brand at Common Sense Media, helping kids and families make sense of the always-on digital world. We take families camping for 48 hours. Parents who've never slept outside watching their kids fall in love with nature. Something happens around the fire. Coffee this week?"""
 ),
 
 "Jim Pitofsky": (
@@ -100,7 +100,7 @@ His passions are a direct hit: "Family, social change, social entrepreneurship, 
 
 **Ambitious partnership vision:** Jim is not just a funder, he's a kingmaker. His rolodex spans three decades of the most powerful people in American philanthropy, social entrepreneurship, and civic life. He could: (1) Connect OC directly to Stand Together's bridging-divides funding stream and their network of philanthropic partners; (2) Introduce Sally to Templeton-connected donors who care about faith, family, and human flourishing, the Templeton Prize celebrates people who harness the power of the sciences to explore "life's deepest questions," and OC's work on what happens to humans in nature is exactly that kind of inquiry; (3) Leverage his Echoing Green network to position OC as a social enterprise worth watching; (4) Use his FORTUNE CEO Forum and Davos connections to bring corporate partnerships to OC; (5) Connect OC to the National Institute for Civil Discourse's network of bridging practitioners. And his faith passion, combined with Sally's ordained ministry background, creates an immediate personal connection. Jim and Sally speak the same language about purpose, calling, and community.""",
 
-"""Jim, I'm Sally Steele, ordained minister, mom of two, and co-founder of Outdoorithm Collective in Oakland. Justin said you'd get why faith and philanthropy matter when families meet outside. We take families camping. Strangers show up. Family leaves. Something happens around the fire. Find me this week?"""
+"""Jim, I'm Sally Steele, ordained minister, mom of four, and co-founder of Outdoorithm Collective in Oakland. Justin said you'd get why faith and philanthropy matter when families meet outside. We take families camping. Strangers show up. Family leaves. Something happens around the fire. Find me this week?"""
 ),
 
 "Rachel Flynn": (
@@ -121,7 +121,7 @@ His Google.org overlap with Justin makes this a warm relationship to activate. J
 **Ambitious partnership vision:** Jason could help OC access climate philanthropy networks, funders who care about public lands stewardship, environmental justice, and building communities that protect nature. OC's theory that "people don't protect what they don't love, and love grows from belonging" is fundamentally a climate argument: the most effective conservation strategy is helping diverse families fall in love with public lands. Jason could also connect OC to Google.org's fellowship or grantmaking programs. His clean energy focus could lead to a "solar-powered camping" partnership that aligns OC with the climate tech community. And his deep content creation (10+ posts) means he could amplify OC's story to his climate-focused network. The bridging opportunity: Jason knows both the climate world and Justin's world, making him a natural evangelist for OC's intersection of people and planet.""",
 
 """Jason.
-I'm Sally Steele, an ordained minister from Oakland and a mom of two.
+I'm Sally Steele, an ordained minister from Oakland and a mom of four.
 I listen to your Invested in Climate podcast and I know you and Justin go back to Google.org days.
 We take urban families on 48-hour camping trips. Parents who've never slept outside watch their kids fall in love with nature. Strangers show up. Family leaves. Something happens around the fire.
 Find me at TED?"""
@@ -136,7 +136,7 @@ She has an existing relationship with Justin, 5 inbound email threads, most rece
 
 **Ambitious partnership vision:** Delia understands something Sally understands as an ordained minister: healing happens when you break down the walls between people. Delia does it with prison walls. OC does it with the invisible walls between neighborhoods, income levels, and racial communities. A Proximity for Justice x OC partnership could go several directions: (1) A "Coming Home to Nature" initiative that brings families of incarcerated individuals on OC camping trips, where the campfire becomes a space of healing not just for the family but for the community fractured by incarceration; (2) A joint media project documenting what happens when you take the TEDx-inside-prison model and extend it to nature, stories told around a campfire instead of inside a prison auditorium; (3) Delia's deep understanding of using arts and storytelling to humanize marginalized communities could help OC tell its own story more powerfully. And as a fellow woman who goes to the margins and brings people together, Delia would immediately recognize Sally as a kindred spirit.""",
 
-"""Delia, I'm Sally Steele. I'm an ordained minister from Oakland and a mom of two. Justin told me about your TEDx inside prisons, the Virginia event and how you bring outsiders behind razor wire to meet the people inside. We take families camping. Strangers show up. Family leaves. Different walls. Same conviction. Something happens around the fire. Coffee this week?"""
+"""Delia, I'm Sally Steele. I'm an ordained minister from Oakland and a mom of four. Justin told me about your TEDx inside prisons, the Virginia event and how you bring outsiders behind razor wire to meet the people inside. We take families camping. Strangers show up. Family leaves. Different walls. Same conviction. Something happens around the fire. Coffee this week?"""
 ),
 
 "Heejae Lim": (
@@ -146,7 +146,7 @@ Her LinkedIn posts are revealing: she recently posted about attending ASU+GSV Su
 
 **Ambitious partnership vision:** Heejae understands something fundamental: family engagement is the lever that moves everything else. TalkingPoints' insight that connecting families to schools transforms educational outcomes parallels OC's insight that connecting families to nature and each other transforms wellbeing and social mobility. A TalkingPoints x OC partnership could be powerful: OC's camping trips could become a "family engagement" touchpoint, a place where families who might never interact at school pickup form deep bonds around the campfire. Imagine OC trips integrated into TalkingPoints' school community toolkit. Heejae's AI expertise could also help OC think about its tech platforms (Camp Sage, the community platform) through a family-centered design lens. And her personal journey as an immigrant founder building technology for underserved families means she gets the communities OC serves. Her TED post about human connection leading the way is practically OC's tagline.""",
 
-"""Heejae, I'm Sally Steele, a mom of two, ordained minister from Oakland who co-founded Outdoorithm Collective. Your TED line 'human connection still leads the way' hit me. You connect families and schools. We take families camping. Strangers show up. Family leaves. Something happens around the fire. Coffee this week?"""
+"""Heejae, I'm Sally Steele, a mom of four, ordained minister from Oakland who co-founded Outdoorithm Collective. Your TED line 'human connection still leads the way' hit me. You connect families and schools. We take families camping. Strangers show up. Family leaves. Something happens around the fire. Coffee this week?"""
 ),
 
 "Hillary Blout": (
@@ -158,7 +158,7 @@ Her LinkedIn posts reveal her current energy: she spoke at Sundance Film Festiva
 
 **Ambitious partnership vision:** Hillary is a connector and an evangelist. The immediate play: ask her "Who else at TED needs to know about Outdoorithm?" Her network spans justice reform philanthropy (one of the best-funded areas of social impact), policy leaders, and culture makers. She could: (1) Connect OC to justice reform funders who would immediately understand the healing power of nature for families impacted by incarceration; (2) Partner on a "Healing Justice" camping trip, families of incarcerated individuals experiencing OC's Sacred Space; (3) Use her Sundance/media connections to amplify OC's story; (4) Introduce Sally to the Elevate Prize community. The faith connection makes this personal, Hillary and Sally can speak woman-to-woman, faith-leader-to-faith-leader, mother-to-mother about what it means to build something that heals.""",
 
-"""Hillary! I'm Sally Steele, ordained minister, mom of two, co-founder of Outdoorithm Collective in Oakland. Justin's been telling me about your work mobilizing DAs to revisit sentences and bring people home. We take families camping. Strangers show up. Family leaves. Something happens around the fire. Coffee this week?"""
+"""Hillary! I'm Sally Steele, ordained minister, mom of four, co-founder of Outdoorithm Collective in Oakland. Justin's been telling me about your work mobilizing DAs to revisit sentences and bring people home. We take families camping. Strangers show up. Family leaves. Something happens around the fire. Coffee this week?"""
 ),
 
 "Alexandra Bernadotte": (
@@ -168,7 +168,7 @@ Her approach, using technology and human coaching in combination to support stud
 
 **Ambitious partnership vision:** Alexandra could help OC think about the "beyond the trip" problem, how do you sustain the connections and transformation that happen during 48 hours in nature? Beyond 12's technology-powered coaching model could inspire OC to build a post-trip engagement system that keeps families connected, supports them in planning return trips, and helps them integrate the Come Alive experience into daily life. The Outdoorithm Collective community platform (with channels, messaging, events) is already built for this, Alexandra's experience with engagement technology could help make it more effective. She could also connect OC to the education equity funding world, where family engagement and student wellbeing are hot topics. And as a dual warm lead, this is one of the easiest conversations for Sally to open.""",
 
-"""Alexandra! I'm Sally Steele, an Oakland mom of two and ordained minister who co-founded Outdoorithm Collective. Beyond 12 helps first-generation students persist and graduate with coaching and tech. College campuses for you. National parks for us. Same fight. We take families camping across race and income. Strangers show up. Family leaves. Something happens around the fire. We're both connected to Justin on LinkedIn. Find me this week?"""
+"""Alexandra! I'm Sally Steele, an Oakland mom of four and ordained minister who co-founded Outdoorithm Collective. Beyond 12 helps first-generation students persist and graduate with coaching and tech. College campuses for you. National parks for us. Same fight. We take families camping across race and income. Strangers show up. Family leaves. Something happens around the fire. We're both connected to Justin on LinkedIn. Find me this week?"""
 ),
 
 "Ryan Letada": (
@@ -178,7 +178,7 @@ His recent post about TED focuses on the power of ideas and connection. His expe
 
 **Ambitious partnership vision:** Ryan is a media and storytelling partner, not a funder. OC's Come Alive story is compelling, "In the age of AI, the most radical thing a family can do is build a fire together", but it needs the right storytelling infrastructure to reach beyond the Bay Area. Ryan could help OC develop a media strategy: a short documentary, a podcast series, a social content strategy that captures the campfire moments, the parent testimonials, the kids running free. He could connect OC to filmmakers, producers, and media platforms. He could help Sally develop her public narrative, the ordained faith leader who discovered that sleeping under stars heals what screens have broken. His understanding of AAPI and BIPOC media ecosystems could help OC reach diverse audiences who have been excluded from outdoor narratives. The Come Alive frame is a media goldmine, it just needs someone who knows how to mine it.""",
 
-"""Ryan, I'm Sally Steele. I'm an ordained minister from Oakland and a mom of two. You write about borderless futures and how stories move people. We take families camping. Parents crying at sunset. Kids running free. Something happens around the fire. Cameras should be there. Want to help us tell it beyond the Bay? Coffee this week?"""
+"""Ryan, I'm Sally Steele. I'm an ordained minister from Oakland and a mom of four. You write about borderless futures and how stories move people. We take families camping. Parents crying at sunset. Kids running free. Something happens around the fire. Cameras should be there. Want to help us tell it beyond the Bay? Coffee this week?"""
 ),
 
 # ── Newly Elevated Contacts ──────────────────────────────────────────
@@ -192,7 +192,7 @@ This connection is doubly powerful because Tulaine Montgomery, who is also in Ti
 
 **Ambitious partnership vision:** A GirlTREK x Outdoorithm "Walk to Camp" initiative where GirlTREK walking groups graduate into OC camping trips, extending the healing journey from the neighborhood trail to the national park. Imagine GirlTREK chapters in Oakland, Atlanta, Chicago, and Houston adding a seasonal camping trip to their programming, families who walk together learning to camp together. GirlTREK provides the community pipeline, OC provides the outdoor expertise and Sacred Space container. Vanessa could also help OC think about scale: how do you go from 107 trips to 10,000? GirlTREK has done it. And her "Joy & Justice" framing maps directly onto OC's "Come Alive", both insist that healing and joy are themselves acts of resistance.""",
 
-"""Vanessa, I'm Sally Steele, an ordained minister from Oakland and a mom of two. I love A Million Black Women Walking. You get Black women moving, finding joy and answers together. Tulaine Montgomery told me about GirlTrek years ago. We take families camping. Strangers show up. Family leaves. Something happens around the fire. Find me this week?"""
+"""Vanessa, I'm Sally Steele, an ordained minister from Oakland and a mom of four. I love A Million Black Women Walking. You get Black women moving, finding joy and answers together. Tulaine Montgomery told me about GirlTrek years ago. We take families camping. Strangers show up. Family leaves. Something happens around the fire. Find me this week?"""
 ),
 
 "Kim Samuel": (
@@ -204,7 +204,7 @@ Her "ask me about" at TED is simple: "What it means to belong."
 
 **Ambitious partnership vision:** Kim could become OC's intellectual partner and legitimizing voice. Her belonging framework could give OC an academic and policy language for what happens on camping trips, transforming "families came alive" into "families accessed all four dimensions of belonging in a 48-hour immersive experience." She could: (1) Feature OC as a case study in SCSC research, rigorous documentation of how cross-class, cross-race camping creates belonging; (2) Connect OC to the global belonging movement she leads, including policymakers who are designing "belonging strategies" for cities; (3) Co-author research with OC on the relationship between nature-based belonging and economic mobility; (4) Introduce OC to her network of funders who care about the loneliness epidemic. For Sally, Kim represents something rare: a peer who has built the intellectual scaffolding for exactly what OC practices. OC gives Kim's theory a body.""",
 
-"""Kim. I'm Sally Steele, an ordained minister, Oakland mom of two and co-founder of Outdoorithm Collective. Your book On Belonging changed how I explain what happens when strangers become family. We take families camping. Strangers show up. Family leaves. Something happens around the fire. Find me this week?"""
+"""Kim. I'm Sally Steele, an ordained minister, Oakland mom of four and co-founder of Outdoorithm Collective. Your book On Belonging changed how I explain what happens when strangers become family. We take families camping. Strangers show up. Family leaves. Something happens around the fire. Find me this week?"""
 ),
 
 "Tamela Davis": (
@@ -214,7 +214,7 @@ Tamela created the F Word platform and the F Word Food Truck, using food and con
 
 **Ambitious partnership vision:** Tamela and Sally are the same person in different cities. Both are women of faith who lead family-centered organizations. Both use simple, embodied experiences (food/camping) to create space for honest human connection. Both are mothers who built organizations because they wanted their own families to thrive. A Devoted Dreamers x OC partnership could bring OC's camping model to Nashville through Tamela's community infrastructure. Tamela could also help OC develop a faith-based framing for its work, connecting the Come Alive message to churches, congregations, and faith communities who understand that "being present" is a spiritual practice, not just a wellness trend. And the F Word Food Truck concept could translate into OC's communal Nourishment dimension.""",
 
-"""Tamela, I'm Sally Steele, an ordained minister from Oakland, mom of two, and co-founder of Outdoorithm Collective. Your line, 'You don't have to be perfect to be powerful, you just have to be present,' landed on me. You do it with the F Word Food Truck and Devoted Dreamers. We take families camping. Parents who've never slept outside watch their kids fall in love with nature. Something happens around the fire. Sister work. Find me this week?"""
+"""Tamela, I'm Sally Steele, an ordained minister from Oakland, mom of four, and co-founder of Outdoorithm Collective. Your line, 'You don't have to be perfect to be powerful, you just have to be present,' landed on me. You do it with the F Word Food Truck and Devoted Dreamers. We take families camping. Parents who've never slept outside watch their kids fall in love with nature. Something happens around the fire. Sister work. Find me this week?"""
 ),
 
 "Sean Goode": (
@@ -225,7 +225,7 @@ Sean's journey from trauma to healing, from violence to facilitation, from survi
 **Ambitious partnership vision:** Sean could help OC design more trauma-informed programming, especially for families who carry invisible weight from violence, poverty, or system involvement. His facilitation expertise could train OC trip leaders. His chaplain background creates an immediate faith connection with Sally. And his work in Seattle with CHOOSE 180 could extend OC's model to the Pacific Northwest. The caterpillar metaphor is OC's Come Alive framing in a different skin.""",
 
 """Sean,
-I'm Sally Steele, ordained minister, mom of two, and co-founder of Outdoorithm Collective. Your "caterpillar's surrender" image stopped me cold. We take families camping for 48 hours. Strangers show up. Family leaves. Something surrenders by the fire. I see that same mercy in your chaplaincy and trauma work. Coffee this week?"""
+I'm Sally Steele, ordained minister, mom of four, and co-founder of Outdoorithm Collective. Your "caterpillar's surrender" image stopped me cold. We take families camping for 48 hours. Strangers show up. Family leaves. Something surrenders by the fire. I see that same mercy in your chaplaincy and trauma work. Coffee this week?"""
 ),
 
 "Jason Mayden": (
@@ -245,7 +245,7 @@ His influence extends far beyond football. The Devoted Dreamers Foundation works
 
 **Ambitious partnership vision:** Demario could bring OC unprecedented visibility. An NFL All-Pro who takes his family camping and believes nature heals? That's a story that reaches audiences OC could never reach on its own. A "Devoted Dreamers x Outdoorithm" camping trip could be a signature event, Demario and Tamela bringing their community alongside OC's families. His Nashville base extends OC beyond the Bay Area. And his faith platform could bring OC's message to churches and congregations nationwide.""",
 
-"""Demario, I'm Sally Steele, an ordained minister, mom of two, co-founder of Outdoorithm Collective in Oakland. I see you and Tamela are both here, and Devoted Dreamers' work rooting leadership in faith and family landed with me. We take families camping. Parents who've never slept outside watching their kids fall in love with nature. Strangers show up. Family leaves. Something happens around the fire. Find me this week?"""
+"""Demario, I'm Sally Steele, an ordained minister, mom of four, co-founder of Outdoorithm Collective in Oakland. I see you and Tamela are both here, and Devoted Dreamers' work rooting leadership in faith and family landed with me. We take families camping. Parents who've never slept outside watching their kids fall in love with nature. Strangers show up. Family leaves. Something happens around the fire. Find me this week?"""
 ),
 
 "Heather Tilert": (
@@ -255,7 +255,7 @@ She's someone who has personally experienced the transformation that happens in 
 
 **Ambitious partnership vision:** Heather is a media partnership dream. She could: (1) Develop OC-inspired content for Netflix, a docuseries about families camping across difference, a kids' show about nature and belonging, or a short film following an OC trip; (2) Connect OC to Netflix's social impact team; (3) Use her PCT experience and nature passion to personally champion OC's mission. The Netflix Kids + Family audience is exactly the audience OC needs to reach, parents looking for alternatives to screen time who want their kids to "come alive." Heather gets this on a cellular level because she lived it on the PCT.""",
 
-"""Heather, I'm Sally Steele, an ordained minister from Oakland and a mom of two who started Outdoorithm Collective after camping changed my family. You thru-hiked the PCT and love tactile arts that pull people into their bodies. We take families who've never camped for 48 hours. Parents who've never slept outside watching their kids fall in love with nature. Something happens around the fire. Find me this week?"""
+"""Heather, I'm Sally Steele, an ordained minister from Oakland and a mom of four who started Outdoorithm Collective after camping changed my family. You thru-hiked the PCT and love tactile arts that pull people into their bodies. We take families who've never camped for 48 hours. Parents who've never slept outside watching their kids fall in love with nature. Something happens around the fire. Find me this week?"""
 ),
 
 "Nathalie Wajashk-Restoule": (
@@ -265,7 +265,7 @@ Her TED "ask me about" is "Decolonizing Wealth", the recognition that philanthro
 
 **Ambitious partnership vision:** Nathalie could help OC deepen its relationship with the land itself. OC's camping trips happen on public lands, land that was Indigenous land before it was "public." Nathalie could help OC develop programming that honors this, creating a land acknowledgment practice that goes beyond words into actual relationship. She could co-design trips that incorporate Indigenous land-based teaching. And her "Decolonizing Wealth" lens could help OC approach funders with a more honest story about public lands, access, and who belongs where.""",
 
-"""Nathalie, I'm Sally Steele, ordained minister, mom of two and co-founder of Outdoorithm Collective. Your work reclaiming Anishinaabemwin and teaching land as relationship at Dokis First Nation keeps coming to mind. We take families camping on public lands. Parents who've never slept outside watching kids fall in love with nature. Something happens around the fire. Find me this week? Coffee?"""
+"""Nathalie, I'm Sally Steele, ordained minister, mom of four and co-founder of Outdoorithm Collective. Your work reclaiming Anishinaabemwin and teaching land as relationship at Dokis First Nation keeps coming to mind. We take families camping on public lands. Parents who've never slept outside watching kids fall in love with nature. Something happens around the fire. Find me this week? Coffee?"""
 ),
 
 
@@ -282,7 +282,7 @@ Together we could build a three-year pilot, Nature + Justice: Family Belonging, 
 
 The model blends grantmaking, program delivery, research, and communications. The Just Trust would fund grants and make introductions into its state-level networks. Outdoorithm would run the trips, recruit cross-class family cohorts, and embed restorative practices used by faith and community leaders. We would partner with an academic evaluator (for example, researchers at UC Berkeley or Stanford) to measure social cohesion, family stability, and economic indicators linked to Raj Chetty-style mobility research. Ana could amplify findings on When It Clicked and in philanthropy convenings, helping move this idea from pilot to line-item in safety and community investment portfolios. This would finish our Come Alive 2026 goals locally and create a replicable model for national expansion.""",
 
-"""Ana, I'm Sally Steele, an ordained minister from Oakland and a mom of two. I loved you calling justice infrastructure on When It Clicked. We take families camping for 48 hours. Parents who've never slept outside watching their kids fall in love with nature. Strangers show up. Family leaves. Find me at TED? Coffee this week?"""
+"""Ana, I'm Sally Steele, an ordained minister from Oakland and a mom of four. I loved you calling justice infrastructure on When It Clicked. We take families camping for 48 hours. Parents who've never slept outside watching their kids fall in love with nature. Strangers show up. Family leaves. Find me at TED? Coffee this week?"""
 ),
 
 
@@ -298,7 +298,7 @@ Partner model 2, catalytic multi-year grant and pilot. LV helps structure a $500
 
 Media and narrative plan. LV and Outdoorithm co-produce a storytelling package: one short documentary, a spoken-word or podcast episode, and two coordinated opinion pieces in national outlets that link family camp stories to the political argument for repair. LV amplifies those pieces to its donor and organizer networks, turning program outcomes into funder-facing evidence. Measurement is simple: number of cross-class friendships formed, family retention, and donor commitments tied to specific program milestones. The result, practical and fundable, is a new lane for reparative work that uses nature to build connective tissue and long-term funding for BIPOC-led outdoor equity.""",
 
-"""Aria, I'm Sally Steele, an ordained minister from Oakland and a mom of two. Your line about building a culture of repair hit me. You love mountains and hiking. Me too. We run 48-hour family camps. Strangers show up. Family leaves. Something happens around the fire. Find me at TED? Coffee this week to talk Come Alive 2026 and a Repair-in-Nature weekend."""
+"""Aria, I'm Sally Steele, an ordained minister from Oakland and a mom of four. Your line about building a culture of repair hit me. You love mountains and hiking. Me too. We run 48-hour family camps. Strangers show up. Family leaves. Something happens around the fire. Find me at TED? Coffee this week to talk Come Alive 2026 and a Repair-in-Nature weekend."""
 ),
 
 
@@ -313,7 +313,7 @@ Bridgespan and Outdoorithm build a two-year scale and funding plan together. Pha
 
 Program components could include a 30-family "Mothers in Nature" pilot that pairs maternal mental health partners with our camping model, a Family Bridge Fellowship to recruit and support cross-class host families, and a donor Field Days program that brings prospective funders on a 48-hour trip. Delivery would mix pro bono strategy, fee-based consulting for implementation, and a convening budget. Quick wins: a Bridgespan-led donor briefing within 90 days and a matched $120K challenge to close Come Alive 2026.""",
 
-"""Betsy, I'm Sally Steele. I'm an ordained minister from Oakland and a mom of two who believes the campfire is sacred. I love how you've helped donor families at Bridgespan move money toward equity and closer-to-home work. We take families on 48-hour camping trips. Strangers show up. Family leaves. Find me at TED? Coffee this week?"""
+"""Betsy, I'm Sally Steele. I'm an ordained minister from Oakland and a mom of four who believes the campfire is sacred. I love how you've helped donor families at Bridgespan move money toward equity and closer-to-home work. We take families on 48-hour camping trips. Strangers show up. Family leaves. Find me at TED? Coffee this week?"""
 ),
 
 
@@ -327,7 +327,7 @@ Co-design a culturally grounded camping curriculum and an Indigenous-led trainin
 
 Scale year two into a multi-site learning network across California, with a $1,000,000 fund to support 200 families, a fellowship for Indigenous outdoor leaders, and policy briefs for parks agencies on land access and cultural protocols. Joint outputs could include peer-reviewed papers on nature-based wellbeing, funder briefs tying our outcomes to Raj Chetty’s work on cross-class friendships and economic mobility, and public storytelling opportunities, including a shared TED or conference session to lift community voices.""",
 
-"""Brittany, I'm Sally Steele, an ordained minister from Oakland, mom of two and co-founder of Outdoorithm Collective. Your line, "Love is at the root of all activism," landed with me. Your Indigenous Equity Lab at UBC. Grounded, fierce work. We take families camping. Strangers arrive. Family leaves. I want to design family camps that center Indigenous leadership and matriarchal mentorship. Find me at TED?"""
+"""Brittany, I'm Sally Steele, an ordained minister from Oakland, mom of four and co-founder of Outdoorithm Collective. Your line, "Love is at the root of all activism," landed with me. Your Indigenous Equity Lab at UBC. Grounded, fierce work. We take families camping. Strangers arrive. Family leaves. I want to design family camps that center Indigenous leadership and matriarchal mentorship. Find me at TED?"""
 ),
 
 
@@ -341,7 +341,7 @@ Partner on a multi-phase media campaign called Campfire Stories. Phase 1, pilot:
 
 Beyond films, David would train our staff to run low-cost video capture on trips, build a donation-focused funnel with retargeting, and deliver a short distribution playbook for partners. Metrics: target 2 million views across platforms, 1,500 new donor leads, and an increase in monthly giving that helps complete Come Alive 2026 and seed a national pilot. Media opportunities include YouTube premieres, partner-sponsored ad buys, and a short film package for TED and public radio booking. Simple. Measured. Designed to move viewers to give and to see how bridging in nature creates durable ties.""",
 
-"""David, I'm Sally Steele, mom of two, ordained minister and cofounder of Outdoorithm in Oakland. Loved your LabTV run. 1,000 user videos. Tens of millions of views. We take families camping. Strangers show up. Family leaves. Find me at TED? Ten minutes to make a 60–90s film that shows belonging and moves donors."""
+"""David, I'm Sally Steele, mom of four, ordained minister and cofounder of Outdoorithm in Oakland. Loved your LabTV run. 1,000 user videos. Tens of millions of views. We take families camping. Strangers show up. Family leaves. Find me at TED? Ten minutes to make a 60–90s film that shows belonging and moves donors."""
 ),
 
 
@@ -356,7 +356,7 @@ Co-produce a flagship short documentary and a 6-episode mini-series that center 
 
 Use dei.watch to build a public pledge pilot where corporate sponsors commit matched funding to Outdoorithm and track those commitments in real time. Partnership models: production grant plus revenue share with kweliTV, in-kind distribution support, and a sponsored community screening tour that routes to national park partners and HBCUs. Media hooks: premiere on kweliTV, a TED screening or session, and placement at a major festival. This could accelerate Come Alive 2026 donor momentum and create a repeatable model for national expansion.""",
 
-"""DeShuna, I'm Sally Steele. I'm an ordained minister from Oakland and a mom of two. I love that you built kweliTV's archive of indie Black films and made dei.watch to call out empty corporate promises. We take families camping for 48 hours. Strangers show up. Family leaves with stories that belong on screen. Something happens around the fire. You in for a short doc or mini-series on kweliTV, with dei.watch tracking sponsor promises? Find me at TED?"""
+"""DeShuna, I'm Sally Steele. I'm an ordained minister from Oakland and a mom of four. I love that you built kweliTV's archive of indie Black films and made dei.watch to call out empty corporate promises. We take families camping for 48 hours. Strangers show up. Family leaves with stories that belong on screen. Something happens around the fire. You in for a short doc or mini-series on kweliTV, with dei.watch tracking sponsor promises? Find me at TED?"""
 ),
 
 
@@ -370,7 +370,7 @@ Work with Debbie to design a donor pipeline and engagement model that turns intr
 
 Pair philanthropy work with program and media opportunities. Fund an Outdoor Equity Fellowship ($150,000 over three years) to hire regional leads in Los Angeles and Sacramento. Budget $75,000 for an impact evaluation partnership that measures friendship formation and mobility outcomes, and $50,000 for a short documentary and targeted op-eds in philanthropy outlets to help convert convened prospects into donors. A clear stewardship path, personal introductions, and on-the-ground donor experiences will turn warm interest into lasting support.""",
 
-"""Debbie, I'm Sally Steele. I'm an ordained minister from Oakland, mom of two, and co-founder of Outdoorithm Collective. I loved your line, "Kindness is a form of impact." We take families on 48-hour guided camping trips. Parents who've never slept outside watching their kids fall in love with nature. Strangers show up. Family leaves. Something happens around the fire. Find me at TED? Coffee this week?"""
+"""Debbie, I'm Sally Steele. I'm an ordained minister from Oakland, mom of four, and co-founder of Outdoorithm Collective. I loved your line, "Kindness is a form of impact." We take families on 48-hour guided camping trips. Parents who've never slept outside watching their kids fall in love with nature. Strangers show up. Family leaves. Something happens around the fire. Find me at TED? Coffee this week?"""
 ),
 
 
@@ -385,7 +385,7 @@ Partner on a multi-year funding and participatory grant pilot focused on Texas a
 **ambitious partnership vision**
 Leverage Eva’s network for program and capacity supports. Use The Management Center coaching network for a leadership cohort, budgeted at $30,000, to strengthen Outdoorithm’s participatory grantmaking and staff systems. Co-create a media and convening plan: a joint op-ed, a short documentary pilot showcasing participatory grant decisions and family trips, and a joint session at Mosaic convenings or Friends of the Earth events to recruit funders and partners. Offer a match challenge: Mosaic will unlock an additional $150,000 if Outdoorithm raises $150,000 from other funders, accelerating Come Alive 2026 and laying groundwork for national expansion.""",
 
-"""Eva, I'm Sally Steele, an ordained minister and mom of two from Oakland who runs Outdoorithm. I loved your two decades at Sierra Club and how Mosaic makes community central. We take families on 48-hour camping trips. Parents who've never slept outside watch their kids fall in love with nature. Something happens around the fire. Find me at TED for 10 minutes?"""
+"""Eva, I'm Sally Steele, an ordained minister and mom of four from Oakland who runs Outdoorithm. I loved your two decades at Sierra Club and how Mosaic makes community central. We take families on 48-hour camping trips. Parents who've never slept outside watch their kids fall in love with nature. Something happens around the fire. Find me at TED for 10 minutes?"""
 ),
 
 
@@ -400,7 +400,7 @@ Work together to build a media and funding pipeline that scales Outdoorithm from
 Beyond the grant, create a Fellowship for family storytellers and community artists (budget $150,000), a rural-urban exchange program that pairs local arts groups Hasiba curates with our campsite programming, and a donor showcase at TED or an Audacious partner event. TED can offer talk coaching for Sally and selected family leaders, host a filmed showcase on TED platforms, and convene a funder roundtable. We track impact with pre/post trust measures, friendship-network mapping informed by Raj Chetty’s findings, and publish a concise donor-facing case study to unlock follow-on funding.""",
 
 """Hasiba, 
-I'm Sally Steele, ordained minister from Oakland and mom of two. 
+I'm Sally Steele, ordained minister from Oakland and mom of four. 
 I love the mini documentaries you produce and your arts work with immigrant women and youth. 
 We take strangers on 48-hour family camping trips. Parents who've never slept outside watching their kids fall in love with nature. Something happens around the fire. 
 Let's shape a short film and a funding pitch for Come Alive 2026. Find me at TED?"""
@@ -417,7 +417,7 @@ First, a media partnership. Fund a short documentary plus a six-episode podcast 
 
 Second, a program and thought-leadership strand. Launch a one-year "Campfire Fellowship" that trains 30 faith leaders, community organizers and undergraduates to run guided family camping trips. Budget ask: $150,000 for stipends, curriculum development, travel and evaluation. Pair the fellowship with a $100,000 research grant to measure friendship formation and early mobility predictors, using Chetty-style metrics and mixed methods. Total pilot ask: $450,000 to $550,000 over 18 to 24 months. Partnership model: a Templeton grant plus matched philanthropy, co-created curriculum, Templeton support for media strategy, and a joint convening to release findings and premiere media at TED or a Templeton forum. Quick wins: a short film screening at TED, a podcast episode drop during a Templeton-funded festival, and fellowship cohorts running in California and two trial regions for national expansion.""",
 
-"""John, I'm Sally Steele. I'm an ordained minister from Oakland and a mom of two who started Outdoorithm after 107 family camping trips. You run a $75M portfolio on meaning, awe and media. That grabbed me. We take families camping. Strangers arrive. Family leaves. Something happens around the fire. Justin's a mutual connection. Find me at TED? Talk short film or Campfire Fellowship."""
+"""John, I'm Sally Steele. I'm an ordained minister from Oakland and a mom of four who started Outdoorithm after 107 family camping trips. You run a $75M portfolio on meaning, awe and media. That grabbed me. We take families camping. Strangers arrive. Family leaves. Something happens around the fire. Justin's a mutual connection. Find me at TED? Talk short film or Campfire Fellowship."""
 ),
 
 
@@ -445,7 +445,7 @@ Work together to build a Skoll-backed Scaling Partnership for Outdoorithm: a thr
 
 In practice, Skoll would act as lead catalytic funder and partner on governance and learning, while Outdoorithm retains community co-design control of programming. Together we would pilot expansion in Kansas City and California, codify an operations playbook, and build a funding pipeline that includes program-related investments and multi-year grants. Media and learning opportunities could include a joint case study for the Skoll World Forum, a co-authored opinion piece on catalytic capital and outdoor equity, and a feature aligning with TED programming to amplify the link between cross-class friendships in nature and economic mobility.""",
 
-"""Liz, I'm Sally Steele, an ordained minister from Oakland and a mom of two. I loved your line about bringing the power closer to the pain. We run 48-hour family camping trips. Strangers show up. Something happens around the fire. Family leaves. Two minutes at TED? I want to ask how you move money to small community-led groups so they can grow and keep control in their neighborhoods."""
+"""Liz, I'm Sally Steele, an ordained minister from Oakland and a mom of four. I loved your line about bringing the power closer to the pain. We run 48-hour family camping trips. Strangers show up. Something happens around the fire. Family leaves. Two minutes at TED? I want to ask how you move money to small community-led groups so they can grow and keep control in their neighborhoods."""
 ),
 
 
@@ -463,7 +463,7 @@ Logan matters for Outdoorithm Collective because TED is one of the few platforms
 
 These pieces fit TED’s strength, and Logan’s experience building convenings and philanthropic programs makes this realistic. Short pilot first, proof next, scale after that. I’d invite Logan to visit a weekend camp in Oakland to see the work in person and meet families. Small ask, big possibilities.""",
 
-"""Logan, I'm Sally Steele, an ordained minister from Oakland and a mom of two. You helped build the TED Fellows and led TED's global work on climate and democracy. We run 48-hour guided family camping trips. Parents who've never slept outside watching their kids fall in love with nature. Strangers show up. Family leaves. Something happens around the fire. Find me at TED this week?"""
+"""Logan, I'm Sally Steele, an ordained minister from Oakland and a mom of four. You helped build the TED Fellows and led TED's global work on climate and democracy. We run 48-hour guided family camping trips. Parents who've never slept outside watching their kids fall in love with nature. Strangers show up. Family leaves. Something happens around the fire. Find me at TED this week?"""
 ),
 
 
@@ -480,7 +480,7 @@ Follow with a $2.5 million growth round to build a three-year National Expansion
 
 Practically, the model is simple: seed, prove, scale. Audacious funds, TED amplifies, Outdoorithm runs programs and builds evidence. We get to regional partners faster, recruit local park systems, and bring cross-class friendships into public land planning. And, I’d love to trade Barbados and rugby notes with Max while we sketch the first pilot at TED.""",
 
-"""Max, I'm Sally Steele, an ordained minister from Oakland and a mom of two. I saw you lead The Audacious Project and that you love Barbados and rugby. We run 48-hour guided family camping trips from Oakland. Parents who've never slept outside watch their kids fall in love with nature. Strangers show up. Family leaves. Something happens around the fire. Find me at TED?"""
+"""Max, I'm Sally Steele, an ordained minister from Oakland and a mom of four. I saw you lead The Audacious Project and that you love Barbados and rugby. We run 48-hour guided family camping trips from Oakland. Parents who've never slept outside watch their kids fall in love with nature. Strangers show up. Family leaves. Something happens around the fire. Find me at TED?"""
 ),
 
 
@@ -494,7 +494,7 @@ Partner on an 18-month pilot and public learning campaign. Columbia designs and 
 
 Use the pilot to build two scalable strands. First, a breathwork facilitator curriculum co-created by Modupe and Outdoorithm, delivered to 30 facilitators and packaged as an online training for parks departments and community orgs. Second, a media series: one TED Business Podcast episode recorded on a camp weekend, plus a 30-minute recorded conversation hosted by Modupe with parents and staff, and op-eds that translate findings for funders and city leaders. Outcomes: validated stress-reduction protocols, a revenue-ready training product, and new funder introductions to help Outdoorithm get to the next $250K of expansion funds.""",
 
-"""Modupe, I'm Sally Steele, an ordained minister from Oakland and a mom of two. I love your work on breathing and stress. We take families on 48-hour camping trips. Parents show up wound tight. They leave softer. Something happens around the fire. Want to talk at TED about bringing your breathwork on a trip, maybe record a live TED Business moment? Find me at TED?"""
+"""Modupe, I'm Sally Steele, an ordained minister from Oakland and a mom of four. I love your work on breathing and stress. We take families on 48-hour camping trips. Parents show up wound tight. They leave softer. Something happens around the fire. Want to talk at TED about bringing your breathwork on a trip, maybe record a live TED Business moment? Find me at TED?"""
 ),
 
 
@@ -509,7 +509,7 @@ Short term: a NEXUS match to close Come Alive 2026, specifically a $36,000 membe
 Medium term: a $500,000 NEXUS‑backed Place‑Based Belonging Fund to seed expansion into three new metro regions over 24 months. Dollars would hire three regional directors, train 60 trip leaders, and subsidize roughly 1,000 family camping experiences. Parallel media work with ImpactHAUS would produce a short documentary for Sundance and targeted screenings at NEXUS summits, followed by a distribution plan for policy and philanthropic audiences. Governance would be simple: a joint advisory group, quarterly impact reports, and clear metrics on participant demographics, number of cross‑class pairings, and family outcomes. Practical, measurable, scalable. Rachel’s convening power makes this real, fast.""",
 
 """Rachel, 
-I'm Sally Steele. I'm an ordained minister from Oakland, a mom of two, and I run Outdoorithm Collective. I loved ImpactHAUS at Sundance and how NEXUS gathers next‑gen funders. We take families on 48‑hour camps. Strangers show up. Family leaves. Parents who've never slept outside watching kids fall in love with nature. Meet at TED to talk a short ImpactHAUS piece and a NEXUS match? Find me this week?"""
+I'm Sally Steele. I'm an ordained minister from Oakland, a mom of four, and I run Outdoorithm Collective. I loved ImpactHAUS at Sundance and how NEXUS gathers next‑gen funders. We take families on 48‑hour camps. Strangers show up. Family leaves. Parents who've never slept outside watching kids fall in love with nature. Meet at TED to talk a short ImpactHAUS piece and a NEXUS match? Find me this week?"""
 ),
 
 
@@ -523,7 +523,7 @@ Co-produce a flagship short documentary project that follows three families on O
 
 As a phased option, start with a single 12- to 15-minute short at $50,000 to test narrative approach and donor response, then expand to a three-part series. Pair the film with a short audio miniseries for NPR and a community screening + panel tour that supports the Come Alive 2026 campaign, with a fundraising target aligned to help close the $120,000 goal. Build in a mentorship track where Razi trains Outdoorithm alumni in storytelling and media skills, so the project boosts OCs capacity to tell future stories and recruit families. Timeline: 12 to 18 months from pilot to broadcast, measurable goals include broadcast placement, 1M combined impressions across platforms, and a clear fundraising lift tied to screenings and distribution.""",
 
-"""Razi, I'm Sally Steele. I'm an ordained minister from Oakland and a mom of two. Three Chaplains moved me. You make faith and belonging feel alive on screen. We run 48-hour guided family camping trips. Parents who've never slept outside watch their kids fall in love with the wild. Strangers show up. Family leaves. Something happens around the fire. Find me at TED to talk short film or podcast ideas?"""
+"""Razi, I'm Sally Steele. I'm an ordained minister from Oakland and a mom of four. Three Chaplains moved me. You make faith and belonging feel alive on screen. We run 48-hour guided family camping trips. Parents who've never slept outside watch their kids fall in love with the wild. Strangers show up. Family leaves. Something happens around the fire. Find me at TED to talk short film or podcast ideas?"""
 ),
 
 
@@ -537,7 +537,7 @@ Imagine a 12- to 18-month pilot called "Sequoia Camp Stories," a partnership bet
 
 Beyond program delivery, we co-produce a short video series and a podcast about campfire storytelling, spiritual belonging, and public land access. That media package helps us raise a follow-on $500,000 expansion fund and supports our Come Alive 2026 campaign, which already has $84,000 of a $120,000 goal. Practical asks: introduce OC to two park decision makers, make warm intros to three philanthropic contacts, and advise on a storytelling brief for the pilot. With his board position and storytelling credibility, Shankar can move this from an idea to a public-lands proof point for cross-class belonging.""",
 
-"""Shankar, I'm Sally Steele. I'm an ordained minister from Oakland and a mom of two. I noticed your Sequoia National Parks board work and your essays about story as the invisible architecture of life. We take families on 48-hour guided camps. Strangers show up. Family leaves. Something happens around the fire. I want to talk at TED about a Sequoia pilot and a short storytelling series. Find me this week?"""
+"""Shankar, I'm Sally Steele. I'm an ordained minister from Oakland and a mom of four. I noticed your Sequoia National Parks board work and your essays about story as the invisible architecture of life. We take families on 48-hour guided camps. Strangers show up. Family leaves. Something happens around the fire. I want to talk at TED about a Sequoia pilot and a short storytelling series. Find me this week?"""
 ),
 
 
@@ -552,7 +552,7 @@ Partner on a California pilot that pairs Onsite Family Camps with a baby-bond en
 
 Scale through policy and media: co-author a policy brief and op-ed for CalMatters and LA Times linking nature-based cross-class programs to mobility strategies like baby bonds, pitch a joint LA County convening for child-serving agencies, and build a packaged grant ask to private and state funders to grow from 200 to 1,000 families across California. Ask from Shimica: introductions to LA County agencies and trustees of the child trust account, help shaping the evaluation to influence state policy, and shared credibility to unlock $500,000 in philanthropic match funding in year one.""",
 
-"""Shimica, I'm Sally Steele, an ordained minister from Oakland and a mom of two. I love your baby bond pilot and how you bring policy into kids' lives. We take families camping. Strangers show up. Family leaves. Something happens around the fire. Find me at TED? Swap children's book picks and talk an LA pilot?"""
+"""Shimica, I'm Sally Steele, an ordained minister from Oakland and a mom of four. I love your baby bond pilot and how you bring policy into kids' lives. We take families camping. Strangers show up. Family leaves. Something happens around the fire. Find me at TED? Swap children's book picks and talk an LA pilot?"""
 ),
 
 
@@ -566,7 +566,7 @@ Work with BRONZE to create a blended capital vehicle and pilot fund that funds s
 
 To amplify impact, co-create a donor convening and media package. Host a BRONZE-sponsored investor day in San Francisco to introduce community leaders and family participants to funders. Produce a short film and an op-ed that link Stephen’s Eastside communities talk and Denali story to Outdoorithm’s outdoor fellowship model. Practical first steps: a $25,000 design grant to underwrite legal and measurement work, a six-month term sheet process led by BRONZE, and a target first close of $1 million within 12 months. If Stephen agrees, we’ll assemble a small steering committee that includes BRONZE, The California Endowment alumni, and one foundation partner to run diligence and a pilot launch schedule.""",
 
-"""Stephen, I'm Sally Steele, a mom of two from Oakland who runs guided family camps. You said "Love is a competitive advantage." Amen. Something happens around the fire. Parents who've never slept outside watching their kids fall in love with nature. We take families camping. Strangers show up. Family leaves. 15 minutes at TED? Find me this week."""
+"""Stephen, I'm Sally Steele, a mom of four from Oakland who runs guided family camps. You said "Love is a competitive advantage." Amen. Something happens around the fire. Parents who've never slept outside watching their kids fall in love with nature. We take families camping. Strangers show up. Family leaves. 15 minutes at TED? Find me this week."""
 ),
 
 
@@ -580,7 +580,7 @@ One concrete pilot: the Cedar Circle Family Stewardship Pilot. Teresa would co-d
 
 Beyond the pilot, we could build a three-part partnership: 1) a Guide Training Fellowship where Teresa and her network train 20 Outdoorithm guides in Indigenous stewardship protocols and salmon-forest ecology, funded at $25,000; 2) a media strand, co-producing a short film or community screening series with the Salmon Forest Project to amplify family stories and attract funders and press; 3) a research collaboration with UBC or Donner Foundation to evaluate how Indigenous-led stewardship on short trips affects participants sense of belonging and cross-class friendships. Together these pieces could form a $200,000 campaign to expand the model regionally and ensure Indigenous partners are paid, credited, and in leadership roles.""",
 
-"""Teresa, I'm Sally Steele. I'm an ordained minister from Oakland and a mom of two. The cedar weaving in your Salmon Forest Project, that moment by the stream with woven cedar hands, stayed with me. We take families camping. Strangers show up. Family leaves. We run 48-hour family trips. I'd love to fold a hands-on cedar and salmon moment into one. Find me at TED?"""
+"""Teresa, I'm Sally Steele. I'm an ordained minister from Oakland and a mom of four. The cedar weaving in your Salmon Forest Project, that moment by the stream with woven cedar hands, stayed with me. We take families camping. Strangers show up. Family leaves. We run 48-hour family trips. I'd love to fold a hands-on cedar and salmon moment into one. Find me at TED?"""
 ),
 
 
@@ -595,7 +595,7 @@ Co-design a Campfire Embodied Healing pilot: six weekend retreats across Califor
 Pair the retreat pilot with a low-cost media lift. Produce a three-episode digital series of 8–10 minute pieces that follow three families through a retreat, plus a 60-minute training video for OC staff. Add a sponsorship model where one foundation or corporate partner underwrites the $60,000 pilot and media for naming rights and reporting. That gives Tina a public platform, funds Outdoorithm’s Come Alive 2026 momentum, and builds a reproducible model for national expansion.""",
 
 """Tina
-I'm Sally Steele, an ordained minister from Oakland and a mom of two. I love how on Queen Sugar and at The Inner Fitness Project you use movement and story to heal. We take Black families camping. Parents who've never slept outside watching kids fall in love with nature. Something happens around the fire. Find me at TED for 10 minutes?"""
+I'm Sally Steele, an ordained minister from Oakland and a mom of four. I love how on Queen Sugar and at The Inner Fitness Project you use movement and story to heal. We take Black families camping. Parents who've never slept outside watching kids fall in love with nature. Something happens around the fire. Find me at TED for 10 minutes?"""
 ),
 
 
@@ -609,7 +609,7 @@ Dream Machine and Outdoorithm co-create a Coalition for Outdoor Equity, a three-
 
 Dream Machine would also co-host a media and policy play. Ideas include a short CNN documentary or multi-segment feature, a co-branded "Campfire Conversations" series that centers family voices, and a TED side session where caregivers and policy partners sit together in a living-room style campfire conversation. We would pair this publicity with a funder convening in Oakland and a university research partner to measure outcomes over time, positioning Outdoorithm as a scalable model for outdoor equity and social cohesion.""",
 
-"""Van. I'm Sally Steele, an ordained minister from Oakland and a mom of two. I’ve followed your work with Dream Corps and #cut50, how you get unlikely partners in the same room. We take families camping. Strangers show up. Family leaves. Something happens around the fire. Find me at TED this week? Ten minutes to talk about lifting our families' stories."""
+"""Van. I'm Sally Steele, an ordained minister from Oakland and a mom of four. I’ve followed your work with Dream Corps and #cut50, how you get unlikely partners in the same room. We take families camping. Strangers show up. Family leaves. Something happens around the fire. Find me at TED this week? Ten minutes to talk about lifting our families' stories."""
 ),
 
 }

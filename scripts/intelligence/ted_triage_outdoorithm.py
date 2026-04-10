@@ -60,7 +60,7 @@ ABOUT SALLY STEELE (who will be networking):
 - Co-Founder & CEO of Outdoorithm Collective
 - Former Co-Executive Director of City Hope San Francisco ($1.9M budget, faith-based community org)
 - Ordained minister with deep roots in ministry, faith-based leadership, and pastoral care
-- Black woman, mother of two, Oakland resident
+- Black woman, mother of four, Oakland resident
 - Passionate about family wellness, nature as healing, racial reconciliation, and belonging
 - Background in community organizing, church leadership, women's ministry, and social justice
 - Her personal story: discovered camping transformed her own family and wanted other families to have that

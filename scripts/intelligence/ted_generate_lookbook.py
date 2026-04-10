@@ -737,7 +737,7 @@ html_parts.append(f'''<div class="event-bar">
 html_parts.append('''<div class="strategy-bar">
   <h3>Outdoorithm Networking Strategy</h3>
   <p style="margin-bottom:8px;opacity:0.9"><strong>Pitch line:</strong> "Outdoorithm Collective transforms public lands into spaces of belonging. We run 48-hour camping trips where families across class and race lines form the cross-class friendships that research shows are the #1 predictor of economic mobility."</p>
-  <p style="margin-bottom:8px;opacity:0.8"><strong>Your story angles:</strong> CEO &amp; Co-Founder of Outdoorithm Collective · Former Co-Executive Director, City Hope SF ($1.9M budget) · Ordained faith leader · Oakland mom of two · 107 family camping trips · 94% BIPOC participants · Come Alive 2026 campaign ($120K goal)</p>
+  <p style="margin-bottom:8px;opacity:0.8"><strong>Your story angles:</strong> CEO &amp; Co-Founder of Outdoorithm Collective · Former Co-Executive Director, City Hope SF ($1.9M budget) · Ordained faith leader · Oakland mom of four · 107 family camping trips · 94% BIPOC participants · Come Alive 2026 campaign ($120K goal)</p>
   <ul>
     <li><strong>For funders:</strong> "We&#x27;re raising $120K for Come Alive 2026 to serve 100 new families. Every $1,200 sends a family camping. We have a 94% BIPOC participation rate and 100% retention."</li>
     <li><strong>For media/storytelling partners:</strong> "Our families&#x27; stories are incredible. Parents who&#x27;ve never slept outside watching their kids fall in love with nature. We&#x27;re looking for filmmakers and storytellers to help us share this."</li>
