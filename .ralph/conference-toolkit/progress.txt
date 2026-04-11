@@ -91,3 +91,65 @@ Started: 2026-04-10
 - Field prefix from config drives all attendee field lookups — no hardcoded `ted_*` assumptions
 - User connection fields derived from config (primary/support connection_field) with fallback to `{name.lower()}_connection`
 - Default `-n 3` in test mode (original was 10) — faster iteration
+
+### Iteration 4 — US-004: Config-driven populate script (2026-04-10)
+**Status:** COMPLETE
+**Commit:** `feat: [US-004] Conference toolkit - Config-driven populate script`
+**Files created:**
+- `scripts/conference/populate.py` — Generic config-driven Supabase population
+
+**What it does:**
+- Accepts `--config` CLI arg pointing to any conference config YAML
+- Loads warm_leads, triage_results, shortlist from config data_paths
+- Joins all three by the config-derived ID field (e.g., `ted_id`)
+- Auto-detects and copies all lead fields, boolean-ifies role fields and connection fields
+- Adds triage scoring fields (relevance_score, partnership_type, etc.) and tier from shortlist
+- Initializes user-specific columns from config (pinned, reached_out, notes, context) with defaults
+- Migrates existing state from legacy `{prefix}_lookbook_state` table
+- Upserts in configurable batches (default 500) with on_conflict on the ID field
+- Reports summary stats: tier counts, scored counts, partnership type distribution
+- `--dry-run` shows prepared rows and sample without touching DB
+- `--batch-size N` for custom batch sizes
+
+**Verified:**
+- `--dry-run` with TED 2026 config: 1,884 rows prepared, 84 with tiers, correct field mapping
+- Sample row has all expected keys (ted_id through justin_context)
+
+**Key decisions:**
+- Auto-copy all lead fields rather than explicit mapping — more generic, handles any field prefix
+- Legacy state migration tries `{prefix}_lookbook_state` table, silently skips if not found
+- User columns driven entirely by config `users.*.columns` dict — no hardcoded sally_/justin_ assumptions
+
+### Iteration 5 — US-005: Config-driven HTML generator (2026-04-10)
+**Status:** COMPLETE
+**Commit:** `feat: [US-005] Conference toolkit - Config-driven HTML generator`
+**Files created:**
+- `scripts/conference/generate_lookbook.py` — Generic config-driven HTML lookbook generator (~850 lines)
+
+**What it does:**
+- Accepts `--config` CLI arg pointing to any conference config YAML
+- Reads ALL conference-specific strings from config: title, dates, venue, subtitle, attendee count, color scheme, section labels
+- Reads Supabase project URL, anon key, table name, and edge function name from config
+- Dynamically imports deep writeups module via importlib using config path
+- Generates same HTML structure: header, search bar, Primary User's Picks, tier sections, quick reference table
+- All JavaScript references parameterized via JS constants (TABLE, ID_FIELD, NAME_FIELD, PINNED_COL, REACHED_COL, NOTES_COL, CONTEXT_COL, EDGE_FN, PRIMARY_USER, ORG_NAME)
+- Partnership badge colors from config partnership_types (color_bg, color_fg)
+- Role badges (TED Speaker, TED Fellow) driven by config conference.roles array
+- Connect URL built from config connect_url_template
+- User labels ("Sally's Picks", "Justin's Context") derived from config user names
+- Org labels ("OUTDOORITHM COLLECTIVE CONNECTION") derived from config org name
+- Output to --output path or {deploy_dir}/index.html by default
+
+**Verified:**
+- Generated HTML matches original: 46 full cards, 38 compact cards, 84 quick ref rows
+- Same Supabase constants (URL, key, table, edge function)
+- Same user labels (Sally's Picks, Justin's Context, Sally's outreach)
+- Same org labels (Outdoorithm Collective Partnership Vision, Connection)
+- File size: 404,818 bytes
+
+**Key decisions:**
+- Used JS constants (TABLE, ID_FIELD, etc.) to parameterize all Supabase/field references in JavaScript — cleaner than string interpolation everywhere
+- Kept `relationship_summary` reading `db_outdoorithm_fit` from data but using config org name in the label
+- Tier section rendering driven by config tiers dict — full cards for tier <=2, compact for tier 3+
+- Quick ref table short labels: first word of tier label (Must, High, Worth)
+- Connection fields derived from config: primary_user.connection_field or `{name.lower()}_connection`

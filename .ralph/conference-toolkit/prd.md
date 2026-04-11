@@ -77,7 +77,7 @@ Create a generic `scripts/conference/triage.py` that reads the conference config
 
 ### US-004: Refactor populate script to be config-driven
 **Priority:** 4
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Create a generic `scripts/conference/populate.py` that reads the conference config and populates Supabase.
@@ -99,7 +99,7 @@ Create a generic `scripts/conference/populate.py` that reads the conference conf
 
 ### US-005: Refactor HTML generator to be config-driven
 **Priority:** 5
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Create a generic `scripts/conference/generate_lookbook.py` that reads the conference config and produces the HTML lookbook. This is the largest refactoring task — the generator has ~1400 lines with ~15 hardcoded conference/org-specific strings.
