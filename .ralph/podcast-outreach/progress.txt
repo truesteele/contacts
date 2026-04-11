@@ -42,3 +42,17 @@ Started: 2026-04-11
 - Podcast Index categories come as `{id: name}` dict — flatten to list of names
 - Module-level rate limiting via global `_last_itunes_call` timestamp works fine for sequential use
 
+## US-004: Podcast Discovery Script — COMPLETE
+- Created `scripts/intelligence/discover_podcasts.py`
+- Pipeline: load terms → search Podcast Index + iTunes → exact-title dedup → language filter → inactive filter (90 days) → GPT dedup → save/print
+- GPT dedup: builds candidate pairs using shared significant words (reduces API calls), then sends to GPT-5 mini with structured JSON output
+- Supports `--speaker sally|justin|both`, `--search-terms` override, `--limit`, `--test`, `--workers`
+- Tested with `--speaker sally --test --limit 10`: 120 raw results → 118 after GPT dedup (2 duplicates removed)
+- PODCAST_INDEX_API_KEY/SECRET not in .env yet — falls back to iTunes-only gracefully
+- Save logic: upserts on podcast_index_id for PI results, title-match fallback for iTunes-only
+
+### Learnings
+- iTunes lacks last_update_time, so activity filtering only works for Podcast Index results — iTunes results get "unknown" status
+- Pre-filtering candidate pairs with shared significant words (3+ chars) dramatically reduces GPT calls (135 pairs out of 7,021 possible for 118 podcasts)
+- `response_format={"type": "json_object"}` works well for simple boolean dedup decisions
+

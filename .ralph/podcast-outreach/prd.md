@@ -577,7 +577,7 @@ python -c "from scripts.intelligence.podcast_api import PodcastIndexClient; prin
 
 ### US-004: Podcast Discovery Script
 **Priority:** 4
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Create `discover_podcasts.py` that searches Podcast Index and iTunes for podcasts matching Sally and Justin's topics, deduplicates results using GPT-5.4 mini (NOT regex), filters out inactive shows, and saves to `podcast_targets`.
