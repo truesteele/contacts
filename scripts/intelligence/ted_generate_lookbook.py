@@ -710,7 +710,108 @@ html_parts.append(f'''<!DOCTYPE html>
   .outreach-counter {{
     display: inline-block; background: rgba(255,255,255,0.15);
     padding: 4px 12px; border-radius: 8px; font-size: 12px; margin-top: 6px;
-  }}</style>
+  }}
+  /* Search bar */
+  .search-container {{
+    padding: 16px; background: #f8fafc; border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 100;
+  }}
+  .search-row {{
+    display: flex; gap: 8px; max-width: 700px; margin: 0 auto;
+  }}
+  .search-input {{
+    flex: 1; padding: 10px 14px; font-size: 15px; border: 2px solid #e2e8f0;
+    border-radius: 10px; outline: none; font-family: inherit;
+  }}
+  .search-input:focus {{ border-color: #166534; }}
+  .search-input::placeholder {{ color: #94a3b8; }}
+  .btn-add-new {{
+    padding: 10px 16px; background: #166534; color: white; border: none;
+    border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer;
+    white-space: nowrap;
+  }}
+  .btn-add-new:hover {{ background: #14532d; }}
+  .search-results {{
+    max-width: 700px; margin: 8px auto 0; background: white;
+    border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: none;
+    max-height: 400px; overflow-y: auto;
+  }}
+  .search-results.active {{ display: block; }}
+  .search-result {{
+    padding: 12px 14px; border-bottom: 1px solid #f1f5f9;
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 12px;
+  }}
+  .search-result:last-child {{ border-bottom: none; }}
+  .search-result:hover {{ background: #f0fdf4; }}
+  .sr-info {{ flex: 1; min-width: 0; }}
+  .sr-name {{ font-weight: 700; font-size: 14px; }}
+  .sr-meta {{ font-size: 12px; color: var(--text-muted); margin-top: 2px; }}
+  .sr-reasoning {{ font-size: 12px; color: #475569; margin-top: 4px; }}
+  .sr-score {{
+    display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px;
+    border-radius: 10px; background: #dcfce7; color: #166534; margin-right: 6px;
+  }}
+  .btn-pin {{
+    padding: 6px 14px; background: #166534; color: white; border: none;
+    border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;
+    white-space: nowrap; flex-shrink: 0;
+  }}
+  .btn-pin:hover {{ background: #14532d; }}
+  .btn-pin.already {{ background: #e2e8f0; color: #64748b; cursor: default; }}
+  .search-empty {{
+    padding: 16px; text-align: center; color: var(--text-muted); font-size: 13px;
+  }}
+  /* Sally's Picks section */
+  .picks-section {{ display: none; }}
+  .picks-section.active {{ display: block; }}
+  .picks-header {{
+    color: #7c3aed; padding: 20px 20px 8px; font-size: 11px; font-weight: 700;
+    letter-spacing: 1.5px; text-transform: uppercase;
+  }}
+  .picks-header .section-count {{ font-weight: 400; opacity: 0.7; text-transform: none; letter-spacing: normal; }}
+  .badge-pick {{ background: #f3e8ff; color: #7c3aed; }}
+  .btn-remove {{
+    font-size: 11px; color: #ef4444; cursor: pointer; border: none;
+    background: none; font-weight: 600; padding: 2px 6px; margin-left: 8px;
+  }}
+  .btn-remove:hover {{ text-decoration: underline; }}
+  .pick-notes textarea {{
+    width: 100%; min-height: 40px; max-height: 150px; border: 1px solid #e5e7eb;
+    border-radius: 6px; padding: 8px 10px; font-size: 13px; font-family: inherit;
+    line-height: 1.5; resize: vertical; margin-top: 6px; background: #faf5ff;
+  }}
+  .pick-notes textarea:focus {{ outline: none; border-color: #a855f7; }}
+  /* Modal */
+  .modal-overlay {{
+    display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5); z-index: 200; align-items: center; justify-content: center;
+  }}
+  .modal-overlay.active {{ display: flex; }}
+  .modal {{
+    background: white; border-radius: 16px; padding: 24px; max-width: 480px;
+    width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  }}
+  .modal h3 {{ font-size: 17px; margin-bottom: 12px; }}
+  .modal input {{
+    width: 100%; padding: 10px 14px; font-size: 14px; border: 2px solid #e2e8f0;
+    border-radius: 10px; outline: none; font-family: inherit; margin-bottom: 12px;
+  }}
+  .modal input:focus {{ border-color: #166534; }}
+  .modal-btns {{ display: flex; gap: 8px; justify-content: flex-end; }}
+  .modal-btns button {{
+    padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 600;
+    cursor: pointer; border: none;
+  }}
+  .btn-cancel {{ background: #f1f5f9; color: #475569; }}
+  .btn-enrich {{ background: #166534; color: white; }}
+  .btn-enrich:disabled {{ background: #94a3b8; cursor: not-allowed; }}
+  .enrich-status {{
+    font-size: 13px; color: #166534; text-align: center; padding: 8px;
+    display: none;
+  }}
+  .enrich-status.active {{ display: block; }}</style>
 </head>
 <body>
 ''')
@@ -744,6 +845,38 @@ html_parts.append('''<div class="strategy-bar">
     <li><strong>For programmatic partners:</strong> "We need gear partners, public lands allies, and community orgs who want to bring their families on our trips. We&#x27;re scaling from California to national."</li>
     <li><strong>Key concept to drop:</strong> john powell&#x27;s "bridging" framework. Our camping trips create the exact cross-class, cross-race social ties that bridge divided communities.</li>
   </ul>
+</div>
+''')
+
+# Search bar
+html_parts.append('''<div class="search-container">
+  <div class="search-row">
+    <input type="text" class="search-input" id="search-input" placeholder="Search all 1,883 TED attendees by name, org, or title..." autocomplete="off">
+    <button class="btn-add-new" onclick="openAddModal()">+ Add New</button>
+  </div>
+  <div class="search-results" id="search-results"></div>
+</div>
+''')
+
+# Sally's Picks section (dynamically populated from Supabase)
+html_parts.append('''<div class="picks-section" id="picks-section">
+  <div class="picks-header">SALLY'S PICKS <span class="section-count" id="picks-count">(0)</span></div>
+  <div id="picks-cards"></div>
+</div>
+''')
+
+# Add New Person modal
+html_parts.append('''<div class="modal-overlay" id="add-modal">
+  <div class="modal">
+    <h3>Add someone new</h3>
+    <p style="font-size:13px;color:#64748b;margin-bottom:12px">Paste their LinkedIn URL. We'll scrape the profile and score them for Outdoorithm fit (~30 seconds).</p>
+    <input type="text" id="linkedin-url-input" placeholder="https://www.linkedin.com/in/username">
+    <div class="enrich-status" id="enrich-status">Scraping profile and scoring...</div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeAddModal()">Cancel</button>
+      <button class="btn-enrich" id="btn-enrich" onclick="enrichAndAdd()">Enrich + Add</button>
+    </div>
+  </div>
 </div>
 ''')
 
@@ -817,15 +950,15 @@ document.querySelectorAll('.message-bubble').forEach(el => {{
   }});
 }});
 
-// Outreach toggle
+// ── Outreach toggle ──
 function toggleOutreach(el) {{
   const name = el.dataset.contact;
   const active = !el.classList.contains('active');
   el.classList.toggle('active');
-  const card = el.closest('.card');
+  const card = el.closest('.card') || el.closest('.compact-card');
   if (card) card.classList.toggle('reached-out', active);
   updateOutreachCounter();
-  upsertState(name, {{ sally_reached_out: active }});
+  upsertAttendee(name, {{ sally_reached_out: active }});
 }}
 
 function updateOutreachCounter() {{
@@ -837,7 +970,7 @@ function updateOutreachCounter() {{
   if (counter) counter.textContent = count;
 }}
 
-// Justin's context save with debounce
+// ── Justin's context save with debounce ──
 let contextTimers = {{}};
 function saveContext(textarea) {{
   const name = textarea.dataset.contact;
@@ -845,27 +978,334 @@ function saveContext(textarea) {{
   if (counter) counter.textContent = textarea.value.length;
   clearTimeout(contextTimers[name]);
   contextTimers[name] = setTimeout(() => {{
-    upsertState(name, {{ justin_context: textarea.value }});
+    upsertAttendee(name, {{ justin_context: textarea.value }});
   }}, 800);
 }}
 
-// Upsert to Supabase
-async function upsertState(contactName, fields) {{
-  const body = {{ contact_name: contactName, ...fields, updated_at: new Date().toISOString() }};
-  await sbFetch('ted_lookbook_state', {{
-    method: 'POST',
-    body: JSON.stringify(body),
-    headers: {{ 'Prefer': 'resolution=merge-duplicates' }},
+// ── Upsert to ted_attendees by name ──
+async function upsertAttendee(name, fields) {{
+  fields.updated_at = new Date().toISOString();
+  await sbFetch('ted_attendees?ted_name=eq.' + encodeURIComponent(name), {{
+    method: 'PATCH',
+    body: JSON.stringify(fields),
     prefer: 'return=minimal'
   }});
 }}
 
-// Load all state from Supabase on page load
+// ── HTML-safe text helper ──
+function escH(s) {{ return s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') : ''; }}
+
+// ── Search ──
+let searchTimer;
+const searchInput = document.getElementById('search-input');
+const searchResults = document.getElementById('search-results');
+const shortlistedNames = new Set({json.dumps([p['ted_name'] for p in shortlist])});
+
+searchInput.addEventListener('input', () => {{
+  clearTimeout(searchTimer);
+  const q = searchInput.value.trim();
+  if (q.length < 2) {{ searchResults.classList.remove('active'); return; }}
+  searchTimer = setTimeout(() => searchAttendees(q), 300);
+}});
+
+searchInput.addEventListener('blur', () => {{
+  setTimeout(() => searchResults.classList.remove('active'), 200);
+}});
+
+async function searchAttendees(q) {{
+  const enc = encodeURIComponent('%' + q + '%');
+  const url = 'ted_attendees?or=(ted_name.ilike.' + enc + ',ted_org.ilike.' + enc + ',ted_title.ilike.' + enc + ')&order=relevance_score.desc&limit=12&select=ted_id,ted_name,ted_title,ted_org,relevance_score,partnership_type,reasoning,tier,sally_pinned';
+  const data = await sbFetch(url, {{ method: 'GET', prefer: 'return=representation' }});
+  renderSearchResults(data || []);
+}}
+
+function renderSearchResults(results) {{
+  const container = searchResults;
+  container.textContent = '';
+  if (results.length === 0) {{
+    const empty = document.createElement('div');
+    empty.className = 'search-empty';
+    empty.textContent = 'No matches found';
+    container.appendChild(empty);
+    container.classList.add('active');
+    return;
+  }}
+  for (const r of results) {{
+    const row = document.createElement('div');
+    row.className = 'search-result';
+
+    const info = document.createElement('div');
+    info.className = 'sr-info';
+
+    const nameDiv = document.createElement('div');
+    nameDiv.className = 'sr-name';
+    const score = r.relevance_score || 0;
+    const scoreBg = score >= 80 ? '#dcfce7' : score >= 60 ? '#fef3c7' : '#f3f4f6';
+    const scoreFg = score >= 80 ? '#166534' : score >= 60 ? '#92400e' : '#4b5563';
+    const scoreSpan = document.createElement('span');
+    scoreSpan.className = 'sr-score';
+    scoreSpan.style.background = scoreBg;
+    scoreSpan.style.color = scoreFg;
+    scoreSpan.textContent = score;
+    nameDiv.appendChild(scoreSpan);
+    nameDiv.appendChild(document.createTextNode(r.ted_name));
+    info.appendChild(nameDiv);
+
+    const meta = [r.ted_title, r.ted_org].filter(Boolean).join(' at ');
+    if (meta) {{
+      const metaDiv = document.createElement('div');
+      metaDiv.className = 'sr-meta';
+      metaDiv.textContent = meta;
+      info.appendChild(metaDiv);
+    }}
+
+    if (r.reasoning) {{
+      const reasonDiv = document.createElement('div');
+      reasonDiv.className = 'sr-reasoning';
+      reasonDiv.textContent = r.reasoning.substring(0, 120);
+      info.appendChild(reasonDiv);
+    }}
+
+    row.appendChild(info);
+
+    const inBrief = shortlistedNames.has(r.ted_name);
+    const btn = document.createElement('button');
+    btn.className = 'btn-pin';
+    if (inBrief) {{
+      btn.classList.add('already');
+      btn.textContent = 'In brief';
+    }} else if (r.sally_pinned) {{
+      btn.classList.add('already');
+      btn.textContent = 'Pinned';
+    }} else {{
+      btn.textContent = '+ Sally\\'s Picks';
+      btn.addEventListener('click', () => pinContact(r.ted_id, btn));
+    }}
+    row.appendChild(btn);
+
+    container.appendChild(row);
+  }}
+  container.classList.add('active');
+}}
+
+// ── Pin / Unpin ──
+async function pinContact(tedId, btn) {{
+  btn.textContent = 'Pinning...';
+  btn.disabled = true;
+  await sbFetch('ted_attendees?ted_id=eq.' + tedId, {{
+    method: 'PATCH',
+    body: JSON.stringify({{ sally_pinned: true, updated_at: new Date().toISOString() }}),
+    prefer: 'return=minimal'
+  }});
+  btn.textContent = 'Pinned';
+  btn.classList.add('already');
+  loadPicks();
+}}
+
+async function unpinContact(tedId) {{
+  await sbFetch('ted_attendees?ted_id=eq.' + tedId, {{
+    method: 'PATCH',
+    body: JSON.stringify({{ sally_pinned: false, updated_at: new Date().toISOString() }}),
+    prefer: 'return=minimal'
+  }});
+  loadPicks();
+}}
+
+// ── Sally's Picks ──
+async function loadPicks() {{
+  const data = await sbFetch('ted_attendees?sally_pinned=eq.true&order=updated_at.desc&select=*', {{ method: 'GET', prefer: 'return=representation' }});
+  const section = document.getElementById('picks-section');
+  const container = document.getElementById('picks-cards');
+  const countEl = document.getElementById('picks-count');
+  const picks = data || [];
+  countEl.textContent = '(' + picks.length + ')';
+  if (picks.length === 0) {{
+    section.classList.remove('active');
+    container.textContent = '';
+    return;
+  }}
+  section.classList.add('active');
+  container.textContent = '';
+
+  for (const p of picks) {{
+    const card = document.createElement('div');
+    card.className = 'compact-card';
+    card.id = 'pick-' + p.ted_id;
+
+    const score = p.relevance_score || 0;
+    const scoreBg = score >= 80 ? '#dcfce7' : score >= 60 ? '#fef3c7' : '#f3f4f6';
+    const scoreFg = score >= 80 ? '#166534' : score >= 60 ? '#92400e' : '#4b5563';
+    const ptype = (p.partnership_type || '').replace('_', ' ');
+    const meta = [p.ted_title, p.ted_org].filter(Boolean).join(' at ');
+    const li = p.ted_linkedin ? 'https://www.linkedin.com/in/' + p.ted_linkedin : '';
+
+    // Build card using DOM methods
+    const top = document.createElement('div');
+    top.className = 'card-top';
+    const avatar = document.createElement('div');
+    avatar.className = 'avatar-placeholder';
+    avatar.textContent = (p.ted_firstname || '?')[0];
+    top.appendChild(avatar);
+
+    const nameWrap = document.createElement('div');
+    const nameLine = document.createElement('div');
+    nameLine.className = 'card-name';
+    nameLine.textContent = p.ted_name + ' ';
+    const badge = document.createElement('span');
+    badge.className = 'tier-badge badge-pick';
+    badge.textContent = "Sally's Pick";
+    nameLine.appendChild(badge);
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'btn-remove';
+    removeBtn.textContent = 'Remove';
+    removeBtn.addEventListener('click', () => unpinContact(p.ted_id));
+    nameLine.appendChild(removeBtn);
+    nameWrap.appendChild(nameLine);
+
+    const titleDiv = document.createElement('div');
+    titleDiv.className = 'card-title';
+    titleDiv.textContent = meta;
+    nameWrap.appendChild(titleDiv);
+    top.appendChild(nameWrap);
+    card.appendChild(top);
+
+    const metaRow = document.createElement('div');
+    metaRow.className = 'meta-row';
+    const scoreBadge = document.createElement('span');
+    scoreBadge.style.cssText = 'background:' + scoreBg + ';color:' + scoreFg + ';padding:1px 6px;border-radius:6px;font-weight:700';
+    scoreBadge.textContent = score + ' ' + ptype;
+    metaRow.appendChild(scoreBadge);
+    card.appendChild(metaRow);
+
+    if (p.reasoning) {{
+      const bio = document.createElement('div');
+      bio.className = 'bio';
+      bio.textContent = p.reasoning;
+      card.appendChild(bio);
+    }}
+
+    if (p.conversation_hook) {{
+      const hook = document.createElement('div');
+      hook.className = 'highlight-box';
+      const strong = document.createElement('strong');
+      strong.textContent = 'Conversation hook: ';
+      hook.appendChild(strong);
+      hook.appendChild(document.createTextNode(p.conversation_hook));
+      card.appendChild(hook);
+    }}
+
+    if (li) {{
+      const link = document.createElement('a');
+      link.className = 'linkedin-link';
+      link.href = li;
+      link.target = '_blank';
+      link.textContent = 'LinkedIn Profile';
+      card.appendChild(link);
+    }}
+
+    const notesDiv = document.createElement('div');
+    notesDiv.className = 'pick-notes';
+    const notesLabel = document.createElement('strong');
+    notesLabel.style.cssText = 'font-size:11px;color:#7c3aed';
+    notesLabel.textContent = "SALLY'S NOTES";
+    notesDiv.appendChild(notesLabel);
+    const textarea = document.createElement('textarea');
+    textarea.dataset.tid = p.ted_id;
+    textarea.placeholder = 'Add notes about this conversation...';
+    textarea.value = p.sally_notes || '';
+    textarea.addEventListener('input', function() {{ savePickNotes(this); }});
+    notesDiv.appendChild(textarea);
+    card.appendChild(notesDiv);
+
+    container.appendChild(card);
+  }}
+}}
+
+let pickTimers = {{}};
+function savePickNotes(textarea) {{
+  const tid = textarea.dataset.tid;
+  clearTimeout(pickTimers[tid]);
+  pickTimers[tid] = setTimeout(async () => {{
+    await sbFetch('ted_attendees?ted_id=eq.' + tid, {{
+      method: 'PATCH',
+      body: JSON.stringify({{ sally_notes: textarea.value, updated_at: new Date().toISOString() }}),
+      prefer: 'return=minimal'
+    }});
+  }}, 800);
+}}
+
+// ── Add New Person (LinkedIn enrichment) ──
+function openAddModal() {{
+  document.getElementById('add-modal').classList.add('active');
+  document.getElementById('linkedin-url-input').value = '';
+  document.getElementById('enrich-status').classList.remove('active');
+  document.getElementById('btn-enrich').disabled = false;
+  document.getElementById('btn-enrich').textContent = 'Enrich + Add';
+  document.getElementById('linkedin-url-input').focus();
+}}
+
+function closeAddModal() {{
+  document.getElementById('add-modal').classList.remove('active');
+}}
+
+async function enrichAndAdd() {{
+  const url = document.getElementById('linkedin-url-input').value.trim();
+  if (!url || !url.includes('linkedin.com/in/')) {{
+    alert('Please enter a valid LinkedIn URL (e.g. https://www.linkedin.com/in/username)');
+    return;
+  }}
+  const btn = document.getElementById('btn-enrich');
+  const status = document.getElementById('enrich-status');
+  btn.disabled = true;
+  btn.textContent = 'Working...';
+  status.textContent = 'Scraping LinkedIn profile and scoring for Outdoorithm fit... (~30 seconds)';
+  status.classList.add('active');
+
+  try {{
+    const resp = await fetch(SB_URL + '/functions/v1/ted-enrich-contact', {{
+      method: 'POST',
+      headers: {{ 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SB_KEY }},
+      body: JSON.stringify({{ linkedin_url: url }})
+    }});
+    if (!resp.ok) {{
+      const err = await resp.json();
+      throw new Error(err.error || 'Enrichment failed');
+    }}
+    const result = await resp.json();
+    status.textContent = 'Scored! ' + escH(result.ted_name) + ': ' + result.relevance_score + '/100. Adding...';
+
+    // Insert into ted_attendees
+    result.sally_pinned = true;
+    result.updated_at = new Date().toISOString();
+    result.partnership_types = JSON.stringify(result.partnership_types || []);
+    await sbFetch('ted_attendees', {{
+      method: 'POST',
+      body: JSON.stringify(result),
+      headers: {{ 'Prefer': 'resolution=merge-duplicates' }},
+      prefer: 'return=minimal'
+    }});
+
+    closeAddModal();
+    loadPicks();
+  }} catch (e) {{
+    status.textContent = 'Error: ' + e.message;
+    btn.disabled = false;
+    btn.textContent = 'Retry';
+  }}
+}}
+
+// ── Load state on page load ──
 document.addEventListener('DOMContentLoaded', async () => {{
   try {{
-    const data = await sbFetch('ted_lookbook_state?select=*', {{ method: 'GET', prefer: 'return=representation' }});
+    // Load state from ted_attendees for shortlisted contacts
+    const names = Array.from(shortlistedNames);
     const stateMap = {{}};
-    (data || []).forEach(row => {{ stateMap[row.contact_name] = row; }});
+    for (let i = 0; i < names.length; i += 50) {{
+      const chunk = names.slice(i, i + 50);
+      const orClause = chunk.map(n => 'ted_name.eq.' + encodeURIComponent(n)).join(',');
+      const data = await sbFetch('ted_attendees?or=(' + orClause + ')&select=ted_name,sally_reached_out,justin_context', {{ method: 'GET', prefer: 'return=representation' }});
+      (data || []).forEach(row => {{ stateMap[row.ted_name] = row; }});
+    }}
 
     // Restore outreach toggles
     document.querySelectorAll('.outreach-toggle').forEach(el => {{
@@ -873,7 +1313,7 @@ document.addEventListener('DOMContentLoaded', async () => {{
       const row = stateMap[name];
       if (row && row.sally_reached_out) {{
         el.classList.add('active');
-        const card = el.closest('.card');
+        const card = el.closest('.card') || el.closest('.compact-card');
         if (card) card.classList.add('reached-out');
       }}
     }});
@@ -889,8 +1329,11 @@ document.addEventListener('DOMContentLoaded', async () => {{
         if (counter) counter.textContent = row.justin_context.length;
       }}
     }});
+
+    // Load Sally's Picks
+    await loadPicks();
   }} catch (e) {{
-    console.error('Failed to load state from Supabase:', e);
+    console.error('Failed to load state:', e);
   }}
 }});
 </script>
