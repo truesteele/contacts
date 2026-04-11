@@ -1,0 +1,16 @@
+# Ralph Progress Log
+Loop: podcast-outreach
+Started: 2026-04-11
+---
+
+## US-001: Database Schema & Migration — COMPLETE
+- Created `supabase/migrations/20260412_add_podcast_outreach.sql` with all 5 tables + 4 indexes
+- Applied via `mcp__supabase-contacts__apply_migration` (Supabase CLI had auth issues with `--project-ref` flag; used MCP instead)
+- Verified all 5 tables exist: speaker_profiles, podcast_targets, podcast_episodes, podcast_pitches, podcast_campaigns
+- Verified all 4 indexes exist: idx_podcast_targets_activity, idx_podcast_pitches_speaker, idx_podcast_pitches_status, idx_podcast_campaigns_outcome
+- Note: local migration file also created for version control
+
+### Learnings
+- `supabase db push --project-ref` no longer works; use `--linked` after `supabase link`, or use MCP apply_migration
+- MCP `apply_migration` is the most reliable path for DDL changes
+
