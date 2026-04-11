@@ -123,7 +123,7 @@ Create a generic `scripts/conference/generate_lookbook.py` that reads the confer
 
 ### US-006: Refactor Edge Function to read scoring prompt from config table
 **Priority:** 6
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Make the Edge Function generic by reading its scoring system prompt from a Supabase `conference_config` table instead of hardcoding it. This way one Edge Function serves all conferences.

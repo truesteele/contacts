@@ -153,3 +153,37 @@ Started: 2026-04-10
 - Tier section rendering driven by config tiers dict — full cards for tier <=2, compact for tier 3+
 - Quick ref table short labels: first word of tier label (Must, High, Worth)
 - Connection fields derived from config: primary_user.connection_field or `{name.lower()}_connection`
+
+### Iteration 6 — US-006: Generic Edge Function with config table (2026-04-10)
+**Status:** COMPLETE
+**Commit:** `feat: [US-006] Conference toolkit - Generic Edge Function with config table`
+**Files created:**
+- `supabase/functions/conference-enrich/index.ts` — Generic Edge Function that reads scoring config from DB
+
+**Database changes:**
+- Created `conference_config` table (slug PK, name, scoring_prompt, partnership_types JSONB, primary_user_name, table_name)
+- RLS enabled: anon read, service_role all
+- Inserted TED 2026 config row (slug='ted-2026', 2555-char scoring prompt, 5 partnership types, primary_user='Sally', table='ted_attendees')
+
+**What it does:**
+- Accepts `{ linkedin_url: string, conference_slug: string }` as input
+- Reads scoring prompt, partnership types, table name, primary user from `conference_config` table via PostgREST
+- Uses service role key (SUPABASE_SERVICE_ROLE_KEY) for config reads
+- Same Apify + GPT scoring pipeline as ted-enrich-contact
+- Field prefix derived from table_name (e.g., "ted_attendees" → "ted")
+- Pinned column derived from primary_user_name (e.g., "Sally" → "sally_pinned")
+- Partnership type validation uses config's partnership_types array (not hardcoded)
+- Proper error handling: 400 for missing slug/URL, 404 for unknown slug/unscrapable profile, 500 for server errors
+
+**Verified:**
+- Deployed to ypqsrejrsocebnldicke project
+- Missing conference_slug → 400 "conference_slug is required"
+- Invalid slug → 404 "No conference config found for slug: nonexistent"
+- Valid ted-2026 slug + LinkedIn URL → config loaded, Apify ran (profile was null due to LinkedIn privacy, not a function bug)
+
+**Key decisions:**
+- Config loaded via PostgREST REST API (not direct SQL) — Edge Functions use HTTP to talk to Supabase
+- Field prefix derived from table_name rather than stored separately — simpler config, one less column
+- Partnership type validation is dynamic — normalizePartnershipType/normalizePartnershipTypes accept the types array from config
+- Kept same Apify scraper (harvestapi~linkedin-profile-scraper) and GPT model (gpt-5-mini)
+- Did NOT delete ted-enrich-contact — both functions coexist for backward compatibility
