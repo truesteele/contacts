@@ -187,3 +187,21 @@ Started: 2026-04-10
 - Partnership type validation is dynamic — normalizePartnershipType/normalizePartnershipTypes accept the types array from config
 - Kept same Apify scraper (harvestapi~linkedin-profile-scraper) and GPT model (gpt-5-mini)
 - Did NOT delete ted-enrich-contact — both functions coexist for backward compatibility
+
+### Iteration 7 — US-007: CLI entry point and documentation (2026-04-10)
+**Status:** COMPLETE
+**Commit:** `feat: [US-007] Conference toolkit - CLI entry point and documentation`
+**Files created:**
+- `scripts/conference/run.py` — CLI entry point orchestrating all pipeline steps
+- `conferences/README.md` — Full documentation for the toolkit
+
+**What it does:**
+- `run.py` accepts `--config` + `--step {triage|populate|generate|deploy|all}`
+- Passes through `--test`, `--workers` to triage; `--dry-run` to populate
+- Deploy step reads deploy_dir, alias, scope from config — runs `npx vercel --prod` + alias
+- `all` step runs triage → populate → generate → deploy in sequence
+- Each step runs as a subprocess with streamed output; non-zero exit stops the pipeline
+- README covers: pipeline overview, quick start, how to create a new conference config, scoring prompt template variables, deep writeups, required secrets, file structure
+
+**Verified:**
+- `--step generate` with TED 2026 config: produced 84 cards, 404,818 bytes — identical to previous runs

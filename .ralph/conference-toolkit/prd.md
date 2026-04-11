@@ -159,7 +159,7 @@ Make the Edge Function generic by reading its scoring system prompt from a Supab
 
 ### US-007: Create CLI entry point and documentation
 **Priority:** 7
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Create a single CLI entry point that orchestrates the full pipeline, and document the toolkit for future use.
