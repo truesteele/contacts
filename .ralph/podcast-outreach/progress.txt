@@ -14,3 +14,15 @@ Started: 2026-04-11
 - `supabase db push --project-ref` no longer works; use `--linked` after `supabase link`, or use MCP apply_migration
 - MCP `apply_migration` is the most reliable path for DDL changes
 
+## US-002: Seed Speaker Profiles — COMPLETE
+- Created `scripts/intelligence/seed_speaker_profiles.py`
+- Follows write_campaign_copy.py conventions: dotenv with absolute path, argparse (--test flag), supabase client
+- Upserts by slug for idempotency — verified running twice produces exactly 2 rows
+- Sally: 6 topic pillars, 4 writing samples, 1 past appearance (Justice Outside Podcast)
+- Justin: 6 topic pillars, 4 writing samples, 1 past appearance (Wantrepreneur to Entrepreneur)
+- Both profiles verified in database via SQL query
+
+### Learnings
+- Supabase Python client `.upsert(row, on_conflict="slug")` works cleanly for idempotent seeding
+- No need for separate insert/update logic — upsert handles both cases
+

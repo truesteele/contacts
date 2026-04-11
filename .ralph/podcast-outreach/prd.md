@@ -479,7 +479,7 @@ SUPABASE_ACCESS_TOKEN=$SB_PAT supabase db push --project-ref ypqsrejrsocebnldick
 
 ### US-002: Seed Speaker Profiles
 **Priority:** 2
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Create a Python script to seed Sally and Justin's speaker profiles into the `speaker_profiles` table. Use the exact profile data from the "Speaker Profile Seed Data" section above.
