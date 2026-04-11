@@ -174,3 +174,24 @@ Started: 2026-04-11
 - The campaign page uses a very long single file — same pattern works fine for this page
 - CardTitle/CardDescription from shadcn card component are divs (not h2/p), so no semantic issues nesting
 - Supabase JSONB columns (topic_pillars, writing_samples, past_appearances) deserialize directly as arrays in the API response
+
+## US-011: UI - Discovery & Scoring Tab — COMPLETE
+- Replaced placeholder Discovery tab with full-featured DiscoveryTab component
+- Modified `job-matcher-ai/app/tools/podcast-outreach/page.tsx` (~250 lines added)
+- Features: search bar, speaker selector (Sally/Justin), fit tier filter, activity status filter
+- Results table: checkbox selection, podcast name/author, host name/email, episode count, last episode date, activity badge, fit tier badge, fit score
+- Client-side sorting by fit score, episode count, or last episode date (toggle asc/desc)
+- Bulk selection with "Score Selected" button calling POST /api/podcast/score
+- Pagination with page controls and showing X-Y of Z
+- Badge color coding: strong=green, moderate=yellow, weak=red, unscored=gray (same for activity: active/slow/podfaded)
+- Email verified indicator badge on host email
+- Loading, error, and empty states handled
+- Score feedback message with dismiss
+- Resets page to 1 and clears selection on filter changes
+- TypeScript compiles clean: `npx tsc --noEmit` passes
+
+### Learnings
+- Radix Checkbox uses `onCheckedChange` (not `onChange`) — takes a boolean|'indeterminate' callback
+- Client-side sorting works well for paginated results since we already have all rows for the current page
+- The discover API does fit_tier filtering client-side (after join), so pagination counts may not match perfectly when filtering by tier — acceptable for now
+- `ChevronLeft` was needed alongside `ChevronRight` (already imported) for pagination nav
