@@ -26,6 +26,7 @@ import {
 import {
   ArrowLeft,
   ArrowUpDown,
+  BarChart3,
   Check,
   ChevronDown,
   ChevronLeft,
@@ -34,13 +35,14 @@ import {
   Lightbulb,
   Loader2,
   Mail,
+  MessageSquare,
   Mic,
   Pencil,
-  BookOpen,
   Quote,
   Radio,
   Search,
   Send,
+  StickyNote,
   User,
   ExternalLink,
   X,
@@ -132,6 +134,55 @@ const PITCH_STATUS_STYLES: Record<string, string> = {
   booked: 'bg-amber-100 text-amber-800 border-amber-200',
   unscored: 'bg-gray-100 text-gray-600 border-gray-200',
 };
+
+const OUTCOME_STYLES: Record<string, string> = {
+  pending: 'bg-gray-100 text-gray-800 border-gray-200',
+  booked: 'bg-green-100 text-green-800 border-green-200',
+  declined: 'bg-red-100 text-red-800 border-red-200',
+  no_response: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  maybe_later: 'bg-blue-100 text-blue-800 border-blue-200',
+};
+
+interface CampaignWithDetails {
+  id: number;
+  pitch_id: number;
+  speaker_profile_id: number;
+  sent_from_email: string | null;
+  sent_to_email: string | null;
+  sent_at: string | null;
+  send_method: string | null;
+  outcome: string | null;
+  notes: string | null;
+  opened_at: string | null;
+  replied_at: string | null;
+  recording_date: string | null;
+  episode_air_date: string | null;
+  episode_url: string | null;
+  pitch: {
+    id: number;
+    subject_line: string | null;
+    pitch_status: string;
+    fit_tier: string | null;
+  } | null;
+  podcast: {
+    id: number;
+    title: string;
+    author: string | null;
+    host_name: string | null;
+    host_email: string | null;
+  } | null;
+  speaker: {
+    id: number;
+    name: string;
+    slug: string;
+  } | null;
+}
+
+interface CampaignStats {
+  total_sent: number;
+  pipeline: Record<string, number>;
+  outcomes: Record<string, number>;
+}
 
 interface PitchWithDetails {
   id: number;
@@ -335,16 +386,6 @@ function SpeakerCard({ profile }: { profile: SpeakerProfile }) {
 }
 
 // ── Placeholder Tab ────────────────────────────────────────────────────
-
-function PlaceholderTab({ title, description }: { title: string; description: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-20 text-center">
-      <BookOpen className="mb-4 h-12 w-12 text-muted-foreground/40" />
-      <h3 className="text-lg font-semibold">{title}</h3>
-      <p className="mt-1 text-sm text-muted-foreground">{description}</p>
-    </div>
-  );
-}
 
 // ── Discovery Tab ─────────────────────────────────────────────────────
 
@@ -1274,6 +1315,392 @@ function PitchReviewTab() {
   );
 }
 
+// ── Campaign Tracker Tab ─────────────────────────────────────────────
+
+function CampaignTrackerTab() {
+  const [campaigns, setCampaigns] = useState<CampaignWithDetails[]>([]);
+  const [stats, setStats] = useState<CampaignStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Filters
+  const [outcomeFilter, setOutcomeFilter] = useState('all');
+  const [search, setSearch] = useState('');
+
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const limit = 25;
+
+  // Inline editing
+  const [editingNotes, setEditingNotes] = useState<number | null>(null);
+  const [notesValue, setNotesValue] = useState('');
+  const [feedback, setFeedback] = useState<string | null>(null);
+
+  const fetchCampaigns = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params = new URLSearchParams();
+      params.set('page', String(page));
+      params.set('limit', String(limit));
+      if (outcomeFilter !== 'all') params.set('outcome', outcomeFilter);
+      if (search) params.set('search', search);
+
+      const res = await fetch(`/api/podcast/campaigns?${params}`);
+      if (!res.ok) throw new Error('Failed to fetch campaigns');
+      const data = await res.json();
+      setCampaigns(data.campaigns || []);
+      setTotal(data.total ?? 0);
+      setTotalPages(data.total_pages ?? 1);
+      setStats(data.stats || null);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load campaigns');
+    } finally {
+      setLoading(false);
+    }
+  }, [page, outcomeFilter, search]);
+
+  useEffect(() => {
+    fetchCampaigns();
+  }, [fetchCampaigns]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [outcomeFilter, search]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPage(1);
+    fetchCampaigns();
+  };
+
+  const updateCampaign = async (campaignId: number, updates: { notes?: string; outcome?: string }) => {
+    try {
+      const res = await fetch('/api/podcast/campaigns', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ campaign_id: campaignId, ...updates }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Update failed');
+      }
+      setFeedback('Updated successfully');
+      setTimeout(() => setFeedback(null), 3000);
+      fetchCampaigns();
+    } catch (err: unknown) {
+      setFeedback(err instanceof Error ? err.message : 'Update failed');
+    }
+  };
+
+  const saveNotes = (campaignId: number) => {
+    updateCampaign(campaignId, { notes: notesValue });
+    setEditingNotes(null);
+  };
+
+  const formatDate = (d: string | null) => {
+    if (!d) return '-';
+    return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const pipelineStages = [
+    { key: 'draft', label: 'Draft' },
+    { key: 'approved', label: 'Approved' },
+    { key: 'sent', label: 'Sent' },
+    { key: 'replied', label: 'Replied' },
+    { key: 'booked', label: 'Booked' },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Dashboard Stats */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Total Sent</CardDescription>
+            <CardTitle className="text-3xl">{stats?.total_sent ?? 0}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-xs text-muted-foreground">
+              <Send className="inline h-3 w-3 mr-1" />
+              Pitches sent to podcast hosts
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Replied</CardDescription>
+            <CardTitle className="text-3xl">{stats?.outcomes?.booked ?? 0 + (stats?.outcomes?.maybe_later ?? 0) + (stats?.pipeline?.replied ?? 0)}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-xs text-muted-foreground">
+              <MessageSquare className="inline h-3 w-3 mr-1" />
+              Got a response back
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Booked</CardDescription>
+            <CardTitle className="text-3xl text-green-600">{stats?.outcomes?.booked ?? 0}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-xs text-muted-foreground">
+              <Mic className="inline h-3 w-3 mr-1" />
+              Episodes confirmed
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Response Rate</CardDescription>
+            <CardTitle className="text-3xl">
+              {stats && stats.total_sent > 0
+                ? `${Math.round(((stats.outcomes?.booked ?? 0) + (stats.outcomes?.declined ?? 0) + (stats.outcomes?.maybe_later ?? 0)) / stats.total_sent * 100)}%`
+                : '0%'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-xs text-muted-foreground">
+              <BarChart3 className="inline h-3 w-3 mr-1" />
+              Any response (booked + declined + maybe)
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Pipeline Visualization */}
+      {stats && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Pipeline</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-1">
+              {pipelineStages.map((stage, i) => {
+                const count = stats.pipeline?.[stage.key] ?? 0;
+                const totalInPipeline = Object.values(stats.pipeline || {}).reduce((a, b) => a + b, 0);
+                const widthPct = totalInPipeline > 0 ? Math.max(count / totalInPipeline * 100, 8) : 20;
+                const colors = ['bg-blue-200', 'bg-green-200', 'bg-purple-200', 'bg-emerald-200', 'bg-amber-200'];
+                return (
+                  <div key={stage.key} className="flex flex-col items-center" style={{ width: `${widthPct}%`, minWidth: 60 }}>
+                    <div className={cn('w-full rounded-md py-3 text-center text-sm font-medium', colors[i])}>
+                      {count}
+                    </div>
+                    <span className="mt-1 text-xs text-muted-foreground">{stage.label}</span>
+                    {i < pipelineStages.length - 1 && (
+                      <ChevronRight className="absolute h-4 w-4 text-muted-foreground/40" style={{ display: 'none' }} />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Filters */}
+      <div className="flex flex-wrap items-end gap-3">
+        <form onSubmit={handleSearch} className="flex flex-1 items-center gap-2" style={{ minWidth: 200 }}>
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search campaigns..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Button type="submit" size="sm" variant="outline">Search</Button>
+        </form>
+
+        <Select value={outcomeFilter} onValueChange={setOutcomeFilter}>
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="Outcome" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All outcomes</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="booked">Booked</SelectItem>
+            <SelectItem value="declined">Declined</SelectItem>
+            <SelectItem value="no_response">No Response</SelectItem>
+            <SelectItem value="maybe_later">Maybe Later</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Feedback */}
+      {feedback && (
+        <div className="flex items-center rounded-md bg-green-50 px-4 py-2 text-sm text-green-700 border border-green-200">
+          {feedback}
+          <button onClick={() => setFeedback(null)} className="ml-2 font-medium underline">Dismiss</button>
+        </div>
+      )}
+
+      {/* Campaign Table */}
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <span className="ml-2 text-sm text-muted-foreground">Loading campaigns...</span>
+        </div>
+      ) : error ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <p className="text-sm text-destructive">{error}</p>
+          <Button variant="outline" size="sm" className="mt-3" onClick={fetchCampaigns}>Retry</Button>
+        </div>
+      ) : campaigns.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <Send className="mb-4 h-12 w-12 text-muted-foreground/40" />
+          <h3 className="text-lg font-semibold">No Campaigns Yet</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Send pitches from the Pitch Review tab to start tracking campaigns.
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="rounded-md border">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  <th className="px-3 py-2 text-left font-medium">Podcast</th>
+                  <th className="px-3 py-2 text-left font-medium">Speaker</th>
+                  <th className="px-3 py-2 text-left font-medium">Sent</th>
+                  <th className="px-3 py-2 text-left font-medium">Outcome</th>
+                  <th className="px-3 py-2 text-left font-medium">Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {campaigns.map(campaign => (
+                  <tr key={campaign.id} className="border-b last:border-0 hover:bg-muted/30">
+                    <td className="px-3 py-2">
+                      <div>
+                        <span className="font-medium">{campaign.podcast?.title ?? 'Unknown'}</span>
+                        {campaign.pitch?.subject_line && (
+                          <p className="text-xs text-muted-foreground truncate max-w-[250px]">
+                            {campaign.pitch.subject_line}
+                          </p>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-3 py-2">
+                      <Badge variant="outline" className="text-xs">
+                        {campaign.speaker?.name ?? '-'}
+                      </Badge>
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap text-xs text-muted-foreground">
+                      {formatDate(campaign.sent_at)}
+                      {campaign.send_method && (
+                        <span className="ml-1 text-muted-foreground/60">
+                          ({campaign.send_method === 'gmail_draft' ? 'draft' : campaign.send_method})
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2">
+                      <Select
+                        value={campaign.outcome || 'pending'}
+                        onValueChange={(val) => updateCampaign(campaign.id, { outcome: val })}
+                      >
+                        <SelectTrigger className="h-7 w-[140px] text-xs">
+                          <Badge
+                            variant="outline"
+                            className={cn('text-xs', OUTCOME_STYLES[campaign.outcome || 'pending'] || OUTCOME_STYLES.pending)}
+                          >
+                            {(campaign.outcome || 'pending').replace('_', ' ')}
+                          </Badge>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="booked">Booked</SelectItem>
+                          <SelectItem value="declined">Declined</SelectItem>
+                          <SelectItem value="no_response">No Response</SelectItem>
+                          <SelectItem value="maybe_later">Maybe Later</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </td>
+                    <td className="px-3 py-2">
+                      {editingNotes === campaign.id ? (
+                        <div className="flex items-center gap-1">
+                          <Input
+                            value={notesValue}
+                            onChange={e => setNotesValue(e.target.value)}
+                            className="h-7 text-xs"
+                            placeholder="Add notes..."
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') saveNotes(campaign.id);
+                              if (e.key === 'Escape') setEditingNotes(null);
+                            }}
+                            autoFocus
+                          />
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => saveNotes(campaign.id)}>
+                            <Check className="h-3 w-3" />
+                          </Button>
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setEditingNotes(null)}>
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <button
+                          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                          onClick={() => {
+                            setEditingNotes(campaign.id);
+                            setNotesValue(campaign.notes || '');
+                          }}
+                        >
+                          {campaign.notes ? (
+                            <span className="truncate max-w-[200px]">{campaign.notes}</span>
+                          ) : (
+                            <>
+                              <StickyNote className="h-3 w-3" />
+                              <span>Add note</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">
+              Showing {(page - 1) * limit + 1}-{Math.min(page * limit, total)} of {total}
+            </span>
+            <div className="flex items-center gap-1">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={page <= 1}
+                onClick={() => setPage(p => p - 1)}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="px-3 text-sm">
+                {page} / {totalPages}
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={page >= totalPages}
+                onClick={() => setPage(p => p + 1)}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // ── Main Page ──────────────────────────────────────────────────────────
 
 export default function PodcastOutreachPage() {
@@ -1371,12 +1798,9 @@ export default function PodcastOutreachPage() {
             <PitchReviewTab />
           </TabsContent>
 
-          {/* Tab 4: Campaign Tracker - Placeholder */}
+          {/* Tab 4: Campaign Tracker */}
           <TabsContent value="tracker">
-            <PlaceholderTab
-              title="Campaign Tracker"
-              description="Coming soon - Track outreach progress, responses, and bookings."
-            />
+            <CampaignTrackerTab />
           </TabsContent>
         </Tabs>
       </div>
