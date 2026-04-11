@@ -623,7 +623,7 @@ python scripts/intelligence/discover_podcasts.py \
 
 ### US-005: RSS Enrichment Script
 **Priority:** 5
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Create `enrich_podcasts.py` that fetches RSS feeds for discovered podcasts, extracts host emails, parses recent episodes, verifies emails with ZeroBounce, and classifies activity status.
@@ -655,12 +655,12 @@ python scripts/intelligence/enrich_podcasts.py \
 7. Update `podcast_targets` with enriched data
 
 **Acceptance Criteria:**
-- [ ] Fetches and parses RSS XML feeds
-- [ ] Extracts host email from `<itunes:owner>` or `<itunes:email>`
-- [ ] Saves last 5 episodes per podcast to `podcast_episodes`
-- [ ] Activity status classified correctly
-- [ ] ZeroBounce verification works (with --skip-verify option)
-- [ ] Runs: `python scripts/intelligence/enrich_podcasts.py --limit 5 --skip-verify`
+- [x] Fetches and parses RSS XML feeds
+- [x] Extracts host email from `<itunes:owner>` or `<itunes:email>`
+- [x] Saves last 5 episodes per podcast to `podcast_episodes`
+- [x] Activity status classified correctly
+- [x] ZeroBounce verification works (with --skip-verify option)
+- [x] Runs: `python scripts/intelligence/enrich_podcasts.py --limit 5 --skip-verify`
 
 ---
 

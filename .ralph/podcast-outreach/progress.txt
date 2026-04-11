@@ -56,3 +56,23 @@ Started: 2026-04-11
 - Pre-filtering candidate pairs with shared significant words (3+ chars) dramatically reduces GPT calls (135 pairs out of 7,021 possible for 118 podcasts)
 - `response_format={"type": "json_object"}` works well for simple boolean dedup decisions
 
+## US-005: RSS Enrichment Script — COMPLETE
+- Created `scripts/intelligence/enrich_podcasts.py`
+- Pipeline: load un-enriched → fetch RSS (concurrent, 20 workers) → parse XML → extract host email/name → parse last 5 episodes → classify activity → optionally verify email with ZeroBounce → save
+- Supports `--limit`, `--workers`, `--skip-verify`, `--test` flags
+- RSS parsing: `xml.etree.ElementTree` with iTunes namespace (`http://www.itunes.com/dtds/podcast-1.0.dtd`)
+- Email extraction: `<itunes:owner><itunes:email>`, fallback to `<itunes:email>` on channel
+- Noreply filtering: regex filters out `@anchor.fm`, `@mg*.acast.com`, `noreply`, `donotreply`, `abuse@`
+- Activity classification: active (<30 days), slow (30-90 days), podfaded (>90 days)
+- Episode parsing: title, description (HTML stripped), pubDate (RFC 2822), duration (HH:MM:SS or seconds), enclosure URL
+- ZeroBounce: reuses verify_email pattern from find_emails.py (credit check, retry, rate limit handling)
+- Tested on 5 iTunes-discovered podcasts: 2 real emails found, 3 generic emails filtered, 25 episodes saved, 1 active / 4 podfaded
+- Re-enrichment safe: deletes old episodes before inserting new ones
+
+### Learnings
+- Podcast RSS feeds use `<itunes:owner><itunes:email>` for host contact info — most reliable source
+- Many podcast hosting platforms (Anchor/Spotify, Acast) inject their own generic addresses — must filter
+- `email.utils.parsedate_to_datetime` handles RFC 2822 dates from `<pubDate>` cleanly
+- iTunes duration can be raw seconds OR HH:MM:SS format — need to handle both
+- Categories in RSS use `<itunes:category text="...">` attribute (not text content) with nested subcategories
+
