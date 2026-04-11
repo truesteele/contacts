@@ -1,0 +1,146 @@
+# TED 2026 — Outdoorithm Collective Conference Networking Config
+# This file parameterizes the entire conference networking toolkit pipeline.
+
+conference:
+  name: "TED 2026"
+  slug: "ted-2026"
+  dates: "April 14-18"
+  venue: "Vancouver, BC"
+  attendee_count: 1884
+  connect_url_template: "https://connect.ted.com/attendees/{ted_id}"
+  # Field prefix used in source data (e.g., ted_firstname, ted_lastname)
+  field_prefix: "ted"
+  # Attendee roles that get special badges
+  roles:
+    - field: "ted_is_speaker"
+      label: "TED Speaker"
+    - field: "ted_is_fellow"
+      label: "TED Fellow"
+
+organization:
+  name: "Outdoorithm Collective"
+  tagline: "Transforms access to public lands by creating community-driven camping experiences for diverse urban families"
+  mission: "Transform public lands into spaces of belonging for historically excluded communities"
+  model: "48-hour guided group camping trips where families across class/race lines build authentic connections"
+  theory_of_change: "Cross-class friendships formed in nature are the #1 predictor of economic mobility"
+  location: "Oakland, CA"
+  color_primary: "#166534"
+  color_accent: "#365314"
+  color_dark: "#1a2e05"
+  partnership_types:
+    funding:
+      label: "Funding"
+      color_bg: "#dcfce7"
+      color_fg: "#166534"
+      description: "Philanthropists, foundation leaders, impact investors, CSR/ESG leaders, family offices, donor-advised fund holders"
+    media_storytelling:
+      label: "Media & Storytelling"
+      color_bg: "#fef3c7"
+      color_fg: "#92400e"
+      description: "Filmmakers, journalists, content creators, media executives, authors, podcasters"
+    programmatic:
+      label: "Programmatic"
+      color_bg: "#dbeafe"
+      color_fg: "#1e40af"
+      description: "Outdoor brands, national parks, public lands agencies, youth-serving nonprofits, wellness brands, education leaders"
+    multiple:
+      label: "Multiple"
+      color_bg: "#fae8ff"
+      color_fg: "#86198f"
+    unlikely:
+      label: "Unlikely"
+      color_bg: "#f3f4f6"
+      color_fg: "#6b7280"
+  # Campaign details for scoring prompt context
+  campaign:
+    name: "Come Alive 2026"
+    goal: "$120K"
+    raised: "$84K"
+  stats:
+    bipoc_pct: "94%"
+    families_served: "~100"
+    camping_trips: "107"
+  key_concepts:
+    - "bridging (john powell)"
+    - "outdoor equity"
+    - "social cohesion"
+    - "collective responsibility"
+    - "belonging"
+
+users:
+  primary:
+    name: "Sally"
+    full_name: "Sally Steele"
+    role: "Co-Founder & CEO"
+    linkedin: "sallysteele"
+    bio:
+      - "Co-Founder & CEO of Outdoorithm Collective"
+      - "Former Co-Executive Director of City Hope San Francisco ($1.9M budget, faith-based community org)"
+      - "Ordained minister with deep roots in ministry, faith-based leadership, and pastoral care"
+      - "Black woman, mother of four, Oakland resident"
+      - "Passionate about family wellness, nature as healing, racial reconciliation, and belonging"
+      - "Background in community organizing, church leadership, women's ministry, and social justice"
+      - "Her personal story: discovered camping transformed her own family and wanted other families to have that"
+      - "Her faith informs her leadership: she sees the campfire as sacred space, nature as a place where people encounter something bigger than themselves"
+    conference_role: "attendee representing Outdoorithm Collective"
+    connection_signals:
+      - "Faith leaders, chaplains, ministers, pastors, or anyone working at the intersection of faith and social justice"
+      - "Family wellness, parenting, family strengthening, intergenerational healing"
+      - "Black women's leadership, Black family wellness, racial healing"
+      - "Belonging, loneliness, social isolation, community building"
+      - "Nature-based healing, outdoor education, environmental justice, public lands access"
+      - "Embodied practices: yoga, meditation, wellness retreats, movement-based healing"
+      - "Women of faith who lead organizations"
+    # Column names for this user's per-contact data in Supabase
+    columns:
+      pinned: "sally_pinned"
+      reached_out: "sally_reached_out"
+      notes: "sally_notes"
+  support:
+    name: "Justin"
+    full_name: "Justin Steele"
+    role: "Co-Founder"
+    linkedin: "justinrichardsteele"
+    bio:
+      - "Former Google.org Director, HBS/HKS"
+    columns:
+      context: "justin_context"
+    # Connection field in source data
+    connection_field: "justin_connection"
+
+supabase:
+  project_url: "https://ypqsrejrsocebnldicke.supabase.co"
+  anon_key: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlwcXNyZWpyc29jZWJubGRpY2tlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYzMTk1NDQsImV4cCI6MjA1MTg5NTU0NH0.MdnHIyb_0GwQpTJjaBUx8g4kGizPRuAdPNFQhhqRQP8"
+  table_name: "ted_attendees"
+  edge_function: "ted-enrich-contact"
+  project_ref: "ypqsrejrsocebnldicke"
+
+vercel:
+  deploy_dir: "docs/TED2026/deploy"
+  alias: "ted-outdoorithm"
+  scope: "true-steele"
+
+data_paths:
+  warm_leads: "/tmp/ted_warm_leads.json"
+  triage_results: "/tmp/ted_triage_results.json"
+  shortlist: "/tmp/ted_shortlist.json"
+  linkedin_profiles: "/tmp/ted_linkedin_profiles.json"
+  linkedin_posts: "/tmp/ted_linkedin_posts.json"
+  deep_writeups_module: "ted_deep_writeups"
+
+scoring_prompt: "scoring_prompt.md"
+
+# Tier configuration
+tiers:
+  1:
+    label: "Must-Connect"
+    badge_class: "badge-tier1"
+    company_class: "tier1-co"
+  2:
+    label: "High Value"
+    badge_class: "badge-tier2"
+    company_class: "tier2-co"
+  3:
+    label: "Worth a Chat"
+    badge_class: "badge-tier3"
+    company_class: ""
