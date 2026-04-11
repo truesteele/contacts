@@ -26,3 +26,19 @@ Started: 2026-04-11
 - Supabase Python client `.upsert(row, on_conflict="slug")` works cleanly for idempotent seeding
 - No need for separate insert/update logic — upsert handles both cases
 
+## US-003: Podcast Index API Client — COMPLETE
+- Created `scripts/intelligence/podcast_api.py` with PodcastIndexClient class + search_itunes function
+- PodcastIndexClient: SHA-1 auth headers, search_by_term, get_episodes, get_podcast_by_id
+- iTunes wrapper: rate-limited (1s delay), normalizes to same dict format
+- Both APIs normalize output to consistent podcast/episode dicts
+- Self-test at bottom: verifies both APIs when run directly
+- Import verified: `from scripts.intelligence.podcast_api import PodcastIndexClient, search_itunes`
+- iTunes test passed: found 3 podcasts for "camping families"
+- PODCAST_INDEX_API_KEY / PODCAST_INDEX_API_SECRET not yet in .env — Podcast Index test skipped but code is ready
+
+### Learnings
+- iTunes Search API returns `collectionName`/`artistName` (not `title`/`author`) — normalization needed
+- iTunes genres include "Podcasts" as a generic category — filter it out
+- Podcast Index categories come as `{id: name}` dict — flatten to list of names
+- Module-level rate limiting via global `_last_itunes_call` timestamp works fine for sequential use
+

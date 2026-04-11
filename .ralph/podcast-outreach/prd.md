@@ -514,7 +514,7 @@ python scripts/intelligence/seed_speaker_profiles.py
 
 ### US-003: Podcast Index API Client
 **Priority:** 3
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Create a Python module with a Podcast Index API client that handles auth (SHA-1 hash), search by term, and episode fetching. Also include an iTunes Search wrapper. This is a shared utility used by the discovery and enrichment scripts.
