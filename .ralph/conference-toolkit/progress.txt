@@ -1,0 +1,93 @@
+# Ralph Progress Log
+Loop: conference-toolkit
+Started: 2026-04-10
+---
+
+## Codebase Patterns
+- Python venv: /Users/Justin/Code/TrueSteele/contacts/.venv/
+- Existing TED scripts: scripts/intelligence/ted_*.py
+- Edge Function: supabase/functions/ted-enrich-contact/index.ts
+- Config will live at: conferences/ted-2026/config.yaml
+- New scripts at: scripts/conference/
+
+---
+
+## Iteration Log
+
+### Iteration 1 — US-001: Config schema and TED 2026 config (2026-04-10)
+**Status:** COMPLETE
+**Commit:** `feat: [US-001] Conference toolkit - Define config schema and TED 2026 config`
+**Files created:**
+- `conferences/ted-2026/config.yaml` — Full YAML config with all conference-specific values
+- `conferences/ted-2026/scoring_prompt.md` — GPT scoring prompt extracted verbatim from ted_triage_outdoorithm.py
+
+**Config sections:**
+- `conference`: name, slug, dates, venue, attendee_count, connect_url_template, field_prefix, roles
+- `organization`: name, tagline, mission, colors, partnership_types (with display labels + colors), campaign details, stats, key_concepts
+- `users.primary` (Sally): full bio, connection_signals, column mappings (pinned/reached_out/notes)
+- `users.support` (Justin): bio, column mappings (context), connection_field
+- `supabase`: project_url, anon_key, table_name, edge_function, project_ref
+- `vercel`: deploy_dir, alias, scope
+- `data_paths`: warm_leads, triage_results, shortlist, linkedin_profiles, linkedin_posts, deep_writeups_module
+- `tiers`: label, badge_class, company_class per tier
+- `scoring_prompt`: relative path to scoring prompt file
+
+**Key decisions:**
+- Used flat YAML (not nested classes) for simplicity — loader in US-002 will provide typed access
+- Partnership types include color_bg/color_fg for HTML badge generation
+- User columns are explicit (sally_pinned, justin_context) — generic scripts can read these from config
+- Scoring prompt extracted verbatim (no template variables yet — that's US-002)
+- Data paths are absolute (/tmp/) matching existing scripts; config loader can resolve relative paths later
+
+### Iteration 2 — US-002: Config loader with prompt templating (2026-04-10)
+**Status:** COMPLETE
+**Commit:** `feat: [US-002] Conference toolkit - Config loader with prompt templating`
+**Files created:**
+- `scripts/conference/__init__.py` — empty package init
+- `scripts/conference/config.py` — ConferenceConfig class with typed dataclass sections
+
+**Updated:**
+- `conferences/ted-2026/scoring_prompt.md` — now uses `{{template_variables}}` (18 variables)
+
+**Config loader features:**
+- Loads YAML, validates required sections (conference, organization, users, supabase, vercel, data_paths, scoring_prompt)
+- Typed dataclass access: `config.conference.name`, `config.users.primary.bio`, etc.
+- `load_scoring_prompt()` — reads prompt file, substitutes all `{{var}}` placeholders using simple `.replace()`
+- `resolve_path(relative)` — resolves paths relative to config file's directory
+- `raw` property for accessing any YAML fields not in typed sections
+- List fields rendered as bullet points (bio, connection_signals) or comma-separated (key_concepts)
+- Partnership types rendered as numbered list (skipping "multiple"/"unlikely" which are catch-all)
+
+**Key decisions:**
+- Used dataclasses (not Pydantic) to avoid adding heavy dependency for config loading
+- Template substitution via simple `.replace()` — no Jinja2 needed, keeps it dead simple
+- Composite replacements handle list→string rendering (bio as bullet points, concepts as CSV)
+- `_render_partnership_types()` skips "multiple"/"unlikely" since those aren't real partnership categories to describe
+
+### Iteration 3 — US-003: Config-driven triage script (2026-04-10)
+**Status:** COMPLETE
+**Commit:** `feat: [US-003] Conference toolkit - Config-driven triage script`
+**Files created:**
+- `scripts/conference/triage.py` — Generic config-driven GPT triage scoring
+
+**What it does:**
+- Accepts `--config` CLI arg pointing to any conference config YAML
+- Loads attendee data from config's `data_paths.warm_leads`
+- Loads scoring prompt via `config.load_scoring_prompt()` (template-rendered)
+- Dynamically builds Pydantic enum from config partnership_types keys
+- Uses `config.conference.field_prefix` to read attendee fields (ted_firstname, ted_id, etc.)
+- Merges LinkedIn profiles if `data_paths.linkedin_profiles` is set
+- Filters out primary user automatically (Sally for TED)
+- Same concurrent GPT-5 mini scoring: ThreadPoolExecutor, structured output, 3x retry
+- Saves results with field-prefix-aware keys (ted_id, ted_name)
+- Supports `--test`, `-n`, `--workers` flags
+
+**Verified:**
+- `--test` with 3 attendees: 3/3 scored successfully, 0 errors
+- Output format matches existing `ted_triage_results.json` exactly (ted_id, ted_name, relevance_score, partnership_type, etc.)
+
+**Key decisions:**
+- Dynamic Pydantic enum built at runtime from config partnership_types — GPT output is constrained to valid types
+- Field prefix from config drives all attendee field lookups — no hardcoded `ted_*` assumptions
+- User connection fields derived from config (primary/support connection_field) with fallback to `{name.lower()}_connection`
+- Default `-n 3` in test mode (original was 10) — faster iteration
