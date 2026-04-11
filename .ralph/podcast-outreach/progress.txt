@@ -116,3 +116,43 @@ Started: 2026-04-11
 - Auto-fixing em dashes is better than re-generating — Claude occasionally slips one in despite explicit instructions
 - `suggested_topics` from Claude comes as string list, but DB schema expects objects — normalize on save
 - Anthropic SDK uses `ANTHROPIC_API_KEY` env var automatically (no need to pass api_key)
+
+## US-008: Next.js API Routes - Discovery & Scoring — COMPLETE
+- Created 3 API routes under `job-matcher-ai/app/api/podcast/`:
+  - `discover/route.ts` — GET with query params: speaker, status, fit_tier, search, page, limit. Paginates podcast_targets, joins pitch data when speaker specified.
+  - `score/route.ts` — POST accepting podcast_ids + speaker_slug. Creates placeholder pitch rows (unscored) for the Python script to fill in. Skips already-scored podcasts.
+  - `status/route.ts` — GET returning dashboard stats: discovery counts, scoring tier breakdown, pitch status counts, campaign outcomes.
+- All routes follow existing patterns: import supabase from `@/lib/supabase`, use NextResponse/Response.json, try/catch error handling
+- Zero TypeScript errors (`npx tsc --noEmit` passes clean)
+- Score route creates "unscored" pitch records as bridge between UI and Python scoring script
+
+### Learnings
+- `npx tsc` from job-matcher-ai needs `npm install` first — node_modules weren't committed
+- Supabase `.select('*', { count: 'exact', head: true })` is efficient for count-only queries
+- No `edge` runtime needed for these routes — they work fine on the default Node runtime
+- The campaign/send route uses `export const runtime = 'edge'` but our routes don't need it since we're not doing Gmail OAuth
+
+## US-009: Next.js API Routes - Generate & Send — COMPLETE
+- Created `job-matcher-ai/app/api/podcast/generate/route.ts`:
+  - POST with `{ pitch_ids: number[] }` or `{ podcast_id, speaker_slug }` body
+  - Inline Claude Sonnet 4.6 pitch generation using Anthropic SDK (`@anthropic-ai/sdk`)
+  - Full AI writing rules enforcement: em dash auto-fix, banned phrase audit, word count check
+  - Voice-matched system prompts per speaker (Sally: poetic/fragments, Justin: punchy/casual)
+  - Fetches speaker profile, podcast data, and recent episodes for context
+  - Skips already-generated pitches, returns audit issues if any
+- Created `job-matcher-ai/app/api/podcast/send/route.ts`:
+  - POST with `{ pitch_id, method: "gmail_draft" | "direct_send" | "manual" }`
+  - Speaker-specific sender emails: Sally from sally@outdoorithmcollective.org, Justin from justin@truesteele.com
+  - Gmail OAuth token refresh using existing GMAIL_CLIENT_ID/SECRET/REFRESH_TOKEN env vars
+  - Creates `podcast_campaigns` record on every send (tracks gmail_message_id, thread_id, outcome)
+  - Updates `podcast_pitches.pitch_status` to 'sent' or 'drafted'
+  - Manual method: records send without Gmail API (for copy-paste sends)
+  - Validates pitch has content before sending, requires host_email for Gmail methods
+- Zero TypeScript errors: `npx tsc --noEmit` passes clean
+
+### Learnings
+- Anthropic SDK import is `import Anthropic from '@anthropic-ai/sdk'` (default export, not named)
+- The `messages.create` response has `.content` array of blocks; iterate and extract `type: 'text'` blocks
+- Podcast pitch emails are plain text (no HTML needed) — simpler RFC 2822 message building
+- Speaker slug in DB is "sally" or "justin" (not "sally-steele"), mapped via SPEAKER_EMAILS config
+- Gmail API returns `threadId` on send but not on draft creation — useful for tracking follow-ups

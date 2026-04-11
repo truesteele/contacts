@@ -845,7 +845,7 @@ message = client.messages.create(
 
 ### US-008: Next.js API Routes - Discovery & Scoring
 **Priority:** 8
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Create Next.js API routes for podcast discovery and scoring that the UI will call.
@@ -889,7 +889,7 @@ Create Next.js API routes for podcast discovery and scoring that the UI will cal
 
 ### US-009: Next.js API Routes - Generate & Send
 **Priority:** 9
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Create Next.js API routes for pitch generation and Gmail sending.
