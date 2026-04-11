@@ -76,3 +76,20 @@ Started: 2026-04-11
 - iTunes duration can be raw seconds OR HH:MM:SS format — need to handle both
 - Categories in RSS use `<itunes:category text="...">` attribute (not text content) with nested subcategories
 
+## US-006: AI Fit Scoring Script — COMPLETE
+- Created `scripts/intelligence/score_podcast_fit.py`
+- Pipeline: load speaker profile → load unscored podcasts (LEFT JOIN filter) → load episodes per podcast → GPT-5.4 mini structured output → save to podcast_pitches
+- Supports `--speaker sally|justin`, `--limit`, `--workers`, `--min-episodes`, `--test` flags
+- Uses `response_format={"type": "json_schema"}` with strict schema for structured output (fit_tier, fit_score, fit_rationale, matching_pillars, episode_hooks, suggested_episode_ideas)
+- Idempotent: skips podcasts already scored for the given speaker (filters by podcast_pitches LEFT JOIN)
+- Tested with `--speaker sally --limit 5 --test`: 1 strong, 3 moderate, 1 weak (reasonable distribution)
+- Saved all 5 scores to podcast_pitches table, verified via SQL query
+- Re-run confirmed idempotency: "No unscored podcasts found"
+- Concurrent scoring via ThreadPoolExecutor (default 50 workers)
+
+### Learnings
+- GPT-5.4 mini strict JSON schema works well with `response_format={"type": "json_schema"}` — no parse errors
+- Using `pitch_status = 'unscored'` to distinguish fit-scored-only rows from fully generated pitches
+- The `chat.completions.create` API (not `responses.parse`) is the right call for `response_format` approach
+- Filtering already-scored podcasts via a set of IDs from podcast_pitches is simpler than SQL LEFT JOIN via Supabase client
+

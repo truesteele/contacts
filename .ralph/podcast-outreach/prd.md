@@ -666,7 +666,7 @@ python scripts/intelligence/enrich_podcasts.py \
 
 ### US-006: AI Fit Scoring Script
 **Priority:** 6
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Create `score_podcast_fit.py` that uses GPT-5.4 mini structured output to score how well each podcast fits a speaker's topic pillars. Pattern directly adapted from Kindora's `nano_fit_scorer.py`.
