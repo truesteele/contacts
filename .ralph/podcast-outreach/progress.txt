@@ -195,3 +195,21 @@ Started: 2026-04-11
 - Client-side sorting works well for paginated results since we already have all rows for the current page
 - The discover API does fit_tier filtering client-side (after join), so pagination counts may not match perfectly when filtering by tier — acceptable for now
 - `ChevronLeft` was needed alongside `ChevronRight` (already imported) for pagination nav
+
+## US-012: UI - Pitch Review Tab — COMPLETE
+- Created `job-matcher-ai/app/api/podcast/pitches/route.ts` — GET (list pitches with podcast/speaker joins) + PATCH (update subject_line, pitch_body, pitch_status)
+- Replaced Pitch Review placeholder tab with full PitchReviewTab component in `page.tsx`
+- PitchCard component: expandable pitch body preview, inline editing (subject + body with word count), approve/reject status buttons, generate/regenerate pitch, send dropdown (Gmail Draft / Direct Send / Manual)
+- Filters: speaker toggle (Sally/Justin), pitch status (draft/approved/rejected/sent/replied/booked), fit tier (strong/moderate/weak), text search
+- Pagination with page controls
+- Status badges with color coding: draft=blue, approved=green, rejected=red, sent=purple, replied=emerald, booked=amber
+- Episode reference and suggested topics shown in expanded view
+- Feedback messages with dismiss on all actions
+- API route validates status against allowed values, sets approved_at timestamp on approval
+- TypeScript compiles clean: `npx tsc --noEmit` passes
+
+### Learnings
+- DropdownMenu from shadcn uses DropdownMenuTrigger with `asChild` to wrap a Button — avoids button-in-button
+- PATCH on the same route file works well for simple updates — no need for a separate update route
+- The pitches API fetches speaker and podcast data in separate queries (by collected IDs), then merges — same pattern as discover route
+- Textarea component was already available in shadcn components, no need to install

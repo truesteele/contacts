@@ -16,20 +16,34 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   ArrowLeft,
   ArrowUpDown,
+  Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Mic,
-  User,
-  ExternalLink,
+  Edit3,
+  Lightbulb,
   Loader2,
+  Mail,
+  Mic,
+  Pencil,
   BookOpen,
   Quote,
   Radio,
   Search,
+  Send,
+  User,
+  ExternalLink,
+  X,
   Zap,
 } from 'lucide-react';
 
@@ -107,6 +121,50 @@ const ACTIVITY_STYLES: Record<string, string> = {
   podfaded: 'bg-red-100 text-red-800 border-red-200',
   unknown: 'bg-gray-100 text-gray-600 border-gray-200',
 };
+
+const PITCH_STATUS_STYLES: Record<string, string> = {
+  draft: 'bg-blue-100 text-blue-800 border-blue-200',
+  approved: 'bg-green-100 text-green-800 border-green-200',
+  rejected: 'bg-red-100 text-red-800 border-red-200',
+  sent: 'bg-purple-100 text-purple-800 border-purple-200',
+  drafted: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+  replied: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+  booked: 'bg-amber-100 text-amber-800 border-amber-200',
+  unscored: 'bg-gray-100 text-gray-600 border-gray-200',
+};
+
+interface PitchWithDetails {
+  id: number;
+  podcast_target_id: number;
+  speaker_profile_id: number;
+  fit_tier: string | null;
+  fit_score: number | null;
+  fit_rationale: string | null;
+  topic_match: string[] | null;
+  episode_hooks: any[] | null;
+  subject_line: string | null;
+  subject_line_alt: string | null;
+  pitch_body: string | null;
+  episode_reference: string | null;
+  suggested_topics: any[] | null;
+  pitch_status: string;
+  generated_at: string | null;
+  podcast: {
+    id: number;
+    title: string;
+    author: string | null;
+    host_name: string | null;
+    host_email: string | null;
+    email_verified: boolean | null;
+    activity_status: string | null;
+    website_url: string | null;
+  } | null;
+  speaker: {
+    id: number;
+    name: string;
+    slug: string;
+  } | null;
+}
 
 type SortField = 'fit_score' | 'episode_count' | 'last_episode_date';
 type SortDir = 'asc' | 'desc';
@@ -684,6 +742,538 @@ function DiscoveryTab() {
   );
 }
 
+// ── Pitch Card ────────────────────────────────────────────────────────
+
+function PitchCard({
+  pitch,
+  onUpdate,
+}: {
+  pitch: PitchWithDetails;
+  onUpdate: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editSubject, setEditSubject] = useState(pitch.subject_line || '');
+  const [editBody, setEditBody] = useState(pitch.pitch_body || '');
+  const [saving, setSaving] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+
+  const tier = pitch.fit_tier || 'unscored';
+  const status = pitch.pitch_status || 'unscored';
+  const hasPitch = !!pitch.pitch_body;
+
+  const handleSaveEdit = async () => {
+    setSaving(true);
+    setFeedback(null);
+    try {
+      const res = await fetch('/api/podcast/pitches', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pitch_id: pitch.id,
+          subject_line: editSubject,
+          pitch_body: editBody,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Save failed');
+      }
+      setEditing(false);
+      setFeedback('Saved');
+      onUpdate();
+    } catch (err: unknown) {
+      setFeedback(err instanceof Error ? err.message : 'Save failed');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleStatusChange = async (newStatus: string) => {
+    setSaving(true);
+    setFeedback(null);
+    try {
+      const res = await fetch('/api/podcast/pitches', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pitch_id: pitch.id,
+          pitch_status: newStatus,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Update failed');
+      }
+      setFeedback(newStatus === 'approved' ? 'Approved' : 'Rejected');
+      onUpdate();
+    } catch (err: unknown) {
+      setFeedback(err instanceof Error ? err.message : 'Update failed');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleGenerate = async () => {
+    setGenerating(true);
+    setFeedback(null);
+    try {
+      const res = await fetch('/api/podcast/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pitch_ids: [pitch.id] }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Generation failed');
+      const result = data.results?.[0];
+      if (result?.status === 'failed') throw new Error(result.error || 'Generation failed');
+      setFeedback('Pitch generated');
+      onUpdate();
+    } catch (err: unknown) {
+      setFeedback(err instanceof Error ? err.message : 'Generation failed');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleSend = async (method: string) => {
+    setSending(true);
+    setFeedback(null);
+    try {
+      const res = await fetch('/api/podcast/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pitch_id: pitch.id, method }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Send failed');
+      setFeedback(method === 'gmail_draft' ? 'Draft created' : method === 'manual' ? 'Marked as sent' : 'Sent');
+      onUpdate();
+    } catch (err: unknown) {
+      setFeedback(err instanceof Error ? err.message : 'Send failed');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const topics = Array.isArray(pitch.suggested_topics)
+    ? pitch.suggested_topics.map((t: any) => (typeof t === 'string' ? t : t.title || t.topic || String(t)))
+    : [];
+
+  return (
+    <Card className="overflow-hidden">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <CardTitle className="text-base truncate">
+              {pitch.podcast?.title || 'Unknown Podcast'}
+            </CardTitle>
+            {pitch.podcast?.author && (
+              <CardDescription className="text-xs mt-0.5 truncate">
+                {pitch.podcast.author}
+                {pitch.podcast.host_name && pitch.podcast.host_name !== pitch.podcast.author
+                  ? ` / Host: ${pitch.podcast.host_name}`
+                  : ''}
+              </CardDescription>
+            )}
+          </div>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <Badge variant="outline" className={cn('text-[10px] capitalize', FIT_TIER_STYLES[tier])}>
+              {tier}
+            </Badge>
+            {pitch.fit_score != null && (
+              <span className="text-xs font-mono text-muted-foreground">{pitch.fit_score.toFixed(1)}</span>
+            )}
+            <Badge variant="outline" className={cn('text-[10px] capitalize', PITCH_STATUS_STYLES[status])}>
+              {status}
+            </Badge>
+          </div>
+        </div>
+      </CardHeader>
+
+      <CardContent className="space-y-3 pt-0">
+        {/* Subject line */}
+        {hasPitch && !editing && (
+          <div className="flex items-center gap-2">
+            <Mail className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <span className="text-sm font-medium truncate flex-1">
+              {pitch.subject_line}
+            </span>
+            <button
+              onClick={() => {
+                setEditSubject(pitch.subject_line || '');
+                setEditBody(pitch.pitch_body || '');
+                setEditing(true);
+                setExpanded(true);
+              }}
+              className="shrink-0 text-muted-foreground hover:text-foreground"
+              title="Edit pitch"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
+
+        {/* Body preview / expanded */}
+        {hasPitch && !editing && (
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="w-full text-left"
+          >
+            <p className={cn(
+              'text-xs text-muted-foreground leading-relaxed',
+              !expanded && 'line-clamp-3'
+            )}>
+              {pitch.pitch_body}
+            </p>
+            <span className="text-[10px] text-blue-600 mt-1 inline-block">
+              {expanded ? 'Show less' : 'Show more'}
+            </span>
+          </button>
+        )}
+
+        {/* Edit mode */}
+        {editing && (
+          <div className="space-y-2">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Subject Line</label>
+              <Input
+                value={editSubject}
+                onChange={e => setEditSubject(e.target.value)}
+                className="mt-1 text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Pitch Body</label>
+              <Textarea
+                value={editBody}
+                onChange={e => setEditBody(e.target.value)}
+                rows={8}
+                className="mt-1 text-xs leading-relaxed"
+              />
+              <div className="mt-1 text-[10px] text-muted-foreground">
+                {editBody.split(/\s+/).filter(Boolean).length} words
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={handleSaveEdit} disabled={saving}>
+                {saving ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Check className="mr-1 h-3 w-3" />}
+                Save
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setEditing(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Episode reference */}
+        {expanded && pitch.episode_reference && (
+          <div className="rounded-md border bg-muted/30 px-3 py-2">
+            <div className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground mb-1">
+              <Edit3 className="h-3 w-3" /> Episode Reference
+            </div>
+            <p className="text-xs">{pitch.episode_reference}</p>
+          </div>
+        )}
+
+        {/* Suggested topics */}
+        {expanded && topics.length > 0 && (
+          <div>
+            <div className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground mb-1.5">
+              <Lightbulb className="h-3 w-3" /> Suggested Topics
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {topics.map((t: string, i: number) => (
+                <Badge key={i} variant="secondary" className="text-[10px]">
+                  {t}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* No pitch content */}
+        {!hasPitch && (
+          <div className="py-3 text-center">
+            <p className="text-xs text-muted-foreground mb-2">No pitch generated yet</p>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleGenerate}
+              disabled={generating}
+            >
+              {generating ? (
+                <><Loader2 className="mr-1 h-3 w-3 animate-spin" /> Generating...</>
+              ) : (
+                <><Zap className="mr-1 h-3 w-3" /> Generate Pitch</>
+              )}
+            </Button>
+          </div>
+        )}
+
+        {/* Action buttons */}
+        {hasPitch && !editing && (
+          <div className="flex items-center gap-2 pt-1 border-t">
+            {status !== 'approved' && status !== 'sent' && status !== 'booked' && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleStatusChange('approved')}
+                disabled={saving}
+                className="text-green-700 border-green-200 hover:bg-green-50"
+              >
+                <Check className="mr-1 h-3 w-3" /> Approve
+              </Button>
+            )}
+            {status !== 'rejected' && status !== 'sent' && status !== 'booked' && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleStatusChange('rejected')}
+                disabled={saving}
+                className="text-red-700 border-red-200 hover:bg-red-50"
+              >
+                <X className="mr-1 h-3 w-3" /> Reject
+              </Button>
+            )}
+            {status !== 'sent' && status !== 'booked' && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleGenerate}
+                disabled={generating}
+              >
+                {generating ? (
+                  <><Loader2 className="mr-1 h-3 w-3 animate-spin" /> Regenerating...</>
+                ) : (
+                  <><Zap className="mr-1 h-3 w-3" /> Regenerate</>
+                )}
+              </Button>
+            )}
+            {(status === 'draft' || status === 'approved') && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" disabled={sending}>
+                    {sending ? (
+                      <><Loader2 className="mr-1 h-3 w-3 animate-spin" /> Sending...</>
+                    ) : (
+                      <><Send className="mr-1 h-3 w-3" /> Send</>
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleSend('gmail_draft')}>
+                    Gmail Draft
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleSend('direct_send')}>
+                    Direct Send
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleSend('manual')}>
+                    Manual (copy/paste)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
+        )}
+
+        {/* Feedback message */}
+        {feedback && (
+          <div className="rounded-md bg-blue-50 px-3 py-1.5 text-xs text-blue-800">
+            {feedback}
+            <button onClick={() => setFeedback(null)} className="ml-2 font-medium underline">
+              Dismiss
+            </button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ── Pitch Review Tab ──────────────────────────────────────────────────
+
+function PitchReviewTab() {
+  const [pitches, setPitches] = useState<PitchWithDetails[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Filters
+  const [speaker, setSpeaker] = useState('sally');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [fitTierFilter, setFitTierFilter] = useState('all');
+  const [search, setSearch] = useState('');
+
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const limit = 20;
+
+  const fetchPitches = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params = new URLSearchParams();
+      params.set('page', String(page));
+      params.set('limit', String(limit));
+      if (speaker) params.set('speaker', speaker);
+      if (statusFilter !== 'all') params.set('pitch_status', statusFilter);
+      if (fitTierFilter !== 'all') params.set('fit_tier', fitTierFilter);
+      if (search) params.set('search', search);
+
+      const res = await fetch(`/api/podcast/pitches?${params}`);
+      if (!res.ok) throw new Error('Failed to fetch pitches');
+      const data = await res.json();
+      setPitches(data.pitches || []);
+      setTotal(data.total ?? 0);
+      setTotalPages(data.total_pages ?? 1);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load pitches');
+    } finally {
+      setLoading(false);
+    }
+  }, [page, speaker, statusFilter, fitTierFilter, search]);
+
+  useEffect(() => {
+    fetchPitches();
+  }, [fetchPitches]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [speaker, statusFilter, fitTierFilter, search]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPage(1);
+    fetchPitches();
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Controls */}
+      <div className="flex flex-wrap items-end gap-3">
+        <form onSubmit={handleSearch} className="flex flex-1 items-center gap-2" style={{ minWidth: 200 }}>
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search pitches..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Button type="submit" size="sm" variant="outline">Search</Button>
+        </form>
+
+        <Select value={speaker} onValueChange={setSpeaker}>
+          <SelectTrigger className="w-[130px]">
+            <SelectValue placeholder="Speaker" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="sally">Sally</SelectItem>
+            <SelectItem value="justin">Justin</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[140px]">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All statuses</SelectItem>
+            <SelectItem value="draft">Draft</SelectItem>
+            <SelectItem value="approved">Approved</SelectItem>
+            <SelectItem value="rejected">Rejected</SelectItem>
+            <SelectItem value="sent">Sent</SelectItem>
+            <SelectItem value="replied">Replied</SelectItem>
+            <SelectItem value="booked">Booked</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={fitTierFilter} onValueChange={setFitTierFilter}>
+          <SelectTrigger className="w-[140px]">
+            <SelectValue placeholder="Fit tier" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All tiers</SelectItem>
+            <SelectItem value="strong">Strong</SelectItem>
+            <SelectItem value="moderate">Moderate</SelectItem>
+            <SelectItem value="weak">Weak</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Content */}
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <span className="ml-2 text-sm text-muted-foreground">Loading pitches...</span>
+        </div>
+      ) : error ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <p className="text-sm text-destructive">{error}</p>
+          <Button variant="outline" size="sm" className="mt-3" onClick={fetchPitches}>
+            Retry
+          </Button>
+        </div>
+      ) : pitches.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <Mic className="mb-4 h-12 w-12 text-muted-foreground/40" />
+          <h3 className="text-lg font-semibold">No Pitches Found</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Score podcasts in the Discovery tab, then run the pitch generation script.
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="grid gap-4 md:grid-cols-2">
+            {pitches.map(pitch => (
+              <PitchCard key={pitch.id} pitch={pitch} onUpdate={fetchPitches} />
+            ))}
+          </div>
+
+          {/* Pagination */}
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">
+              Showing {(page - 1) * limit + 1}-{Math.min(page * limit, total)} of {total}
+            </span>
+            <div className="flex items-center gap-1">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={page <= 1}
+                onClick={() => setPage(p => p - 1)}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="px-3 text-sm">
+                {page} / {totalPages}
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={page >= totalPages}
+                onClick={() => setPage(p => p + 1)}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // ── Main Page ──────────────────────────────────────────────────────────
 
 export default function PodcastOutreachPage() {
@@ -776,12 +1366,9 @@ export default function PodcastOutreachPage() {
             <DiscoveryTab />
           </TabsContent>
 
-          {/* Tab 3: Pitch Review - Placeholder */}
+          {/* Tab 3: Pitch Review */}
           <TabsContent value="pitches">
-            <PlaceholderTab
-              title="Pitch Review"
-              description="Coming soon - Review, edit, and approve AI-generated podcast pitches."
-            />
+            <PitchReviewTab />
           </TabsContent>
 
           {/* Tab 4: Campaign Tracker - Placeholder */}
