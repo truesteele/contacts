@@ -156,3 +156,21 @@ Started: 2026-04-11
 - Podcast pitch emails are plain text (no HTML needed) — simpler RFC 2822 message building
 - Speaker slug in DB is "sally" or "justin" (not "sally-steele"), mapped via SPEAKER_EMAILS config
 - Gmail API returns `threadId` on send but not on draft creation — useful for tracking follow-ups
+
+## US-010: UI - Main Page & Speaker Profiles Tab — COMPLETE
+- Created `job-matcher-ai/app/tools/podcast-outreach/page.tsx` (~250 lines)
+- Created `job-matcher-ai/app/api/podcast/profiles/route.ts` (simple GET endpoint for speaker_profiles)
+- Page layout: header with back link + title, 4-tab Tabs component
+- Tab 1 (Speaker Profiles): fetches from /api/podcast/profiles, renders 2-column card grid
+- Each card: avatar placeholder, name, headline, LinkedIn/website links, full bio, expandable topic pillars, past appearances, collapsible writing samples
+- Topic pillars: click to expand/collapse, shows description, talking points (bullet list), keywords (Badge pills)
+- Writing samples: collapsed by default, expandable section with text + source attribution
+- Tabs 2-4: placeholder "Coming soon" with icon and description
+- Loading, error, and empty states handled
+- TypeScript compiles clean: `npx tsc --noEmit` passes
+- Follows existing patterns: 'use client', shadcn components (Badge, Button, Card, Tabs), lucide-react icons, cn() utility
+
+### Learnings
+- The campaign page uses a very long single file — same pattern works fine for this page
+- CardTitle/CardDescription from shadcn card component are divs (not h2/p), so no semantic issues nesting
+- Supabase JSONB columns (topic_pillars, writing_samples, past_appearances) deserialize directly as arrays in the API response
