@@ -205,3 +205,33 @@ Started: 2026-04-10
 
 **Verified:**
 - `--step generate` with TED 2026 config: produced 84 cards, 404,818 bytes — identical to previous runs
+
+### Iteration 8 — US-008: End-to-end validation with TED 2026 (2026-04-10)
+**Status:** COMPLETE
+**Commit:** `feat: [US-008] Conference toolkit - End-to-end validation with TED 2026`
+
+**What was validated:**
+1. **HTML generation:** `run.py --step generate` produced 84 cards (27 must-connect, 19 high value, 38 worth a chat), 404,818 bytes — functionally equivalent to original
+2. **Diff analysis:** Generated HTML has same card counts (46 full), same Supabase config (URL, anon key, table name), same structure; differences are JS parameterization (constants vs inline strings) from the refactoring
+3. **First deploy (ted-enrich-contact):** Deployed to ted-outdoorithm.vercel.app — all features work: search, Sally's Picks, outreach toggles, Add New Person form
+4. **Config update:** Changed `edge_function` from `ted-enrich-contact` to `conference-enrich` in config.yaml
+5. **Second deploy (conference-enrich):** Regenerated HTML, redeployed — `const EDGE_FN = "conference-enrich"` confirmed in output
+6. **Edge Function verification:** conference-enrich returns proper errors (400 missing slug, 404 invalid slug) and correctly loads config from `conference_config` table for valid `ted-2026` slug
+
+**Key findings:**
+- Vercel deploy dir project is "deploy" (not "ted-outdoorithm") — requires manual `vercel alias` after each deploy
+- LinkedIn privacy blocks Apify scrape for Justin's profile — not a function bug, same as US-006
+- The refactored toolkit produces identical results to the original hardcoded scripts
+
+---
+
+## PROJECT COMPLETE
+All 8 user stories implemented and validated. The conference networking toolkit is fully config-driven:
+- Config schema + TED 2026 config (US-001)
+- Config loader with prompt templating (US-002)
+- Config-driven triage (US-003)
+- Config-driven populate (US-004)
+- Config-driven HTML generator (US-005)
+- Generic Edge Function with config table (US-006)
+- CLI entry point and docs (US-007)
+- End-to-end validation (US-008)

@@ -187,7 +187,7 @@ Create a single CLI entry point that orchestrates the full pipeline, and documen
 
 ### US-008: End-to-end validation — regenerate TED 2026 from new toolkit
 **Priority:** 8
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Validate the full toolkit by regenerating the TED 2026 lookbook from the new config-driven pipeline and deploying it. This proves the refactoring is complete and nothing broke.

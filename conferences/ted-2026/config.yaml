@@ -112,7 +112,7 @@ supabase:
   project_url: "https://ypqsrejrsocebnldicke.supabase.co"
   anon_key: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlwcXNyZWpyc29jZWJubGRpY2tlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYzMTk1NDQsImV4cCI6MjA1MTg5NTU0NH0.MdnHIyb_0GwQpTJjaBUx8g4kGizPRuAdPNFQhhqRQP8"
   table_name: "ted_attendees"
-  edge_function: "ted-enrich-contact"
+  edge_function: "conference-enrich"
   project_ref: "ypqsrejrsocebnldicke"
 
 vercel:
