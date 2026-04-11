@@ -249,13 +249,12 @@ def load_ungenerated_pitches(sb: Client, speaker_id: int, tiers: list[str], limi
         .order("fit_score", desc=True) \
         .limit(limit)
 
-    result = query.execute()
-
-    # Filter by tier if specified
+    # Apply tier filter at DB level
     if tiers:
-        result.data = [r for r in result.data if r.get("fit_tier") in tiers]
+        query = query.in_("fit_tier", tiers)
 
-    return result.data[:limit]
+    result = query.execute()
+    return result.data
 
 
 def load_podcast(sb: Client, podcast_id: int) -> dict | None:
@@ -425,6 +424,11 @@ def main():
     args = parser.parse_args()
 
     tiers = [t.strip() for t in args.tier.split(",")]
+
+    # Validate API key upfront
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        print("ERROR: ANTHROPIC_API_KEY not set in environment")
+        sys.exit(1)
 
     # Init clients
     sb = get_supabase()

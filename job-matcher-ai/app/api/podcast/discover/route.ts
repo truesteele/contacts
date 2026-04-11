@@ -24,9 +24,13 @@ export async function GET(req: NextRequest) {
 
     // Text search on title, author, description
     if (search) {
-      query = query.or(
-        `title.ilike.%${search}%,author.ilike.%${search}%,description.ilike.%${search}%`
-      );
+      // Sanitize search to prevent PostgREST filter injection
+      const sanitized = search.replace(/[%.,()]/g, '');
+      if (sanitized) {
+        query = query.or(
+          `title.ilike.%${sanitized}%,author.ilike.%${sanitized}%,description.ilike.%${sanitized}%`
+        );
+      }
     }
 
     // Paginate

@@ -112,34 +112,28 @@ def load_speaker(sb: Client, slug: str) -> dict:
 def load_unscored_podcasts(sb: Client, speaker_id: int, limit: int, min_episodes: int) -> list[dict]:
     """Load podcasts that haven't been scored for this speaker yet.
 
-    Uses a LEFT JOIN approach: get all enriched podcast_targets that don't
-    have a matching row in podcast_pitches for this speaker.
+    Gets IDs already scored, then uses server-side .not_.in_() filter
+    so pagination works correctly regardless of how many are already scored.
     """
     # Get IDs already scored for this speaker
     scored = sb.table("podcast_pitches") \
         .select("podcast_target_id") \
         .eq("speaker_profile_id", speaker_id) \
         .execute()
-    scored_ids = {r["podcast_target_id"] for r in scored.data}
+    scored_ids = [r["podcast_target_id"] for r in scored.data]
 
-    # Get enriched podcasts not yet scored
+    # Get enriched podcasts not yet scored — server-side exclusion
     query = sb.table("podcast_targets") \
         .select("*") \
         .not_.is_("enriched_at", "null") \
         .order("id") \
-        .limit(limit + len(scored_ids))  # over-fetch to account for filtering
+        .limit(limit)
+
+    if scored_ids:
+        query = query.not_.in_("id", scored_ids)
 
     result = query.execute()
-
-    podcasts = []
-    for p in result.data:
-        if p["id"] in scored_ids:
-            continue
-        podcasts.append(p)
-        if len(podcasts) >= limit:
-            break
-
-    return podcasts
+    return result.data
 
 
 def load_episodes(sb: Client, podcast_id: int) -> list[dict]:

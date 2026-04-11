@@ -49,6 +49,18 @@ import {
   Zap,
 } from 'lucide-react';
 
+// ── Constants ─────────────────────────────────────────────────────────
+
+const PIPELINE_STAGES = [
+  { key: 'draft', label: 'Draft' },
+  { key: 'approved', label: 'Approved' },
+  { key: 'sent', label: 'Sent' },
+  { key: 'replied', label: 'Replied' },
+  { key: 'booked', label: 'Booked' },
+];
+
+const PIPELINE_COLORS = ['bg-blue-200', 'bg-green-200', 'bg-purple-200', 'bg-emerald-200', 'bg-amber-200'];
+
 // ── Types ──────────────────────────────────────────────────────────────
 
 interface TopicPillar {
@@ -526,8 +538,8 @@ function DiscoveryTab() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    // setPage(1) triggers useCallback/useEffect chain to refetch
     setPage(1);
-    fetchPodcasts();
   };
 
   const formatDate = (d: string | null) => {
@@ -1195,7 +1207,6 @@ function PitchReviewTab() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setPage(1);
-    fetchPitches();
   };
 
   return (
@@ -1373,7 +1384,6 @@ function CampaignTrackerTab() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setPage(1);
-    fetchCampaigns();
   };
 
   const updateCampaign = async (campaignId: number, updates: { notes?: string; outcome?: string }) => {
@@ -1395,8 +1405,8 @@ function CampaignTrackerTab() {
     }
   };
 
-  const saveNotes = (campaignId: number) => {
-    updateCampaign(campaignId, { notes: notesValue });
+  const saveNotes = async (campaignId: number) => {
+    await updateCampaign(campaignId, { notes: notesValue });
     setEditingNotes(null);
   };
 
@@ -1405,13 +1415,7 @@ function CampaignTrackerTab() {
     return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  const pipelineStages = [
-    { key: 'draft', label: 'Draft' },
-    { key: 'approved', label: 'Approved' },
-    { key: 'sent', label: 'Sent' },
-    { key: 'replied', label: 'Replied' },
-    { key: 'booked', label: 'Booked' },
-  ];
+  const pipelineStages = PIPELINE_STAGES;
 
   return (
     <div className="space-y-6">
@@ -1433,7 +1437,7 @@ function CampaignTrackerTab() {
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Replied</CardDescription>
-            <CardTitle className="text-3xl">{stats?.outcomes?.booked ?? 0 + (stats?.outcomes?.maybe_later ?? 0) + (stats?.pipeline?.replied ?? 0)}</CardTitle>
+            <CardTitle className="text-3xl">{(stats?.outcomes?.booked ?? 0) + (stats?.outcomes?.maybe_later ?? 0) + (stats?.pipeline?.replied ?? 0)}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-xs text-muted-foreground">
@@ -1481,25 +1485,25 @@ function CampaignTrackerTab() {
             <CardTitle className="text-base">Pipeline</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-1">
-              {pipelineStages.map((stage, i) => {
-                const count = stats.pipeline?.[stage.key] ?? 0;
-                const totalInPipeline = Object.values(stats.pipeline || {}).reduce((a, b) => a + b, 0);
-                const widthPct = totalInPipeline > 0 ? Math.max(count / totalInPipeline * 100, 8) : 20;
-                const colors = ['bg-blue-200', 'bg-green-200', 'bg-purple-200', 'bg-emerald-200', 'bg-amber-200'];
-                return (
-                  <div key={stage.key} className="flex flex-col items-center" style={{ width: `${widthPct}%`, minWidth: 60 }}>
-                    <div className={cn('w-full rounded-md py-3 text-center text-sm font-medium', colors[i])}>
-                      {count}
-                    </div>
-                    <span className="mt-1 text-xs text-muted-foreground">{stage.label}</span>
-                    {i < pipelineStages.length - 1 && (
-                      <ChevronRight className="absolute h-4 w-4 text-muted-foreground/40" style={{ display: 'none' }} />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+            {(() => {
+              const totalInPipeline = Object.values(stats.pipeline || {}).reduce((a: number, b: number) => a + b, 0);
+              return (
+                <div className="flex items-center gap-1">
+                  {pipelineStages.map((stage, i) => {
+                    const count = stats.pipeline?.[stage.key] ?? 0;
+                    const widthPct = totalInPipeline > 0 ? Math.max(count / totalInPipeline * 100, 8) : 20;
+                    return (
+                      <div key={stage.key} className="flex flex-col items-center" style={{ width: `${widthPct}%`, minWidth: 60 }}>
+                        <div className={cn('w-full rounded-md py-3 text-center text-sm font-medium', PIPELINE_COLORS[i])}>
+                          {count}
+                        </div>
+                        <span className="mt-1 text-xs text-muted-foreground">{stage.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </CardContent>
         </Card>
       )}

@@ -22,7 +22,8 @@ export async function GET(req: NextRequest) {
       if (speakerProfile) speakerId = speakerProfile.id;
     }
 
-    // Build campaign query
+    // Build campaign query — when search is active, fetch all rows first
+    // so we can filter across joined fields before paginating
     let query = supabase
       .from('podcast_campaigns')
       .select('*', { count: 'exact' });
@@ -35,9 +36,12 @@ export async function GET(req: NextRequest) {
       query = query.eq('outcome', outcome);
     }
 
-    query = query
-      .order('sent_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+    query = query.order('sent_at', { ascending: false });
+
+    // Only paginate at DB level when there's no cross-table search
+    if (!search) {
+      query = query.range(offset, offset + limit - 1);
+    }
 
     const { data: campaigns, error: campaignError, count } = await query;
 
@@ -111,7 +115,8 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    // Search filter
+    // Search filter (cross-table: podcast title, pitch subject, notes, email)
+    // When search is active, we fetched all rows above and paginate after filtering
     if (search) {
       const q = search.toLowerCase();
       merged = merged.filter(
@@ -121,6 +126,13 @@ export async function GET(req: NextRequest) {
           c.notes?.toLowerCase().includes(q) ||
           c.sent_to_email?.toLowerCase().includes(q)
       );
+    }
+
+    // When search is active, paginate the filtered results
+    const filteredTotal = search ? merged.length : (count ?? 0);
+    const filteredTotalPages = Math.ceil(filteredTotal / limit);
+    if (search) {
+      merged = merged.slice(offset, offset + limit);
     }
 
     // Pipeline stats for dashboard
@@ -166,10 +178,10 @@ export async function GET(req: NextRequest) {
 
     return Response.json({
       campaigns: merged,
-      total: count ?? 0,
+      total: filteredTotal,
       page,
       limit,
-      total_pages: Math.ceil((count ?? 0) / limit),
+      total_pages: filteredTotalPages,
       stats: {
         total_sent: totalSent,
         pipeline,
@@ -213,20 +225,19 @@ export async function PATCH(req: Request) {
       }
       updates.outcome = body.outcome;
 
-      // If booked, also update the pitch status
-      if (body.outcome === 'booked') {
-        const { data: campaign } = await supabase
-          .from('podcast_campaigns')
-          .select('pitch_id')
-          .eq('id', body.campaign_id)
-          .single();
+      // Keep pitch status in sync with campaign outcome
+      const { data: campaign } = await supabase
+        .from('podcast_campaigns')
+        .select('pitch_id, outcome')
+        .eq('id', body.campaign_id)
+        .single();
 
-        if (campaign?.pitch_id) {
-          await supabase
-            .from('podcast_pitches')
-            .update({ pitch_status: 'booked', updated_at: new Date().toISOString() })
-            .eq('id', campaign.pitch_id);
-        }
+      if (campaign?.pitch_id) {
+        const pitchStatus = body.outcome === 'booked' ? 'booked' : 'sent';
+        await supabase
+          .from('podcast_pitches')
+          .update({ pitch_status: pitchStatus, updated_at: new Date().toISOString() })
+          .eq('id', campaign.pitch_id);
       }
     }
 

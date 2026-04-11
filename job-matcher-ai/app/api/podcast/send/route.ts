@@ -8,12 +8,15 @@ const SPEAKER_EMAILS: Record<string, { from: string; name: string }> = {
   justin: { from: 'justin@truesteele.com', name: 'Justin Steele' },
 };
 
-async function getGmailAccessToken(): Promise<string> {
-  const clientId = process.env.GMAIL_CLIENT_ID;
-  const clientSecret = process.env.GMAIL_CLIENT_SECRET;
-  const refreshToken = process.env.GMAIL_REFRESH_TOKEN;
+async function getGmailAccessToken(speakerSlug: string): Promise<string> {
+  // Per-speaker Gmail credentials: SALLY_GMAIL_CLIENT_ID, JUSTIN_GMAIL_CLIENT_ID, etc.
+  // Falls back to generic GMAIL_* if speaker-specific vars not set
+  const prefix = speakerSlug.toUpperCase();
+  const clientId = process.env[`${prefix}_GMAIL_CLIENT_ID`] || process.env.GMAIL_CLIENT_ID;
+  const clientSecret = process.env[`${prefix}_GMAIL_CLIENT_SECRET`] || process.env.GMAIL_CLIENT_SECRET;
+  const refreshToken = process.env[`${prefix}_GMAIL_REFRESH_TOKEN`] || process.env.GMAIL_REFRESH_TOKEN;
   if (!clientId || !clientSecret || !refreshToken) {
-    throw new Error('Gmail OAuth credentials not configured (GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN)');
+    throw new Error(`Gmail OAuth credentials not configured for ${speakerSlug} (${prefix}_GMAIL_CLIENT_ID, ${prefix}_GMAIL_CLIENT_SECRET, ${prefix}_GMAIL_REFRESH_TOKEN)`);
   }
 
   const response = await fetch('https://oauth2.googleapis.com/token', {
@@ -67,8 +70,9 @@ async function createGmailDraft(params: {
   toEmail: string;
   subject: string;
   textBody: string;
+  speakerSlug: string;
 }): Promise<{ id: string | null }> {
-  const accessToken = await getGmailAccessToken();
+  const accessToken = await getGmailAccessToken(params.speakerSlug);
   const raw = base64UrlEncode(buildRfc2822Message(params));
 
   const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/drafts', {
@@ -93,8 +97,9 @@ async function sendWithGmail(params: {
   toEmail: string;
   subject: string;
   textBody: string;
+  speakerSlug: string;
 }): Promise<{ id: string | null; threadId: string | null }> {
-  const accessToken = await getGmailAccessToken();
+  const accessToken = await getGmailAccessToken(params.speakerSlug);
   const raw = base64UrlEncode(buildRfc2822Message(params));
 
   const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
@@ -225,32 +230,9 @@ export async function POST(req: Request) {
 
     let gmailMessageId: string | null = null;
     let gmailThreadId: string | null = null;
-    let resultStatus: 'drafted' | 'sent';
+    let resultStatus: 'draft' | 'sent';
 
-    if (method === 'gmail_draft') {
-      const result = await createGmailDraft({
-        fromEmail: senderConfig.from,
-        fromName: senderConfig.name,
-        toEmail,
-        subject: pitch.subject_line,
-        textBody: pitch.pitch_body,
-      });
-      gmailMessageId = result.id;
-      resultStatus = 'drafted';
-    } else {
-      const result = await sendWithGmail({
-        fromEmail: senderConfig.from,
-        fromName: senderConfig.name,
-        toEmail,
-        subject: pitch.subject_line,
-        textBody: pitch.pitch_body,
-      });
-      gmailMessageId = result.id;
-      gmailThreadId = result.threadId;
-      resultStatus = 'sent';
-    }
-
-    // Create campaign record
+    // Create campaign record BEFORE sending (so we have a record even if send fails)
     const { data: campaign, error: campaignError } = await supabase
       .from('podcast_campaigns')
       .insert({
@@ -260,8 +242,6 @@ export async function POST(req: Request) {
         sent_to_email: toEmail,
         sent_at: now,
         send_method: method,
-        gmail_message_id: gmailMessageId,
-        gmail_thread_id: gmailThreadId,
         outcome: 'pending',
       })
       .select('id')
@@ -269,6 +249,42 @@ export async function POST(req: Request) {
 
     if (campaignError) {
       return Response.json({ error: `Failed to create campaign record: ${campaignError.message}` }, { status: 500 });
+    }
+
+    if (method === 'gmail_draft') {
+      const result = await createGmailDraft({
+        fromEmail: senderConfig.from,
+        fromName: senderConfig.name,
+        toEmail,
+        subject: pitch.subject_line,
+        textBody: pitch.pitch_body,
+        speakerSlug,
+      });
+      gmailMessageId = result.id;
+      resultStatus = 'draft';
+    } else {
+      const result = await sendWithGmail({
+        fromEmail: senderConfig.from,
+        fromName: senderConfig.name,
+        toEmail,
+        subject: pitch.subject_line,
+        textBody: pitch.pitch_body,
+        speakerSlug,
+      });
+      gmailMessageId = result.id;
+      gmailThreadId = result.threadId;
+      resultStatus = 'sent';
+    }
+
+    // Update campaign with Gmail IDs
+    if (gmailMessageId || gmailThreadId) {
+      await supabase
+        .from('podcast_campaigns')
+        .update({
+          gmail_message_id: gmailMessageId,
+          gmail_thread_id: gmailThreadId,
+        })
+        .eq('id', campaign?.id);
     }
 
     // Update pitch status

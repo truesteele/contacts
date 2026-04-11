@@ -283,21 +283,24 @@ def _parse_episode(item: ET.Element) -> dict | None:
 
 
 def _parse_duration(raw: str) -> int | None:
-    """Parse iTunes duration string to seconds. Handles HH:MM:SS, MM:SS, or raw seconds."""
+    """Parse iTunes duration string to seconds. Handles HH:MM:SS, MM:SS, or raw seconds/floats."""
     if not raw:
         return None
 
-    # Pure integer = seconds
-    if raw.isdigit():
-        return int(raw)
+    # Pure number (integer or float) = seconds
+    try:
+        val = float(raw)
+        return int(val)
+    except ValueError:
+        pass
 
     # HH:MM:SS or MM:SS
     parts = raw.split(":")
     try:
         if len(parts) == 3:
-            return int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
+            return int(float(parts[0])) * 3600 + int(float(parts[1])) * 60 + int(float(parts[2]))
         elif len(parts) == 2:
-            return int(parts[0]) * 60 + int(parts[1])
+            return int(float(parts[0])) * 60 + int(float(parts[1]))
     except ValueError:
         pass
 

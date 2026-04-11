@@ -1,6 +1,8 @@
 import { supabase } from '@/lib/supabase';
 import Anthropic from '@anthropic-ai/sdk';
 
+export const runtime = 'nodejs';
+
 const MODEL = 'claude-sonnet-4-6';
 
 const AI_WRITING_RULES = `RULES (non-negotiable):
@@ -368,6 +370,12 @@ export async function POST(req: Request) {
           episode_reference: string;
           suggested_topics: string[];
         };
+
+        // Validate required fields
+        if (!generated.subject_line || !generated.pitch_body) {
+          results.push({ pitch_id: p.id, status: 'failed', error: 'Missing subject_line or pitch_body in generated output' });
+          continue;
+        }
 
         // Fix em dashes
         generated.pitch_body = fixEmDashes(generated.pitch_body);

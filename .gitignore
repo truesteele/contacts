@@ -80,6 +80,9 @@ scripts/intelligence/test_*_output.json
 # Node modules (all nested)
 **/node_modules/
 
+# Mouse detector config (contains API keys)
+scripts/mouse_detector/config.json
+
 # Vercel
 .vercel
 .cache/
