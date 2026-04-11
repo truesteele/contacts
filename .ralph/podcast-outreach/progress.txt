@@ -93,3 +93,26 @@ Started: 2026-04-11
 - The `chat.completions.create` API (not `responses.parse`) is the right call for `response_format` approach
 - Filtering already-scored podcasts via a set of IDs from podcast_pitches is simpler than SQL LEFT JOIN via Supabase client
 
+## US-007: Pitch Generation Script — COMPLETE
+- Created `scripts/intelligence/generate_podcast_pitches.py`
+- Pipeline: load speaker profile → build system prompt with voice guide + writing samples → load ungenerated pitches (fit scored, no pitch_body) → load podcast + episodes per pitch → Claude Sonnet 4.6 generation → auto-fix em dashes → AI-tell audit → save
+- Supports `--speaker sally|justin`, `--tier strong,moderate`, `--limit`, `--workers`, `--test` flags
+- Uses Anthropic SDK: `client.messages.create(model="claude-sonnet-4-6", ...)` with JSON output
+- AI-tell audit: checks for em dashes, 17 banned phrases, word count >200, subject line >60 chars, participle pileups
+- Auto-fixes em dashes before audit (replaces with commas)
+- Per-speaker voice guides: Sally (poetic, fragments, contrast) vs Justin (punchy, casual, numbers)
+- Tested with `--speaker sally --limit 3 --test`: 3 strong-fit pitches generated
+  - Word counts: 172, 170, 192 (all under 200)
+  - Zero audit issues across all 3
+  - Each references a specific recent episode by name
+  - 2-3 concrete topic ideas per pitch
+  - Voice reads authentically as Sally (fragments, contrast, real numbers)
+- Justin test: correctly reports "No ungenerated pitches found" (no fit scores exist yet)
+- Concurrent generation via ThreadPoolExecutor (default 10 workers)
+
+### Learnings
+- Claude Sonnet 4.6 follows the "return only JSON" instruction reliably, but added markdown fence stripping as fallback
+- Writing samples in the system prompt are the key to voice matching — Claude picks up sentence rhythm, fragment patterns, and contrast structure
+- Auto-fixing em dashes is better than re-generating — Claude occasionally slips one in despite explicit instructions
+- `suggested_topics` from Claude comes as string list, but DB schema expects objects — normalize on save
+- Anthropic SDK uses `ANTHROPIC_API_KEY` env var automatically (no need to pass api_key)
