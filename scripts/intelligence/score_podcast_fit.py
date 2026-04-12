@@ -1,24 +1,29 @@
 #!/usr/bin/env python3
 """
-Podcast Fit Scoring — GPT-5.4 mini structured output
+Podcast Fit Scoring — GPT-5.4 mini structured output + composite multi-signal scoring
 
 Scores how well each discovered podcast fits a speaker's topic pillars.
+Composite mode (default) combines 5 signals: GPT fit, embedding similarity,
+similar-speaker boost, activity recency, and episode count.
+
 Saves fit scores to podcast_pitches (fit fields only; pitch copy comes later).
 
 Usage:
   python scripts/intelligence/score_podcast_fit.py --speaker sally --limit 5 --test
   python scripts/intelligence/score_podcast_fit.py --speaker justin --limit 50 --workers 50
-  python scripts/intelligence/score_podcast_fit.py --speaker sally --min-episodes 3
+  python scripts/intelligence/score_podcast_fit.py --speaker sally --no-composite
 """
 
 import os
 import sys
 import json
+import math
 import time
 import argparse
 from datetime import datetime, timezone
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+import psycopg2
 from dotenv import load_dotenv
 from openai import OpenAI, RateLimitError, APIError
 from supabase import create_client, Client
@@ -26,7 +31,7 @@ from supabase import create_client, Client
 load_dotenv("/Users/Justin/Code/TrueSteele/contacts/.env")
 
 
-# ── Constants ──────────────────────────────────────────────────────────
+# -- Constants ---------------------------------------------------------------
 
 MODEL = "gpt-5.4-mini"
 
@@ -88,7 +93,7 @@ FIT_SCORE_SCHEMA = {
 }
 
 
-# ── Clients ────────────────────────────────────────────────────────────
+# -- Clients -----------------------------------------------------------------
 
 def get_supabase() -> Client:
     return create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_SERVICE_KEY"])
@@ -98,7 +103,18 @@ def get_openai() -> OpenAI:
     return OpenAI(api_key=os.environ["OPENAI_APIKEY"])
 
 
-# ── Data Loading ───────────────────────────────────────────────────────
+def get_pg_conn():
+    """Direct PostgreSQL connection for pgvector queries."""
+    return psycopg2.connect(
+        host="db.ypqsrejrsocebnldicke.supabase.co",
+        port=5432,
+        dbname="postgres",
+        user="postgres",
+        password=os.environ["SUPABASE_DB_PASSWORD"],
+    )
+
+
+# -- Data Loading ------------------------------------------------------------
 
 def load_speaker(sb: Client, slug: str) -> dict:
     """Load a speaker profile by slug."""
@@ -109,20 +125,63 @@ def load_speaker(sb: Client, slug: str) -> dict:
     return result.data[0]
 
 
-def load_unscored_podcasts(sb: Client, speaker_id: int, limit: int, min_episodes: int) -> list[dict]:
-    """Load podcasts that haven't been scored for this speaker yet.
+def load_speaker_embedding(conn, speaker_id: int) -> list[float] | None:
+    """Load speaker's profile_embedding via psycopg2."""
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT profile_embedding::text FROM speaker_profiles WHERE id = %s",
+            (speaker_id,),
+        )
+        row = cur.fetchone()
+        if row and row[0]:
+            return _parse_pg_vector(row[0])
+    return None
 
-    Gets IDs already scored, then uses server-side .not_.in_() filter
-    so pagination works correctly regardless of how many are already scored.
-    """
-    # Get IDs already scored for this speaker
+
+def load_podcast_embeddings(conn, podcast_ids: list[int]) -> dict[int, list[float]]:
+    """Load description_embedding for a batch of podcast IDs."""
+    if not podcast_ids:
+        return {}
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT id, description_embedding::text FROM podcast_targets WHERE id = ANY(%s)",
+            (podcast_ids,),
+        )
+        result = {}
+        for row in cur.fetchall():
+            if row[1]:
+                result[row[0]] = _parse_pg_vector(row[1])
+        return result
+
+
+def load_podcast_discovery_methods(conn, podcast_ids: list[int]) -> dict[int, list[str]]:
+    """Load discovery_methods for a batch of podcast IDs."""
+    if not podcast_ids:
+        return {}
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT id, discovery_methods FROM podcast_targets WHERE id = ANY(%s)",
+            (podcast_ids,),
+        )
+        result = {}
+        for row in cur.fetchall():
+            result[row[0]] = row[1] or []
+        return result
+
+
+def _parse_pg_vector(vec_str: str) -> list[float]:
+    """Parse pgvector text representation '[0.1,0.2,...]' into list of floats."""
+    return [float(x) for x in vec_str.strip("[]").split(",")]
+
+
+def load_unscored_podcasts(sb: Client, speaker_id: int, limit: int, min_episodes: int) -> list[dict]:
+    """Load podcasts that haven't been scored for this speaker yet."""
     scored = sb.table("podcast_pitches") \
         .select("podcast_target_id") \
         .eq("speaker_profile_id", speaker_id) \
         .execute()
     scored_ids = [r["podcast_target_id"] for r in scored.data]
 
-    # Get enriched podcasts not yet scored — server-side exclusion
     query = sb.table("podcast_targets") \
         .select("*") \
         .not_.is_("enriched_at", "null") \
@@ -147,7 +206,7 @@ def load_episodes(sb: Client, podcast_id: int) -> list[dict]:
     return result.data
 
 
-# ── Prompt Building ────────────────────────────────────────────────────
+# -- Prompt Building ---------------------------------------------------------
 
 def build_speaker_context(speaker: dict) -> str:
     """Build speaker context string from profile data."""
@@ -195,12 +254,11 @@ def build_podcast_context(podcast: dict, episodes: list[dict]) -> str:
         for ep in episodes:
             title = ep.get("title", "Untitled")
             desc = ep.get("description", "")
-            # Truncate long descriptions
             if desc and len(desc) > 300:
                 desc = desc[:300] + "..."
             date = ep.get("published_at", "")
             if date:
-                date = date[:10]  # Just the date portion
+                date = date[:10]
             duration = ep.get("duration_seconds")
             dur_str = f" ({duration // 60}min)" if duration else ""
             parts.append(f"- [{date}]{dur_str} {title}")
@@ -210,7 +268,105 @@ def build_podcast_context(podcast: dict, episodes: list[dict]) -> str:
     return "\n".join(parts)
 
 
-# ── Scoring ────────────────────────────────────────────────────────────
+# -- Composite Signal Functions ----------------------------------------------
+
+def cosine_similarity(a: list[float], b: list[float]) -> float:
+    """Cosine similarity between two vectors. Pure Python (no numpy needed)."""
+    dot = sum(x * y for x, y in zip(a, b))
+    norm_a = math.sqrt(sum(x * x for x in a))
+    norm_b = math.sqrt(sum(x * x for x in b))
+    if norm_a == 0 or norm_b == 0:
+        return 0.0
+    return dot / (norm_a * norm_b)
+
+
+def compute_embedding_similarity(
+    speaker_embedding: list[float] | None,
+    podcast_embedding: list[float] | None,
+) -> float:
+    """Cosine similarity between speaker and podcast embeddings. Returns 0-1."""
+    if speaker_embedding is None or podcast_embedding is None:
+        return 0.3  # neutral default for missing embeddings
+    return max(0.0, cosine_similarity(speaker_embedding, podcast_embedding))
+
+
+def compute_activity_recency(last_episode_date: str | None) -> float:
+    """0-1 score based on how recently the podcast published."""
+    if not last_episode_date:
+        return 0.3  # unknown = moderate
+    try:
+        if isinstance(last_episode_date, str):
+            # Handle ISO format with or without timezone
+            date_str = last_episode_date.replace("Z", "+00:00")
+            if "T" in date_str:
+                dt = datetime.fromisoformat(date_str)
+            else:
+                dt = datetime.fromisoformat(date_str + "T00:00:00+00:00")
+        else:
+            dt = last_episode_date
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        days_ago = (datetime.now(timezone.utc) - dt).days
+    except (ValueError, TypeError):
+        return 0.3
+    if days_ago <= 7:
+        return 1.0
+    if days_ago <= 30:
+        return 0.8
+    if days_ago <= 60:
+        return 0.5
+    if days_ago <= 90:
+        return 0.3
+    return 0.1
+
+
+def compute_episode_count_signal(count: int | None) -> float:
+    """0-1 normalized. More episodes = more established."""
+    if not count:
+        return 0.1
+    if count >= 200:
+        return 1.0
+    if count >= 100:
+        return 0.8
+    if count >= 50:
+        return 0.6
+    if count >= 20:
+        return 0.4
+    if count >= 10:
+        return 0.2
+    return 0.1
+
+
+def compute_composite_score(
+    gpt_fit_score: float,
+    embedding_similarity: float,
+    similar_speaker_boost: float,
+    activity_recency: float,
+    episode_count_signal: float,
+) -> tuple[float, str]:
+    """
+    Compute composite score from 5 signals.
+    Returns (composite_score, tier).
+    """
+    composite = (
+        0.35 * gpt_fit_score
+        + 0.30 * embedding_similarity
+        + 0.15 * similar_speaker_boost
+        + 0.10 * activity_recency
+        + 0.10 * episode_count_signal
+    )
+
+    if composite >= 0.70:
+        tier = "strong"
+    elif composite >= 0.45:
+        tier = "moderate"
+    else:
+        tier = "weak"
+
+    return round(composite, 4), tier
+
+
+# -- GPT Scoring -------------------------------------------------------------
 
 def score_podcast(oai: OpenAI, speaker_context: str, podcast: dict, episodes: list[dict]) -> dict | None:
     """Score a single podcast's fit with GPT-5.4 mini structured output."""
@@ -256,7 +412,7 @@ def score_podcast(oai: OpenAI, speaker_context: str, podcast: dict, episodes: li
     return None
 
 
-# ── Save ───────────────────────────────────────────────────────────────
+# -- Save --------------------------------------------------------------------
 
 def save_score(sb: Client, podcast_id: int, speaker_id: int, score: dict) -> bool:
     """Save fit score to podcast_pitches table."""
@@ -266,7 +422,7 @@ def save_score(sb: Client, podcast_id: int, speaker_id: int, score: dict) -> boo
         "fit_tier": score["fit_tier"],
         "fit_score": score["fit_score"],
         "fit_rationale": score["fit_rationale"],
-        "topic_match": score.get("matching_pillars", []),
+        "topic_match": score.get("topic_match", score.get("matching_pillars", [])),
         "episode_hooks": score.get("episode_hooks", []),
         "suggested_topics": score.get("suggested_episode_ideas", []),
         "model_used": MODEL,
@@ -282,7 +438,7 @@ def save_score(sb: Client, podcast_id: int, speaker_id: int, score: dict) -> boo
         return False
 
 
-# ── Main ───────────────────────────────────────────────────────────────
+# -- Main --------------------------------------------------------------------
 
 def main():
     parser = argparse.ArgumentParser(
@@ -298,18 +454,33 @@ def main():
                         help="Skip podcasts with fewer episodes (default: 0)")
     parser.add_argument("--test", action="store_true",
                         help="Dry run: print scores without saving")
+    parser.add_argument("--no-composite", action="store_true",
+                        help="Disable composite scoring, use GPT-only (backward compat)")
     args = parser.parse_args()
+
+    use_composite = not args.no_composite
 
     # Init clients
     sb = get_supabase()
     oai = get_openai()
     print(f"Connected to Supabase and OpenAI")
+    print(f"Scoring mode: {'composite (5 signals)' if use_composite else 'GPT-only'}")
 
     # Load speaker
     speaker = load_speaker(sb, args.speaker)
     speaker_context = build_speaker_context(speaker)
     print(f"Speaker: {speaker['name']} (id={speaker['id']})")
     print(f"Topic pillars: {len(speaker.get('topic_pillars') or [])}")
+
+    # Load speaker embedding for composite scoring
+    speaker_embedding = None
+    if use_composite:
+        conn = get_pg_conn()
+        speaker_embedding = load_speaker_embedding(conn, speaker["id"])
+        if speaker_embedding:
+            print(f"Speaker embedding: loaded ({len(speaker_embedding)} dims)")
+        else:
+            print(f"Speaker embedding: not found (will use neutral default 0.3)")
 
     # Load unscored podcasts
     podcasts = load_unscored_podcasts(sb, speaker["id"], args.limit, args.min_episodes)
@@ -319,13 +490,23 @@ def main():
         print("No unscored podcasts found. Done.")
         return
 
+    # Load podcast embeddings and discovery methods in bulk for composite
+    podcast_embeddings = {}
+    discovery_methods_map = {}
+    if use_composite:
+        podcast_ids = [p["id"] for p in podcasts]
+        podcast_embeddings = load_podcast_embeddings(conn, podcast_ids)
+        discovery_methods_map = load_podcast_discovery_methods(conn, podcast_ids)
+        conn.close()
+        print(f"Podcast embeddings loaded: {len(podcast_embeddings)}/{len(podcast_ids)}")
+
     # Load episodes for each podcast and filter by min-episodes
     podcast_episodes = {}
     filtered = []
     for p in podcasts:
         eps = load_episodes(sb, p["id"])
         if len(eps) < args.min_episodes:
-            print(f"  Skipping '{p['title']}' — only {len(eps)} episodes (min: {args.min_episodes})")
+            print(f"  Skipping '{p['title']}' -- only {len(eps)} episodes (min: {args.min_episodes})")
             continue
         podcast_episodes[p["id"]] = eps
         filtered.append(p)
@@ -343,8 +524,47 @@ def main():
 
     def score_one(podcast: dict) -> tuple[dict, dict | None]:
         eps = podcast_episodes.get(podcast["id"], [])
-        score = score_podcast(oai, speaker_context, podcast, eps)
-        return (podcast, score)
+        gpt_score = score_podcast(oai, speaker_context, podcast, eps)
+        if gpt_score is None:
+            return (podcast, None)
+
+        if not use_composite:
+            return (podcast, gpt_score)
+
+        # Compute composite signals
+        gpt_fit = gpt_score["fit_score"]
+        emb_sim = compute_embedding_similarity(
+            speaker_embedding, podcast_embeddings.get(podcast["id"])
+        )
+        disc_methods = discovery_methods_map.get(podcast["id"], [])
+        ss_boost = 0.15 if "similar_speaker" in disc_methods else 0.0
+        recency = compute_activity_recency(podcast.get("last_episode_date"))
+        ep_count = compute_episode_count_signal(podcast.get("episode_count"))
+
+        composite, tier = compute_composite_score(
+            gpt_fit, emb_sim, ss_boost, recency, ep_count
+        )
+
+        # Build enriched score dict
+        signals = {
+            "gpt_fit_score": round(gpt_fit, 4),
+            "embedding_similarity": round(emb_sim, 4),
+            "similar_speaker_boost": round(ss_boost, 4),
+            "activity_recency": round(recency, 4),
+            "episode_count_signal": round(ep_count, 4),
+        }
+
+        gpt_score["fit_tier"] = tier
+        gpt_score["fit_score"] = composite
+        gpt_score["topic_match"] = {
+            "composite_score": composite,
+            "signals": signals,
+            "matching_pillars": gpt_score.get("matching_pillars", []),
+            "discovery_methods": disc_methods,
+        }
+        gpt_score["_signals"] = signals  # for display
+
+        return (podcast, gpt_score)
 
     print(f"\nScoring {len(podcasts)} podcasts with {args.workers} workers...")
     with ThreadPoolExecutor(max_workers=args.workers) as executor:
@@ -363,11 +583,19 @@ def main():
             stats[tier] += 1
 
             pillars = ", ".join(score.get("matching_pillars", [])[:3])
-            print(f"  {tier.upper():8s} ({score['fit_score']:.2f}) '{title}' — {pillars}")
+            print(f"  {tier.upper():8s} ({score['fit_score']:.2f}) '{title}' -- {pillars}")
 
             if args.test:
-                # Print details in test mode
                 print(f"           Rationale: {score['fit_rationale'][:100]}")
+                if use_composite and "_signals" in score:
+                    s = score["_signals"]
+                    print(
+                        f"           Signals: GPT={s['gpt_fit_score']:.2f} "
+                        f"Emb={s['embedding_similarity']:.2f} "
+                        f"Speaker={s['similar_speaker_boost']:.2f} "
+                        f"Recency={s['activity_recency']:.2f} "
+                        f"Episodes={s['episode_count_signal']:.2f}"
+                    )
                 for hook in score.get("episode_hooks", [])[:2]:
                     print(f"           Hook: {hook['episode_title'][:40]} -> {hook['angle'][:60]}")
                 for idea in score.get("suggested_episode_ideas", [])[:2]:
@@ -381,6 +609,7 @@ def main():
     # Summary
     print(f"\n{'='*60}")
     print(f"Scoring complete for {speaker['name']}")
+    print(f"  Mode: {'composite (5 signals)' if use_composite else 'GPT-only'}")
     print(f"  Scored: {stats['scored']}")
     print(f"  Strong: {stats['strong']}")
     print(f"  Moderate: {stats['moderate']}")
@@ -389,7 +618,7 @@ def main():
     if not args.test:
         print(f"  Saved: {stats['saved']}")
     else:
-        print("  DRY RUN — no database changes made")
+        print("  DRY RUN -- no database changes made")
 
 
 if __name__ == "__main__":
