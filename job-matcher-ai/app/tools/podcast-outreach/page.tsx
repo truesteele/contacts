@@ -1139,6 +1139,7 @@ function DiscoveryTab() {
   const [discoveryMethodFilter, setDiscoveryMethodFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [activeIn2026, setActiveIn2026] = useState(true);
+  const [bookmarkedOnly, setBookmarkedOnly] = useState(false);
 
   // Expanded row for signal breakdown
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
@@ -1174,6 +1175,7 @@ function DiscoveryTab() {
       if (discoveryMethodFilter !== 'all') params.set('discovery_method', discoveryMethodFilter);
       if (categoryFilter !== 'all') params.set('category', categoryFilter);
       if (activeIn2026) params.set('active_2026', 'true');
+      if (bookmarkedOnly) params.set('bookmarked', 'true');
 
       const res = await fetch(`/api/podcast/discover?${params}`);
       if (!res.ok) throw new Error('Failed to fetch podcasts');
@@ -1186,7 +1188,7 @@ function DiscoveryTab() {
     } finally {
       setLoading(false);
     }
-  }, [page, speaker, search, activityFilter, fitTierFilter, discoveryMethodFilter, categoryFilter, activeIn2026]);
+  }, [page, speaker, search, activityFilter, fitTierFilter, discoveryMethodFilter, categoryFilter, activeIn2026, bookmarkedOnly]);
 
   useEffect(() => {
     fetchPodcasts();
@@ -1196,7 +1198,7 @@ function DiscoveryTab() {
   useEffect(() => {
     setPage(1);
     setSelected(new Set());
-  }, [search, speaker, fitTierFilter, activityFilter, discoveryMethodFilter, categoryFilter, activeIn2026]);
+  }, [search, speaker, fitTierFilter, activityFilter, discoveryMethodFilter, categoryFilter, activeIn2026, bookmarkedOnly]);
 
   // Client-side sort
   const sorted = useMemo(() => {
@@ -1383,16 +1385,29 @@ function DiscoveryTab() {
         </Select>
       </div>
 
-      {/* Active in 2026 toggle */}
-      <div className="flex items-center gap-2 px-1">
-        <Checkbox
-          id="active2026"
-          checked={activeIn2026}
-          onCheckedChange={(checked) => setActiveIn2026(checked === true)}
-        />
-        <label htmlFor="active2026" className="text-sm text-muted-foreground cursor-pointer select-none">
-          Active in 2026 only
-        </label>
+      {/* Filter toggles */}
+      <div className="flex items-center gap-6 px-1">
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="active2026"
+            checked={activeIn2026}
+            onCheckedChange={(checked) => setActiveIn2026(checked === true)}
+          />
+          <label htmlFor="active2026" className="text-sm text-muted-foreground cursor-pointer select-none">
+            Active in 2026 only
+          </label>
+        </div>
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="bookmarkedOnly"
+            checked={bookmarkedOnly}
+            onCheckedChange={(checked) => setBookmarkedOnly(checked === true)}
+          />
+          <label htmlFor="bookmarkedOnly" className="text-sm text-muted-foreground cursor-pointer select-none flex items-center gap-1">
+            <Star className="h-3 w-3 text-amber-500" />
+            Bookmarked only
+          </label>
+        </div>
       </div>
 
       {/* Bulk actions */}
@@ -1519,7 +1534,12 @@ function DiscoveryTab() {
                         />
                       </td>
                       <td className="max-w-[250px] px-3 py-2">
-                        <div className="font-medium truncate">{podcast.title}</div>
+                        <div className="font-medium truncate flex items-center gap-1">
+                          {podcast.pitch?.is_bookmarked && (
+                            <Star className="h-3.5 w-3.5 text-amber-500 fill-amber-500 flex-shrink-0" />
+                          )}
+                          {podcast.title}
+                        </div>
                         {podcast.author && (
                           <div className="text-xs text-muted-foreground truncate">{podcast.author}</div>
                         )}
@@ -1584,12 +1604,26 @@ function DiscoveryTab() {
                         </Badge>
                       </td>
                       <td className="px-3 py-2 text-center font-mono text-xs">
-                        {podcast.pitch?.fit_score != null ? Number(podcast.pitch.fit_score).toFixed(2) : '-'}
+                        <div className="flex items-center justify-center gap-1.5">
+                          <span>{podcast.pitch?.fit_score != null ? Number(podcast.pitch.fit_score).toFixed(2) : '-'}</span>
+                          {podcast.pitch?.pitch_status && podcast.pitch.pitch_status !== 'unscored' && (
+                            <Badge variant="outline" className={cn('text-[9px] px-1 py-0', {
+                              'border-blue-300 text-blue-700': podcast.pitch.pitch_status === 'draft',
+                              'border-green-300 text-green-700': podcast.pitch.pitch_status === 'approved',
+                              'border-purple-300 text-purple-700': podcast.pitch.pitch_status === 'sent',
+                              'border-emerald-300 text-emerald-700': podcast.pitch.pitch_status === 'replied',
+                              'border-amber-300 text-amber-700': podcast.pitch.pitch_status === 'booked',
+                              'border-red-300 text-red-700': podcast.pitch.pitch_status === 'rejected',
+                            })}>
+                              {podcast.pitch.pitch_status}
+                            </Badge>
+                          )}
+                        </div>
                       </td>
                     </tr>
                     {isExpanded && (
                       <tr className="border-b bg-muted/10">
-                        <td colSpan={9} className="px-6 py-4">
+                        <td colSpan={10} className="px-6 py-4">
                           <PodcastDetailPanel podcastId={podcast.id} speaker={speaker} />
                         </td>
                       </tr>
