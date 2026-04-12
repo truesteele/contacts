@@ -202,7 +202,7 @@ Keywords: {keyword1}, {keyword2}, ...
 
 ---
 
-### [ ] US-004: Similar-Speaker Discovery
+### [x] US-004: Similar-Speaker Discovery
 
 **Goal:** Find podcasts that have hosted speakers similar to Sally/Justin by using pgvector to find similar contacts in our DB, then searching for their podcast appearances.
 

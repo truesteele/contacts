@@ -7,9 +7,10 @@ deduplicates results using GPT-5.4 mini, filters out inactive shows,
 and saves to podcast_targets.
 
 Discovery methods:
-  keyword    — search hardcoded terms (default)
-  expanded   — keyword + AI-generated expanded terms from speaker profile
-  all        — all discovery methods
+  keyword          — search hardcoded terms (default)
+  expanded         — keyword + AI-generated expanded terms from speaker profile
+  similar-speaker  — find podcasts via contacts with similar interests (pgvector)
+  all              — all discovery methods
 
 Usage:
   python scripts/intelligence/discover_podcasts.py --speaker sally --test --limit 10
@@ -17,6 +18,7 @@ Usage:
   python scripts/intelligence/discover_podcasts.py --speaker both
   python scripts/intelligence/discover_podcasts.py --speaker sally --search-terms "camping,outdoor family"
   python scripts/intelligence/discover_podcasts.py --speaker sally --method expanded --limit 100
+  python scripts/intelligence/discover_podcasts.py --speaker sally --method similar-speaker --test --limit 10
   python scripts/intelligence/discover_podcasts.py --speaker sally --method all
 """
 
@@ -31,6 +33,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dotenv import load_dotenv
 from openai import OpenAI
 from supabase import create_client, Client
+import psycopg2
 
 load_dotenv("/Users/Justin/Code/TrueSteele/contacts/.env")
 
@@ -401,6 +404,138 @@ Return a JSON object with key "terms" containing an array of strings."""
         return []
 
 
+# ── Similar-Speaker Discovery ──────────────────────────────────────────
+
+def discover_by_similar_speakers(
+    speaker_slug: str,
+    pi_client: PodcastIndexClient | None,
+    limit_per_term: int,
+    similar_speaker_limit: int = 50,
+    test: bool = False,
+) -> list[dict]:
+    """Find podcasts by searching for similar contacts' podcast appearances.
+
+    Pipeline:
+    1. Load speaker's profile_embedding from speaker_profiles
+    2. Query contacts for top N most similar by interests_embedding (pgvector)
+    3. Search Podcast Index for each similar contact by name
+    4. Filter: only keep podcasts where the contact's name appears in title/description
+    5. Tag results with discovery_method = 'similar_speaker'
+    """
+    if not pi_client:
+        print("  WARNING: Podcast Index client required for similar-speaker discovery (need name search)")
+        print("  Set PODCAST_INDEX_API_KEY and PODCAST_INDEX_API_SECRET in .env")
+        return []
+
+    # Connect via psycopg2 for vector queries
+    conn = psycopg2.connect(
+        host="db.ypqsrejrsocebnldicke.supabase.co",
+        port=5432,
+        dbname="postgres",
+        user="postgres",
+        password=os.environ["SUPABASE_DB_PASSWORD"],
+    )
+
+    try:
+        with conn.cursor() as cur:
+            # 1. Get speaker's profile_embedding
+            cur.execute(
+                "SELECT id, name, profile_embedding FROM speaker_profiles WHERE slug = %s",
+                (speaker_slug,),
+            )
+            row = cur.fetchone()
+            if not row or row[2] is None:
+                print(f"  WARNING: No profile embedding for speaker '{speaker_slug}'. Run embed_podcasts.py first.")
+                return []
+
+            speaker_name = row[1]
+            speaker_embedding_str = row[2]  # pgvector returns as string
+
+            # 2. Query contacts for most similar by interests_embedding
+            cur.execute(
+                """
+                SELECT id, first_name, last_name, headline, company,
+                       1 - (interests_embedding <=> %s::vector) as similarity
+                FROM contacts
+                WHERE interests_embedding IS NOT NULL
+                ORDER BY interests_embedding <=> %s::vector
+                LIMIT %s
+                """,
+                (speaker_embedding_str, speaker_embedding_str, similar_speaker_limit),
+            )
+            similar_contacts = cur.fetchall()
+    finally:
+        conn.close()
+
+    # 3. Filter by similarity threshold
+    contacts_to_search = [
+        {"id": c[0], "first_name": c[1], "last_name": c[2],
+         "headline": c[3], "company": c[4], "similarity": float(c[5])}
+        for c in similar_contacts if float(c[5]) > 0.5
+    ]
+
+    print(f"  Speaker: {speaker_name}")
+    print(f"  Found {len(contacts_to_search)} similar contacts (similarity > 0.5) out of top {similar_speaker_limit}")
+    if contacts_to_search:
+        print(f"  Top 5 similar:")
+        for c in contacts_to_search[:5]:
+            print(f"    - {c['first_name']} {c['last_name']} ({c.get('headline', '')[:50]}) — sim: {c['similarity']:.3f}")
+
+    # 4. Search Podcast Index for each similar contact by name
+    all_results = []
+    seen_titles = set()
+    contacts_with_hits = 0
+
+    for i, contact in enumerate(contacts_to_search):
+        name = f"{contact['first_name']} {contact['last_name']}"
+        name_lower = name.lower()
+        first_lower = contact["first_name"].lower()
+        last_lower = contact["last_name"].lower()
+
+        if test and i >= 10:
+            print(f"  (test mode: stopping after 10 contacts)")
+            break
+
+        try:
+            pi_results = pi_client.search_by_term(name, max_results=limit_per_term)
+        except Exception as e:
+            print(f"    PI search error for '{name}': {e}")
+            continue
+
+        # Filter: only keep podcasts where the contact appears to be a guest
+        contact_hits = 0
+        for p in pi_results:
+            title_lower = p["title"].lower()
+            desc_lower = (p.get("description") or "").lower()
+
+            # Check if the person's name appears in title or description
+            name_in_content = (
+                name_lower in title_lower
+                or name_lower in desc_lower
+                or (first_lower in desc_lower and last_lower in desc_lower)
+            )
+
+            if name_in_content:
+                key = p["title"].lower().strip()
+                if key not in seen_titles:
+                    seen_titles.add(key)
+                    p["_source"] = "podcast_index"
+                    p["_search_term"] = name
+                    p["_discovery_method"] = "similar_speaker"
+                    all_results.append(p)
+                    contact_hits += 1
+                    print(f"    Found '{p['title'][:60]}' via {name} (sim: {contact['similarity']:.3f})")
+
+        if contact_hits > 0:
+            contacts_with_hits += 1
+
+        # Small delay to avoid hammering PI API
+        time.sleep(0.2)
+
+    print(f"\n  Similar-speaker results: {len(all_results)} podcasts from {contacts_with_hits} contacts")
+    return all_results
+
+
 # ── Main ───────────────────────────────────────────────────────────────
 
 def main():
@@ -416,8 +551,10 @@ def main():
     parser.add_argument("--workers", type=int, default=20,
                         help="Concurrent GPT workers for dedup (default: 20)")
     parser.add_argument("--method", type=str, default="keyword",
-                        choices=["keyword", "expanded", "all"],
-                        help="Discovery method: keyword (default), expanded (keyword + AI terms), all")
+                        choices=["keyword", "expanded", "similar-speaker", "all"],
+                        help="Discovery method: keyword (default), expanded (keyword + AI terms), similar-speaker, all")
+    parser.add_argument("--similar-speaker-limit", type=int, default=50,
+                        help="How many similar contacts to check for similar-speaker discovery (default: 50)")
     args = parser.parse_args()
 
     # Init clients
@@ -449,15 +586,19 @@ def main():
     print()
 
     all_results = []
+    step = 1
 
-    # ── Keyword search (always runs for keyword/expanded/all) ──
-    print("Step 1: Keyword search...")
-    keyword_results = search_all(terms, args.limit, pi_client, discovery_method="keyword_search")
-    all_results.extend(keyword_results)
+    # ── Keyword search (runs for keyword/expanded/all) ──
+    if args.method in ("keyword", "expanded", "all"):
+        print(f"Step {step}: Keyword search...")
+        keyword_results = search_all(terms, args.limit, pi_client, discovery_method="keyword_search")
+        all_results.extend(keyword_results)
+        step += 1
 
     # ── Expanded keyword search ──
     if args.method in ("expanded", "all"):
-        print("\nStep 1b: Generating expanded search terms...")
+        print(f"\nStep {step}: Generating expanded search terms...")
+        step += 1
         # Load speaker profile for expanded terms
         speakers_to_expand = []
         if args.speaker in ("sally", "both"):
@@ -487,6 +628,34 @@ def main():
                 print(f"  New podcasts from expanded terms: {len(new_expanded)}")
                 all_results.extend(new_expanded)
 
+    # ── Similar-speaker discovery ──
+    if args.method in ("similar-speaker", "all"):
+        print(f"\nStep {step}: Similar-speaker discovery...")
+        step += 1
+        speakers_to_search = []
+        if args.speaker in ("sally", "both"):
+            speakers_to_search.append("sally")
+        if args.speaker in ("justin", "both"):
+            speakers_to_search.append("justin")
+
+        seen_titles = {r["title"].lower().strip() for r in all_results}
+
+        for slug in speakers_to_search:
+            similar_results = discover_by_similar_speakers(
+                speaker_slug=slug,
+                pi_client=pi_client,
+                limit_per_term=min(args.limit, 20),  # cap at 20 per contact name search
+                similar_speaker_limit=args.similar_speaker_limit,
+                test=args.test,
+            )
+            # Filter out titles already found by other methods
+            new_similar = [r for r in similar_results
+                           if r["title"].lower().strip() not in seen_titles]
+            for r in new_similar:
+                seen_titles.add(r["title"].lower().strip())
+            print(f"  New podcasts from similar speakers: {len(new_similar)}")
+            all_results.extend(new_similar)
+
     if not all_results:
         print("No results found. Exiting.")
         return
@@ -494,14 +663,17 @@ def main():
     # Filter and dedup
     print(f"\nTotal raw results: {len(all_results)}")
 
-    print("\nStep 2: Filtering non-English...")
+    print(f"\nStep {step}: Filtering non-English...")
     all_results = filter_language(all_results)
+    step += 1
 
-    print("\nStep 3: Filtering inactive shows...")
+    print(f"\nStep {step}: Filtering inactive shows...")
     all_results = filter_inactive(all_results)
+    step += 1
 
-    print("\nStep 4: GPT-powered deduplication...")
+    print(f"\nStep {step}: GPT-powered deduplication...")
     all_results = dedup_with_gpt(all_results, oai, workers=args.workers)
+    step += 1
 
     # Summary
     print(f"\n{'='*60}")
@@ -531,7 +703,7 @@ def main():
         print(f"\nDRY RUN -- no database changes made")
     else:
         # Save
-        print("\nStep 5: Saving to database...")
+        print(f"\nStep {step}: Saving to database...")
         saved = save_podcasts(all_results, sb)
         print(f"\nSaved {saved}/{len(all_results)} podcasts to podcast_targets")
 

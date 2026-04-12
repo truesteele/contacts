@@ -85,3 +85,40 @@ Date: 2026-04-11
 - The `_merge_discovery_methods()` closure captures `discovery_method` from the outer scope — works correctly but is defined inside the loop
 - `search_all()` now takes a `discovery_method` parameter (default "keyword_search") for tagging
 
+## US-004: Similar-Speaker Discovery ✓
+Date: 2026-04-11
+
+**What was done:**
+- Added `discover_by_similar_speakers()` function to `discover_podcasts.py`
+- Uses psycopg2 for pgvector cosine similarity query against contacts `interests_embedding`
+- Loads speaker's `profile_embedding` from speaker_profiles via psycopg2
+- Finds top N similar contacts (default 50), filters by similarity > 0.5
+- Searches Podcast Index for each similar contact's name
+- Filters results to only keep podcasts where contact's name appears in title/description
+- Tags results with `discovery_methods = ['similar_speaker']`
+- Added `--method similar-speaker` option (and included in `all`)
+- Added `--similar-speaker-limit` CLI flag (default: 50)
+- Dynamic step numbering so all methods compose cleanly
+- 0.2s delay between PI API calls to avoid hammering
+
+**Test results (--speaker sally --test --limit 10):**
+- 40 contacts pass similarity > 0.5 threshold out of top 50
+- Top similar: Sally Steele (0.821), Krista Kokjohn-Poehler (0.740), Rue Mapp (0.739)
+- Found 4 podcasts from 3 contacts (Laura Rodriguez, Alex Bailey, Benje Williams)
+- After language + activity filters: 1 active English podcast
+- Most contacts have no podcast appearances (expected — this is a low-hit-rate but high-relevance method)
+
+**Verified:**
+- `--speaker sally --method similar-speaker --test --limit 10` finds similar contacts and searches for podcast appearances
+- Output shows discovery chain: podcast title + similar contact name + similarity score
+- Results tagged with `_discovery_method = 'similar_speaker'`
+- Does not duplicate existing podcasts (title dedup in seen_titles set)
+- Gracefully handles contacts with no podcast appearances (silent skip)
+- `--similar-speaker-limit 100` correctly expands search pool (still 40 pass threshold)
+
+**Notes:**
+- psycopg2 returns pgvector embeddings as strings, which can be passed directly back as `%s::vector` in queries
+- Hit rate is low (~7.5% of contacts have searchable podcast appearances) but results are highly relevant
+- PI API name search sometimes returns false positives (e.g., common names matching unrelated podcasts) — the name-in-content filter handles this well
+- The `--method all` flag now runs: keyword → expanded → similar-speaker → filters → dedup → save
+
