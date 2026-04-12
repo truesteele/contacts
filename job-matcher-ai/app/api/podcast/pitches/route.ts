@@ -125,6 +125,8 @@ export async function PATCH(req: Request) {
       subject_line?: string;
       pitch_body?: string;
       pitch_status?: string;
+      is_bookmarked?: boolean;
+      user_notes?: string;
     };
 
     if (!body.pitch_id) {
@@ -140,6 +142,12 @@ export async function PATCH(req: Request) {
     }
     if (body.pitch_body !== undefined) {
       updates.pitch_body = body.pitch_body;
+    }
+    if (body.is_bookmarked !== undefined) {
+      updates.is_bookmarked = body.is_bookmarked;
+    }
+    if (body.user_notes !== undefined) {
+      updates.user_notes = body.user_notes;
     }
     if (body.pitch_status !== undefined) {
       const valid = ['draft', 'approved', 'rejected', 'sent', 'replied', 'booked'];
@@ -171,6 +179,78 @@ export async function PATCH(req: Request) {
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to update pitch';
     console.error('[Podcast Pitches] Error:', message);
+    return Response.json({ error: message }, { status: 500 });
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.json() as {
+      podcast_target_id: number;
+      speaker_slug: string;
+      is_bookmarked?: boolean;
+      user_notes?: string;
+    };
+
+    if (!body.podcast_target_id || !body.speaker_slug) {
+      return Response.json(
+        { error: 'podcast_target_id and speaker_slug are required' },
+        { status: 400 }
+      );
+    }
+
+    // Resolve speaker_profile_id from slug
+    const { data: speakerProfile, error: speakerError } = await supabase
+      .from('speaker_profiles')
+      .select('id')
+      .eq('slug', body.speaker_slug)
+      .single();
+
+    if (speakerError || !speakerProfile) {
+      return Response.json(
+        { error: `Speaker not found for slug: ${body.speaker_slug}` },
+        { status: 404 }
+      );
+    }
+
+    // Check if pitch already exists for this podcast+speaker combo
+    const { data: existing } = await supabase
+      .from('podcast_pitches')
+      .select('id')
+      .eq('podcast_target_id', body.podcast_target_id)
+      .eq('speaker_profile_id', speakerProfile.id)
+      .single();
+
+    if (existing) {
+      // Upsert: return existing record instead of creating duplicate
+      return Response.json({ id: existing.id, pitch_id: existing.id });
+    }
+
+    // Create minimal pitch record
+    const { data: newPitch, error: insertError } = await supabase
+      .from('podcast_pitches')
+      .insert({
+        podcast_target_id: body.podcast_target_id,
+        speaker_profile_id: speakerProfile.id,
+        is_bookmarked: body.is_bookmarked ?? false,
+        user_notes: body.user_notes ?? '',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .select('id')
+      .single();
+
+    if (insertError || !newPitch) {
+      return Response.json(
+        { error: `Failed to create pitch: ${insertError?.message}` },
+        { status: 500 }
+      );
+    }
+
+    return Response.json({ id: newPitch.id, pitch_id: newPitch.id });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to create pitch';
+    console.error('[Podcast Pitches] POST Error:', message);
     return Response.json({ error: message }, { status: 500 });
   }
 }
