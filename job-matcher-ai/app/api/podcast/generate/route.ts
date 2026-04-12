@@ -93,6 +93,8 @@ function buildSystemPrompt(speaker: {
   bio: string;
   writing_samples?: any;
   past_appearances?: any;
+  linkedin_url?: string;
+  website_url?: string;
 }): string {
   const voiceGuide = speaker.slug === 'sally'
     ? `VOICE GUIDE (Sally Steele — podcast outreach):
@@ -222,9 +224,16 @@ TONE TEST: Does this read like a real email from a real person? Or does it read 
     }
   }
 
+  const speakerLinks: string[] = [];
+  if (speaker.linkedin_url) speakerLinks.push(`LinkedIn: ${speaker.linkedin_url}`);
+  if (speaker.website_url) speakerLinks.push(`Website: ${speaker.website_url}`);
+  const linksSection = speakerLinks.length > 0
+    ? `\n\nSPEAKER LINKS (include in email signature or body if natural — do NOT force them in):\n${speakerLinks.join('\n')}`
+    : '';
+
   return `You are writing a personal outreach email from ${speaker.name} to a podcast host, inviting them to explore a conversation. This is NOT a pitch template. It's a genuine, human email that happens to suggest being a guest. Write it like ${speaker.name} would actually write it — warm, specific, slightly imperfect.
 
-${speaker.bio}
+${speaker.bio}${linksSection}
 
 ${voiceGuide}
 
@@ -585,7 +594,7 @@ export async function POST(req: Request) {
     // Fetch speakers
     const { data: speakers } = await supabase
       .from('speaker_profiles')
-      .select('id, name, slug, bio, writing_samples, past_appearances')
+      .select('id, name, slug, bio, writing_samples, past_appearances, linkedin_url, website_url')
       .in('id', speakerIds);
 
     const speakerMap = new Map<number, any>();
