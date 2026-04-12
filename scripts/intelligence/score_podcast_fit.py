@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
 """
-Podcast Fit Scoring — GPT-5.4 mini structured output + composite multi-signal scoring
+Podcast Fit Scoring — Holistic GPT-5.4 mini scoring
 
-Scores how well each discovered podcast fits a speaker's topic pillars.
-Composite mode (default) combines 5 signals: GPT fit, embedding similarity,
-similar-speaker boost, activity recency, and episode count.
+GPT receives ALL available information (speaker profile, podcast data, episodes,
+embedding similarity, discovery method, activity, podcast_profile research) and
+makes a single holistic fit judgment. No hardcoded signal weights.
 
 Saves fit scores to podcast_pitches (fit fields only; pitch copy comes later).
 
 Usage:
   python scripts/intelligence/score_podcast_fit.py --speaker sally --limit 5 --test
   python scripts/intelligence/score_podcast_fit.py --speaker justin --limit 50 --workers 50
-  python scripts/intelligence/score_podcast_fit.py --speaker sally --no-composite
 """
 
 import os
@@ -35,16 +34,22 @@ load_dotenv("/Users/Justin/Code/TrueSteele/contacts/.env")
 
 MODEL = "gpt-5.4-mini"
 
-SYSTEM_PROMPT = """You are a podcast booking expert evaluating whether a podcast is a good
-fit for a speaker. Score the fit based on topic alignment, audience
-relevance, and how naturally the speaker's expertise connects to the
-podcast's content. Consider recent episodes to identify specific
-conversation angles.
+SYSTEM_PROMPT = """You are a podcast booking expert scoring fit between a speaker and a podcast.
+
+You have access to multiple data signals. Weigh them holistically — use your judgment:
+- Topic alignment and audience relevance matter most
+- Recent episodes and specific conversation angles matter
+- How active and established the podcast is matters
+- Embedding similarity provides a semantic overlap signal (0-1, higher = more overlap)
+- Discovery method provides provenance context (how this podcast was found)
+- Podcast profile research (when available) gives deeper context on hosts, audience, format
 
 Score 0.0-1.0 where:
-- 0.8-1.0 = strong (clear topic overlap, audience match)
-- 0.5-0.79 = moderate (some overlap, could work with right angle)
-- 0.0-0.49 = weak (poor fit, forced connection)"""
+- 0.8-1.0 = strong fit (pursue immediately — clear topic overlap, right audience, active show)
+- 0.5-0.79 = moderate (worth considering with right angle)
+- 0.0-0.49 = weak (poor fit, forced connection)
+
+Be calibrated: a 0.9 should be a near-perfect match. Use the full range."""
 
 FIT_SCORE_SCHEMA = {
     "type": "json_schema",
@@ -171,17 +176,25 @@ def load_podcast_discovery_methods(conn, podcast_ids: list[int]) -> dict[int, li
 
 def load_existing_pitches(sb: Client, speaker_id: int) -> dict[int, dict]:
     """Load existing pitch rows keyed by podcast_target_id for a speaker."""
-    result = (
-        sb.table("podcast_pitches")
-        .select("id, podcast_target_id, fit_score, pitch_status")
-        .eq("speaker_profile_id", speaker_id)
-        .execute()
-    )
-    return {
-        row["podcast_target_id"]: row
-        for row in (result.data or [])
-        if row.get("podcast_target_id") is not None
-    }
+    pitches: dict[int, dict] = {}
+    page_size = 1000
+    offset = 0
+    while True:
+        result = (
+            sb.table("podcast_pitches")
+            .select("id, podcast_target_id, fit_score, pitch_status")
+            .eq("speaker_profile_id", speaker_id)
+            .range(offset, offset + page_size - 1)
+            .execute()
+        )
+        rows = result.data or []
+        for row in rows:
+            if row.get("podcast_target_id") is not None:
+                pitches[row["podcast_target_id"]] = row
+        if len(rows) < page_size:
+            break
+        offset += page_size
+    return pitches
 
 
 def _parse_pg_vector(vec_str: str) -> list[float]:
@@ -253,8 +266,14 @@ def build_speaker_context(speaker: dict) -> str:
     return "\n".join(parts)
 
 
-def build_podcast_context(podcast: dict, episodes: list[dict]) -> str:
-    """Build podcast context string including recent episodes."""
+def build_podcast_context(
+    podcast: dict,
+    episodes: list[dict],
+    embedding_sim: float | None = None,
+    discovery_methods: list[str] | None = None,
+    podcast_profile: dict | None = None,
+) -> str:
+    """Build full podcast context including all available signals."""
     parts = [
         f"PODCAST: {podcast['title']}",
         f"Author/Host: {podcast.get('author') or 'Unknown'}",
@@ -269,6 +288,36 @@ def build_podcast_context(podcast: dict, episodes: list[dict]) -> str:
             parts.append(f"Categories: {', '.join(categories)}")
 
     parts.append(f"Activity: {podcast.get('activity_status', 'unknown')}")
+    ep_count = podcast.get("episode_count")
+    if ep_count:
+        parts.append(f"Total episodes: {ep_count}")
+    last_ep = podcast.get("last_episode_date")
+    if last_ep:
+        parts.append(f"Last episode date: {str(last_ep)[:10]}")
+
+    # Podcast profile research (from Perplexity)
+    if podcast_profile:
+        parts.append("")
+        parts.append("RESEARCH PROFILE:")
+        about = podcast_profile.get("about", "")
+        if about:
+            parts.append(f"About: {about}")
+        hosts = podcast_profile.get("hosts", [])
+        for h in hosts:
+            bio = h.get("bio", "")
+            if bio:
+                parts.append(f"Host — {h.get('name', 'Unknown')}: {bio}")
+        audience = podcast_profile.get("audience", {})
+        size = audience.get("size_estimate", "")
+        demo = audience.get("demographic", "")
+        if size or demo:
+            parts.append(f"Audience: {size}. {demo}".strip())
+        guests = podcast_profile.get("notable_guests", [])
+        if guests:
+            parts.append(f"Notable guests: {', '.join(guests[:10])}")
+        fmt = podcast_profile.get("format", {})
+        if fmt.get("style"):
+            parts.append(f"Format: {fmt['style']}, ~{fmt.get('length_minutes', '?')}min, {fmt.get('frequency', '?')}")
 
     if episodes:
         parts.append("")
@@ -287,10 +336,22 @@ def build_podcast_context(podcast: dict, episodes: list[dict]) -> str:
             if desc:
                 parts.append(f"  {desc}")
 
+    # Additional signals section
+    parts.append("")
+    parts.append("ADDITIONAL CONTEXT:")
+    if embedding_sim is not None:
+        parts.append(f"- Embedding similarity: {embedding_sim:.3f} (semantic overlap between speaker profile and podcast description, 0-1 scale)")
+    if discovery_methods:
+        parts.append(f"- Discovery method: {', '.join(discovery_methods)} (how this podcast was found)")
+    if ep_count:
+        parts.append(f"- Established: {ep_count} total episodes")
+    if last_ep:
+        parts.append(f"- Last published: {str(last_ep)[:10]}")
+
     return "\n".join(parts)
 
 
-# -- Composite Signal Functions ----------------------------------------------
+# -- Helpers -----------------------------------------------------------------
 
 def cosine_similarity(a: list[float], b: list[float]) -> float:
     """Cosine similarity between two vectors. Pure Python (no numpy needed)."""
@@ -302,106 +363,47 @@ def cosine_similarity(a: list[float], b: list[float]) -> float:
     return dot / (norm_a * norm_b)
 
 
-def compute_embedding_similarity(
-    speaker_embedding: list[float] | None,
-    podcast_embedding: list[float] | None,
-) -> float:
-    """Cosine similarity between speaker and podcast embeddings. Returns 0-1."""
-    if speaker_embedding is None or podcast_embedding is None:
-        return 0.3  # neutral default for missing embeddings
-    return max(0.0, cosine_similarity(speaker_embedding, podcast_embedding))
-
-
-def compute_activity_recency(last_episode_date: str | None) -> float:
-    """0-1 score based on how recently the podcast published."""
-    if not last_episode_date:
-        return 0.3  # unknown = moderate
-    try:
-        if isinstance(last_episode_date, str):
-            # Handle ISO format with or without timezone
-            date_str = last_episode_date.replace("Z", "+00:00")
-            if "T" in date_str:
-                dt = datetime.fromisoformat(date_str)
-            else:
-                dt = datetime.fromisoformat(date_str + "T00:00:00+00:00")
-        else:
-            dt = last_episode_date
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
-        days_ago = (datetime.now(timezone.utc) - dt).days
-    except (ValueError, TypeError):
-        return 0.3
-    if days_ago <= 7:
-        return 1.0
-    if days_ago <= 30:
-        return 0.8
-    if days_ago <= 60:
-        return 0.5
-    if days_ago <= 90:
-        return 0.3
-    return 0.1
-
-
-def compute_episode_count_signal(count: int | None) -> float:
-    """0-1 normalized. More episodes = more established."""
-    if not count:
-        return 0.1
-    if count >= 200:
-        return 1.0
-    if count >= 100:
-        return 0.8
-    if count >= 50:
-        return 0.6
-    if count >= 20:
-        return 0.4
-    if count >= 10:
-        return 0.2
-    return 0.1
-
-
-def compute_composite_score(
-    gpt_fit_score: float,
-    embedding_similarity: float,
-    similar_speaker_boost: float,
-    activity_recency: float,
-    episode_count_signal: float,
-) -> tuple[float, str]:
-    """
-    Compute composite score from 4 base signals + similar-speaker bonus.
-
-    Base score uses 4 signals normalized to sum to 1.0:
-      GPT fit (0.41) + Embedding (0.35) + Recency (0.12) + Episodes (0.12)
-    Similar-speaker is a bonus (0.10) added on top, capped at 1.0.
-    This prevents non-similar-speaker podcasts from being penalized.
-    """
-    base = (
-        0.41 * gpt_fit_score
-        + 0.35 * embedding_similarity
-        + 0.12 * activity_recency
-        + 0.12 * episode_count_signal
-    )
-    bonus = 0.10 if similar_speaker_boost > 0 else 0.0
-    composite = min(1.0, base + bonus)
-
-    if composite >= 0.70:
-        tier = "strong"
-    elif composite >= 0.45:
-        tier = "moderate"
-    else:
-        tier = "weak"
-
-    return round(composite, 4), tier
+def load_podcast_profiles(sb: Client, podcast_ids: list[int]) -> dict[int, dict]:
+    """Load podcast_profile JSONB for a batch of podcast IDs."""
+    if not podcast_ids:
+        return {}
+    result_map = {}
+    for i in range(0, len(podcast_ids), 500):
+        batch = podcast_ids[i : i + 500]
+        result = (
+            sb.table("podcast_targets")
+            .select("id, podcast_profile")
+            .in_("id", batch)
+            .not_.is_("podcast_profile", "null")
+            .execute()
+        )
+        for row in result.data or []:
+            result_map[row["id"]] = row["podcast_profile"]
+    return result_map
 
 
 # -- GPT Scoring -------------------------------------------------------------
 
-def score_podcast(oai: OpenAI, speaker_context: str, podcast: dict, episodes: list[dict]) -> dict | None:
-    """Score a single podcast's fit with GPT-5.4 mini structured output."""
-    podcast_context = build_podcast_context(podcast, episodes)
+def score_podcast(
+    oai: OpenAI,
+    speaker_context: str,
+    podcast: dict,
+    episodes: list[dict],
+    embedding_sim: float | None = None,
+    discovery_methods: list[str] | None = None,
+    podcast_profile: dict | None = None,
+) -> dict | None:
+    """Score a single podcast's fit with GPT-5.4 mini holistic scoring."""
+    podcast_context = build_podcast_context(
+        podcast, episodes,
+        embedding_sim=embedding_sim,
+        discovery_methods=discovery_methods,
+        podcast_profile=podcast_profile,
+    )
 
     user_message = (
         f"{speaker_context}\n\n---\n\n{podcast_context}\n\n"
-        "Score how well this podcast fits this speaker. "
+        "Score how well this podcast fits this speaker. Consider all the information above holistically. "
         "Identify which topic pillars match, suggest angles from recent episodes, "
         "and propose 2-3 episode topic ideas."
     )
@@ -454,7 +456,10 @@ def save_score(
         "fit_tier": score["fit_tier"],
         "fit_score": score["fit_score"],
         "fit_rationale": score["fit_rationale"],
-        "topic_match": score.get("topic_match", score.get("matching_pillars", [])),
+        "topic_match": {
+            "matching_pillars": score.get("matching_pillars", []),
+            "discovery_methods": score.get("_discovery_methods", []),
+        },
         "episode_hooks": score.get("episode_hooks", []),
         "suggested_topics": score.get("suggested_episode_ideas", []),
         "model_used": MODEL,
@@ -495,17 +500,13 @@ def main():
                         help="Skip podcasts with fewer episodes (default: 0)")
     parser.add_argument("--test", action="store_true",
                         help="Dry run: print scores without saving")
-    parser.add_argument("--no-composite", action="store_true",
-                        help="Disable composite scoring, use GPT-only (backward compat)")
     args = parser.parse_args()
-
-    use_composite = not args.no_composite
 
     # Init clients
     sb = get_supabase()
     oai = get_openai()
     print(f"Connected to Supabase and OpenAI")
-    print(f"Scoring mode: {'composite (5 signals)' if use_composite else 'GPT-only'}")
+    print(f"Scoring mode: holistic (GPT-5.4 mini with all context)")
 
     # Load speaker
     speaker = load_speaker(sb, args.speaker)
@@ -518,15 +519,13 @@ def main():
     existing_scored = len(existing_pitches) - existing_pending
     print(f"Existing pitch rows: {len(existing_pitches)} ({existing_scored} scored, {existing_pending} pending)")
 
-    # Load speaker embedding for composite scoring
-    speaker_embedding = None
-    if use_composite:
-        conn = get_pg_conn()
-        speaker_embedding = load_speaker_embedding(conn, speaker["id"])
-        if speaker_embedding:
-            print(f"Speaker embedding: loaded ({len(speaker_embedding)} dims)")
-        else:
-            print(f"Speaker embedding: not found (will use neutral default 0.3)")
+    # Load speaker embedding
+    conn = get_pg_conn()
+    speaker_embedding = load_speaker_embedding(conn, speaker["id"])
+    if speaker_embedding:
+        print(f"Speaker embedding: loaded ({len(speaker_embedding)} dims)")
+    else:
+        print(f"Speaker embedding: not found (embedding similarity will be omitted)")
 
     # Load unscored podcasts
     podcasts = load_unscored_podcasts(
@@ -540,17 +539,17 @@ def main():
 
     if not podcasts:
         print("No unscored podcasts found. Done.")
+        conn.close()
         return
 
-    # Load podcast embeddings and discovery methods in bulk for composite
-    podcast_embeddings = {}
-    discovery_methods_map = {}
-    if use_composite:
-        podcast_ids = [p["id"] for p in podcasts]
-        podcast_embeddings = load_podcast_embeddings(conn, podcast_ids)
-        discovery_methods_map = load_podcast_discovery_methods(conn, podcast_ids)
-        conn.close()
-        print(f"Podcast embeddings loaded: {len(podcast_embeddings)}/{len(podcast_ids)}")
+    # Load all contextual data in bulk
+    podcast_ids = [p["id"] for p in podcasts]
+    podcast_embeddings = load_podcast_embeddings(conn, podcast_ids)
+    discovery_methods_map = load_podcast_discovery_methods(conn, podcast_ids)
+    conn.close()
+    podcast_profiles = load_podcast_profiles(sb, podcast_ids)
+    print(f"Podcast embeddings loaded: {len(podcast_embeddings)}/{len(podcast_ids)}")
+    print(f"Podcast profiles loaded: {len(podcast_profiles)}/{len(podcast_ids)}")
 
     # Load episodes for each podcast and filter by min-episodes
     podcast_episodes = {}
@@ -576,45 +575,26 @@ def main():
 
     def score_one(podcast: dict) -> tuple[dict, dict | None]:
         eps = podcast_episodes.get(podcast["id"], [])
-        gpt_score = score_podcast(oai, speaker_context, podcast, eps)
+        disc_methods = discovery_methods_map.get(podcast["id"], [])
+        profile = podcast_profiles.get(podcast["id"])
+
+        # Compute embedding similarity as a context signal for GPT
+        emb_sim = None
+        pod_emb = podcast_embeddings.get(podcast["id"])
+        if speaker_embedding and pod_emb:
+            emb_sim = max(0.0, cosine_similarity(speaker_embedding, pod_emb))
+
+        gpt_score = score_podcast(
+            oai, speaker_context, podcast, eps,
+            embedding_sim=emb_sim,
+            discovery_methods=disc_methods,
+            podcast_profile=profile,
+        )
         if gpt_score is None:
             return (podcast, None)
 
-        if not use_composite:
-            return (podcast, gpt_score)
-
-        # Compute composite signals
-        gpt_fit = gpt_score["fit_score"]
-        emb_sim = compute_embedding_similarity(
-            speaker_embedding, podcast_embeddings.get(podcast["id"])
-        )
-        disc_methods = discovery_methods_map.get(podcast["id"], [])
-        ss_boost = 1.0 if "similar_speaker" in disc_methods else 0.0
-        recency = compute_activity_recency(podcast.get("last_episode_date"))
-        ep_count = compute_episode_count_signal(podcast.get("episode_count"))
-
-        composite, tier = compute_composite_score(
-            gpt_fit, emb_sim, ss_boost, recency, ep_count
-        )
-
-        # Build enriched score dict
-        signals = {
-            "gpt_fit_score": round(gpt_fit, 4),
-            "embedding_similarity": round(emb_sim, 4),
-            "similar_speaker_boost": round(ss_boost, 4),
-            "activity_recency": round(recency, 4),
-            "episode_count_signal": round(ep_count, 4),
-        }
-
-        gpt_score["fit_tier"] = tier
-        gpt_score["fit_score"] = composite
-        gpt_score["topic_match"] = {
-            "composite_score": composite,
-            "signals": signals,
-            "matching_pillars": gpt_score.get("matching_pillars", []),
-            "discovery_methods": disc_methods,
-        }
-        gpt_score["_signals"] = signals  # for display
+        # Stash discovery methods for save
+        gpt_score["_discovery_methods"] = disc_methods
 
         return (podcast, gpt_score)
 
@@ -638,16 +618,7 @@ def main():
             print(f"  {tier.upper():8s} ({score['fit_score']:.2f}) '{title}' -- {pillars}")
 
             if args.test:
-                print(f"           Rationale: {score['fit_rationale'][:100]}")
-                if use_composite and "_signals" in score:
-                    s = score["_signals"]
-                    print(
-                        f"           Signals: GPT={s['gpt_fit_score']:.2f} "
-                        f"Emb={s['embedding_similarity']:.2f} "
-                        f"Speaker={s['similar_speaker_boost']:.2f} "
-                        f"Recency={s['activity_recency']:.2f} "
-                        f"Episodes={s['episode_count_signal']:.2f}"
-                    )
+                print(f"           Rationale: {score['fit_rationale'][:120]}")
                 for hook in score.get("episode_hooks", [])[:2]:
                     print(f"           Hook: {hook['episode_title'][:40]} -> {hook['angle'][:60]}")
                 for idea in score.get("suggested_episode_ideas", [])[:2]:
@@ -668,7 +639,7 @@ def main():
     # Summary
     print(f"\n{'='*60}")
     print(f"Scoring complete for {speaker['name']}")
-    print(f"  Mode: {'composite (5 signals)' if use_composite else 'GPT-only'}")
+    print(f"  Mode: holistic GPT-5.4 mini")
     print(f"  Scored: {stats['scored']}")
     print(f"  Strong: {stats['strong']}")
     print(f"  Moderate: {stats['moderate']}")

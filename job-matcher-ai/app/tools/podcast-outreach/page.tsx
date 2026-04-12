@@ -96,19 +96,48 @@ interface SpeakerProfile {
   past_appearances: PastAppearance[];
 }
 
-interface CompositeSignals {
-  gpt_fit_score: number;
-  embedding_similarity: number;
-  similar_speaker_boost: number;
-  activity_recency: number;
-  episode_count_signal: number;
-}
-
 interface TopicMatch {
-  composite_score?: number;
-  signals?: CompositeSignals;
   matching_pillars?: string[];
   discovery_methods?: string[];
+}
+
+interface PodcastProfileHost {
+  name: string;
+  bio: string;
+  social_links: { twitter: string; linkedin: string; instagram: string; website: string };
+}
+
+interface PodcastProfile {
+  about: string;
+  hosts: PodcastProfileHost[];
+  audience: { size_estimate: string; demographic: string };
+  platforms: { apple_url: string; spotify_url: string; youtube_url: string; website_url: string };
+  notable_guests: string[];
+  format: { style: string; length_minutes: number; frequency: string };
+  social_media: { twitter: string; instagram: string; facebook: string; tiktok: string };
+  awards_recognition: string[];
+}
+
+interface PodcastEpisode {
+  id: number;
+  title: string;
+  description: string | null;
+  published_at: string | null;
+  duration_seconds: number | null;
+  episode_url: string | null;
+}
+
+interface PodcastDetailData {
+  podcast: Podcast & { podcast_profile: PodcastProfile | null; researched_at: string | null };
+  episodes: PodcastEpisode[];
+  pitch: {
+    fit_tier: string | null;
+    fit_score: number | null;
+    fit_rationale: string | null;
+    topic_match: TopicMatch | string[] | null;
+    episode_hooks: { episode_title: string; angle: string }[] | null;
+    suggested_topics: { title: string; description: string }[] | null;
+  } | null;
 }
 
 interface PodcastPitch {
@@ -136,6 +165,9 @@ interface Podcast {
   categories: string[] | null;
   email_verified: boolean | null;
   discovery_methods: string[] | null;
+  apple_rating: number | null;
+  apple_rating_count: number | null;
+  listener_estimate: number | null;
   pitch: PodcastPitch | null;
 }
 
@@ -253,7 +285,7 @@ interface PitchWithDetails {
   } | null;
 }
 
-type SortField = 'fit_score' | 'episode_count' | 'last_episode_date';
+type SortField = 'fit_score' | 'episode_count' | 'last_episode_date' | 'apple_rating_count';
 type SortDir = 'asc' | 'desc';
 
 // ── Speaker Profile Card ───────────────────────────────────────────────
@@ -421,18 +453,280 @@ function SpeakerCard({ profile }: { profile: SpeakerProfile }) {
   );
 }
 
-// ── Signal Bar ────────────────────────────────────────────────────────
+// ── Podcast Detail Panel ──────────────────────────────────────────────
 
-function SignalBar({ label, value, weight, color }: { label: string; value: number; weight: string; color: string }) {
-  const pct = Math.round(value * 100);
-  return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between text-[10px]">
-        <span className="font-medium">{label} <span className="text-muted-foreground">({weight})</span></span>
-        <span className="font-mono">{value.toFixed(2)}</span>
+function PodcastDetailPanel({ podcastId, speaker }: { podcastId: number; speaker: string }) {
+  const [detail, setDetail] = useState<PodcastDetailData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [researching, setResearching] = useState(false);
+  const [researchError, setResearchError] = useState<string | null>(null);
+
+  const fetchDetail = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/podcast/detail?id=${podcastId}&speaker=${speaker}`);
+      if (!res.ok) throw new Error('Failed to load detail');
+      const data = await res.json();
+      setDetail(data);
+    } catch {
+      setDetail(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [podcastId, speaker]);
+
+  useEffect(() => { fetchDetail(); }, [fetchDetail]);
+
+  const handleResearch = async () => {
+    setResearching(true);
+    setResearchError(null);
+    try {
+      const res = await fetch('/api/podcast/research', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ podcast_id: podcastId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Research failed');
+      fetchDetail();
+    } catch (err: unknown) {
+      setResearchError(err instanceof Error ? err.message : 'Research failed');
+    } finally {
+      setResearching(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 py-4">
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+        <span className="text-xs text-muted-foreground">Loading details...</span>
       </div>
-      <div className="h-1.5 w-full rounded-full bg-muted">
-        <div className={cn('h-full rounded-full', color)} style={{ width: `${pct}%` }} />
+    );
+  }
+
+  if (!detail) {
+    return <div className="py-2 text-xs text-muted-foreground">Failed to load detail.</div>;
+  }
+
+  const { podcast, episodes, pitch } = detail;
+  const profile = podcast.podcast_profile;
+  const topicMatch = pitch?.topic_match;
+  const matchingPillars = topicMatch && !Array.isArray(topicMatch) ? topicMatch.matching_pillars : (Array.isArray(topicMatch) ? topicMatch : []);
+  const tier = pitch?.fit_tier || 'unscored';
+
+  const formatEpDate = (d: string | null) => {
+    if (!d) return '';
+    return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Header with platform links */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h3 className="text-base font-semibold">{podcast.title}</h3>
+          <p className="text-sm text-muted-foreground">by {podcast.host_name || podcast.author || 'Unknown'}</p>
+          {podcast.categories && (
+            <div className="mt-1 flex flex-wrap gap-1">
+              {(Array.isArray(podcast.categories) ? podcast.categories : []).map((cat, i) => (
+                <Badge key={i} variant="secondary" className="text-[10px]">{cat}</Badge>
+              ))}
+            </div>
+          )}
+          <div className="mt-1 text-xs text-muted-foreground">
+            {podcast.episode_count ?? 0} episodes
+            {profile?.format?.frequency ? ` · ${profile.format.frequency}` : ''}
+            {profile?.format?.length_minutes ? ` · ~${profile.format.length_minutes}min` : ''}
+            {podcast.activity_status ? ` · ${podcast.activity_status}` : ''}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {(profile?.platforms?.apple_url || profile?.platforms?.spotify_url || podcast.website_url || profile?.platforms?.website_url) && (
+            <div className="flex gap-1.5">
+              {profile?.platforms?.apple_url && (
+                <a href={profile.platforms.apple_url} target="_blank" rel="noopener noreferrer"
+                   className="inline-flex items-center gap-1 rounded border px-2 py-1 text-[10px] hover:bg-muted">
+                  Apple <ExternalLink className="h-2.5 w-2.5" />
+                </a>
+              )}
+              {profile?.platforms?.spotify_url && (
+                <a href={profile.platforms.spotify_url} target="_blank" rel="noopener noreferrer"
+                   className="inline-flex items-center gap-1 rounded border px-2 py-1 text-[10px] hover:bg-muted">
+                  Spotify <ExternalLink className="h-2.5 w-2.5" />
+                </a>
+              )}
+              {(podcast.website_url || profile?.platforms?.website_url) && (
+                <a href={podcast.website_url || profile?.platforms?.website_url} target="_blank" rel="noopener noreferrer"
+                   className="inline-flex items-center gap-1 rounded border px-2 py-1 text-[10px] hover:bg-muted">
+                  Web <ExternalLink className="h-2.5 w-2.5" />
+                </a>
+              )}
+              {profile?.platforms?.youtube_url && (
+                <a href={profile.platforms.youtube_url} target="_blank" rel="noopener noreferrer"
+                   className="inline-flex items-center gap-1 rounded border px-2 py-1 text-[10px] hover:bg-muted">
+                  YouTube <ExternalLink className="h-2.5 w-2.5" />
+                </a>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        {/* Left column — About + Host */}
+        <div className="space-y-3">
+          {/* About */}
+          <div>
+            <h4 className="mb-1 text-xs font-semibold uppercase text-muted-foreground">About</h4>
+            <p className="text-sm leading-relaxed">
+              {profile?.about || podcast.description || 'No description available.'}
+            </p>
+          </div>
+
+          {/* Host(s) */}
+          {profile?.hosts && profile.hosts.length > 0 && (
+            <div>
+              <h4 className="mb-1 text-xs font-semibold uppercase text-muted-foreground">
+                {profile.hosts.length > 1 ? 'Hosts' : 'Host'}
+              </h4>
+              {profile.hosts.map((h, i) => (
+                <div key={i} className="mb-2">
+                  <p className="text-sm font-medium">{h.name}</p>
+                  {h.bio && <p className="text-xs text-muted-foreground leading-relaxed">{h.bio}</p>}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Audience */}
+          {profile?.audience && (profile.audience.size_estimate || profile.audience.demographic) && (
+            <div>
+              <h4 className="mb-1 text-xs font-semibold uppercase text-muted-foreground">Audience</h4>
+              {profile.audience.size_estimate && (
+                <p className="text-xs">{profile.audience.size_estimate}</p>
+              )}
+              {profile.audience.demographic && (
+                <p className="text-xs text-muted-foreground">{profile.audience.demographic}</p>
+              )}
+            </div>
+          )}
+
+          {/* Notable Guests */}
+          {profile?.notable_guests && profile.notable_guests.length > 0 && (
+            <div>
+              <h4 className="mb-1 text-xs font-semibold uppercase text-muted-foreground">Notable Guests</h4>
+              <p className="text-xs text-muted-foreground">{profile.notable_guests.join(', ')}</p>
+            </div>
+          )}
+
+          {/* Research button if no profile */}
+          {!profile && (
+            <div className="rounded-md border border-dashed p-3">
+              <p className="mb-2 text-xs text-muted-foreground">
+                No deep research available yet. Research this podcast to get host bios, audience info, platform links, and more.
+              </p>
+              <Button size="sm" variant="outline" onClick={handleResearch} disabled={researching}>
+                {researching ? (
+                  <><Loader2 className="mr-1 h-3 w-3 animate-spin" /> Researching...</>
+                ) : (
+                  <><Search className="mr-1 h-3 w-3" /> Research with Perplexity</>
+                )}
+              </Button>
+              {researchError && (
+                <p className="mt-1 text-xs text-destructive">{researchError}</p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Right column — Fit Analysis + Episodes */}
+        <div className="space-y-3">
+          {/* Fit Analysis */}
+          {pitch && (
+            <div>
+              <h4 className="mb-1 text-xs font-semibold uppercase text-muted-foreground">
+                Fit Analysis
+                {pitch.fit_score != null && (
+                  <span className="ml-2 normal-case">
+                    <Badge variant="outline" className={cn('text-[10px] capitalize', FIT_TIER_STYLES[tier])}>
+                      {tier} ({pitch.fit_score.toFixed(2)})
+                    </Badge>
+                  </span>
+                )}
+              </h4>
+              {pitch.fit_rationale && (
+                <p className="text-xs leading-relaxed">{pitch.fit_rationale}</p>
+              )}
+              {matchingPillars && matchingPillars.length > 0 && (
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {matchingPillars.map((p, i) => (
+                    <Badge key={i} variant="secondary" className="text-[10px]">{p}</Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Episode Hooks */}
+          {pitch?.episode_hooks && pitch.episode_hooks.length > 0 && (
+            <div>
+              <h4 className="mb-1 text-xs font-semibold uppercase text-muted-foreground">Episode Angles</h4>
+              <div className="space-y-1">
+                {pitch.episode_hooks.map((hook, i) => (
+                  <div key={i} className="text-xs">
+                    <span className="font-medium">&ldquo;{hook.episode_title}&rdquo;</span>
+                    <span className="text-muted-foreground"> &mdash; {hook.angle}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Suggested Topics */}
+          {pitch?.suggested_topics && pitch.suggested_topics.length > 0 && (
+            <div>
+              <h4 className="mb-1 text-xs font-semibold uppercase text-muted-foreground">Suggested Topics</h4>
+              <div className="space-y-1">
+                {pitch.suggested_topics.map((topic, i) => (
+                  <div key={i} className="text-xs">
+                    <span className="font-medium">{topic.title}</span>
+                    <p className="text-muted-foreground">{topic.description}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Recent Episodes */}
+          {episodes.length > 0 && (
+            <div>
+              <h4 className="mb-1 text-xs font-semibold uppercase text-muted-foreground">
+                Recent Episodes ({episodes.length})
+              </h4>
+              <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
+                {episodes.map((ep) => (
+                  <div key={ep.id} className="rounded border px-2 py-1.5">
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="text-muted-foreground">{formatEpDate(ep.published_at)}</span>
+                      <span className="font-medium flex-1 truncate">{ep.title}</span>
+                      {ep.duration_seconds && (
+                        <span className="text-muted-foreground shrink-0">
+                          {Math.round(ep.duration_seconds / 60)}min
+                        </span>
+                      )}
+                    </div>
+                    {ep.description && (
+                      <p className="mt-0.5 text-[11px] text-muted-foreground line-clamp-2">
+                        {ep.description}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -451,6 +745,8 @@ function DiscoveryTab() {
   const [fitTierFilter, setFitTierFilter] = useState('all');
   const [activityFilter, setActivityFilter] = useState('all');
   const [discoveryMethodFilter, setDiscoveryMethodFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [activeIn2026, setActiveIn2026] = useState(true);
 
   // Expanded row for signal breakdown
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
@@ -484,6 +780,8 @@ function DiscoveryTab() {
       if (activityFilter !== 'all') params.set('status', activityFilter);
       if (fitTierFilter !== 'all') params.set('fit_tier', fitTierFilter);
       if (discoveryMethodFilter !== 'all') params.set('discovery_method', discoveryMethodFilter);
+      if (categoryFilter !== 'all') params.set('category', categoryFilter);
+      if (activeIn2026) params.set('active_2026', 'true');
 
       const res = await fetch(`/api/podcast/discover?${params}`);
       if (!res.ok) throw new Error('Failed to fetch podcasts');
@@ -496,7 +794,7 @@ function DiscoveryTab() {
     } finally {
       setLoading(false);
     }
-  }, [page, speaker, search, activityFilter, fitTierFilter, discoveryMethodFilter]);
+  }, [page, speaker, search, activityFilter, fitTierFilter, discoveryMethodFilter, categoryFilter, activeIn2026]);
 
   useEffect(() => {
     fetchPodcasts();
@@ -506,7 +804,7 @@ function DiscoveryTab() {
   useEffect(() => {
     setPage(1);
     setSelected(new Set());
-  }, [search, speaker, fitTierFilter, activityFilter, discoveryMethodFilter]);
+  }, [search, speaker, fitTierFilter, activityFilter, discoveryMethodFilter, categoryFilter, activeIn2026]);
 
   // Client-side sort
   const sorted = useMemo(() => {
@@ -520,6 +818,9 @@ function DiscoveryTab() {
       } else if (sortField === 'episode_count') {
         aVal = a.episode_count ?? 0;
         bVal = b.episode_count ?? 0;
+      } else if (sortField === 'apple_rating_count') {
+        aVal = a.apple_rating_count ?? 0;
+        bVal = b.apple_rating_count ?? 0;
       } else {
         aVal = a.last_episode_date ? new Date(a.last_episode_date).getTime() : 0;
         bVal = b.last_episode_date ? new Date(b.last_episode_date).getTime() : 0;
@@ -658,6 +959,48 @@ function DiscoveryTab() {
             <SelectItem value="similar_speaker">Similar Speaker</SelectItem>
           </SelectContent>
         </Select>
+
+        {/* Category filter */}
+        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All categories</SelectItem>
+            <SelectItem value="Society & Culture">Society & Culture</SelectItem>
+            <SelectItem value="Education">Education</SelectItem>
+            <SelectItem value="Religion & Spirituality">Religion & Spirituality</SelectItem>
+            <SelectItem value="Kids & Family">Kids & Family</SelectItem>
+            <SelectItem value="Health & Fitness">Health & Fitness</SelectItem>
+            <SelectItem value="Self-Improvement">Self-Improvement</SelectItem>
+            <SelectItem value="Places & Travel">Places & Travel</SelectItem>
+            <SelectItem value="Sports">Sports</SelectItem>
+            <SelectItem value="Christianity">Christianity</SelectItem>
+            <SelectItem value="Parenting">Parenting</SelectItem>
+            <SelectItem value="Spirituality">Spirituality</SelectItem>
+            <SelectItem value="Nature">Nature</SelectItem>
+            <SelectItem value="Wilderness">Wilderness</SelectItem>
+            <SelectItem value="Business">Business</SelectItem>
+            <SelectItem value="Entrepreneurship">Entrepreneurship</SelectItem>
+            <SelectItem value="Science">Science</SelectItem>
+            <SelectItem value="News">News</SelectItem>
+            <SelectItem value="Mental Health">Mental Health</SelectItem>
+            <SelectItem value="Leisure">Leisure</SelectItem>
+            <SelectItem value="Non-Profit">Non-Profit</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Active in 2026 toggle */}
+      <div className="flex items-center gap-2 px-1">
+        <Checkbox
+          id="active2026"
+          checked={activeIn2026}
+          onCheckedChange={(checked) => setActiveIn2026(checked === true)}
+        />
+        <label htmlFor="active2026" className="text-sm text-muted-foreground cursor-pointer select-none">
+          Active in 2026 only
+        </label>
       </div>
 
       {/* Bulk actions */}
@@ -745,6 +1088,12 @@ function DiscoveryTab() {
                     </button>
                   </th>
                   <th className="w-24 px-3 py-2 text-left font-medium">Activity</th>
+                  <th className="w-24 px-3 py-2 text-left font-medium">
+                    <button onClick={() => toggleSort('apple_rating_count')} className="inline-flex items-center gap-1 hover:text-foreground">
+                      Ratings
+                      <ArrowUpDown className="h-3 w-3" />
+                    </button>
+                  </th>
                   <th className="px-3 py-2 text-left font-medium">Found via</th>
                   <th className="w-24 px-3 py-2 text-left font-medium">
                     <button onClick={() => toggleSort('fit_score')} className="inline-flex items-center gap-1 hover:text-foreground">
@@ -760,9 +1109,6 @@ function DiscoveryTab() {
                   const tier = podcast.pitch?.fit_tier || 'unscored';
                   const activity = podcast.activity_status || 'unknown';
                   const methods = podcast.discovery_methods || [];
-                  const topicMatch = podcast.pitch?.topic_match;
-                  const signals = topicMatch && !Array.isArray(topicMatch) ? topicMatch.signals : null;
-                  const compositeScore = topicMatch && !Array.isArray(topicMatch) ? topicMatch.composite_score : null;
                   const isExpanded = expandedRow === podcast.id;
                   return (
                     <React.Fragment key={podcast.id}>
@@ -812,6 +1158,20 @@ function DiscoveryTab() {
                           {activity}
                         </Badge>
                       </td>
+                      <td className="px-3 py-2 text-xs">
+                        {podcast.apple_rating_count ? (
+                          <div className="flex items-center gap-1">
+                            <span className="text-amber-500">{podcast.apple_rating}★</span>
+                            <span className="text-muted-foreground">
+                              {podcast.apple_rating_count >= 1000
+                                ? `${(podcast.apple_rating_count / 1000).toFixed(1)}K`
+                                : podcast.apple_rating_count}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </td>
                       <td className="px-3 py-2">
                         <div className="flex flex-wrap gap-1">
                           {methods.length > 0 ? methods.map(m => {
@@ -832,41 +1192,13 @@ function DiscoveryTab() {
                         </Badge>
                       </td>
                       <td className="px-3 py-2 text-center font-mono text-xs">
-                        {compositeScore != null ? compositeScore.toFixed(2) : (podcast.pitch?.fit_score != null ? podcast.pitch.fit_score : '-')}
+                        {podcast.pitch?.fit_score != null ? Number(podcast.pitch.fit_score).toFixed(2) : '-'}
                       </td>
                     </tr>
                     {isExpanded && (
                       <tr className="border-b bg-muted/10">
-                        <td colSpan={9} className="px-6 py-3">
-                          {signals ? (
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-3">
-                                <span className="text-sm font-semibold">
-                                  Composite: {compositeScore?.toFixed(2)}
-                                </span>
-                                <Badge variant="outline" className={cn('text-[10px] capitalize', FIT_TIER_STYLES[tier])}>
-                                  {tier}
-                                </Badge>
-                              </div>
-                              <div className="grid grid-cols-5 gap-3">
-                                <SignalBar label="GPT Fit" value={signals.gpt_fit_score} weight="41%" color="bg-blue-500" />
-                                <SignalBar label="Embedding" value={signals.embedding_similarity} weight="35%" color="bg-cyan-500" />
-                                <SignalBar label="Speaker" value={signals.similar_speaker_boost} weight="bonus" color="bg-purple-500" />
-                                <SignalBar label="Recency" value={signals.activity_recency} weight="12%" color="bg-green-500" />
-                                <SignalBar label="Episodes" value={signals.episode_count_signal} weight="12%" color="bg-orange-500" />
-                              </div>
-                              {topicMatch && !Array.isArray(topicMatch) && topicMatch.matching_pillars && topicMatch.matching_pillars.length > 0 && (
-                                <div className="text-xs text-muted-foreground">
-                                  <span className="font-medium">Matching pillars:</span>{' '}
-                                  {topicMatch.matching_pillars.join(', ')}
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            <div className="text-xs text-muted-foreground">
-                              {podcast.pitch?.fit_rationale || 'No composite scoring data available. Score this podcast to see signal breakdown.'}
-                            </div>
-                          )}
+                        <td colSpan={9} className="px-6 py-4">
+                          <PodcastDetailPanel podcastId={podcast.id} speaker={speaker} />
                         </td>
                       </tr>
                     )}
