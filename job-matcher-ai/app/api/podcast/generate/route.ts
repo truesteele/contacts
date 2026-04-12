@@ -45,6 +45,7 @@ const BANNED_PHRASES = [
   'Dear ',
   'deeply resonated', 'truly inspiring', 'incredibly important',
   'I would be honored', 'unique perspective',
+  'stayed with me', 'found myself nodding', 'really resonated',
 ];
 
 interface GenerateRequest {
@@ -238,15 +239,24 @@ OUTREACH PHILOSOPHY (from our fundraising principles — apply to podcast outrea
 - We don't over-optimize. No strategic quote placement, no hero framing, no pronoun ratios.
 - Before sending, ask: does this sound like me talking to a friend? Would I be comfortable if this person showed it to someone else?
 
+HONESTY ABOUT EPISODES (critical):
+We have NOT listened to most of these podcasts. We know episode titles, descriptions, and guest names from our research database. Be HONEST about this:
+- DO reference a specific episode by title. This shows real research.
+- DO NOT claim it "stayed with me" or "resonated deeply" or "I found myself nodding" — that implies you listened.
+- DO use honest framing: "I noticed your episode on...", "Your conversation with [Guest] about [Topic] caught my eye", "I came across your episode on..."
+- IF the USER NOTES say they listened to a specific episode, THEN you can use stronger language like "stuck with me" or "got me thinking."
+- The goal: demonstrate genuine research without faking a personal listening experience.
+
 OUTREACH STRUCTURE:
-1. OPEN with a specific episode reference (name, guest, detail). This MUST be the first 1-2 sentences. It's the single biggest signal that this isn't a mass pitch.
-2. BRIDGE naturally to why it resonated and how it connects to your work. One sentence. Not a bio dump.
-3. INVITE a conversation — frame what you'd explore together as genuinely interesting for their audience. Keep this organic, not as bullet points.
-4. CLOSE warm and low-pressure. Name only as sign-off.
+1. OPEN with a specific episode reference (title, guest name). Honest framing — "noticed" or "came across", not "stayed with me." First 1-2 sentences.
+2. BRIDGE naturally to why the topic connects to your work. One sentence. Not a bio dump.
+3. BRIEF context on who you are — 1-2 sentences about OC. Not a paragraph. Not a credential list.
+4. INVITE a conversation — one natural sentence about what you'd explore together. Do NOT list 3-4 parallel topic fragments. Just say what the conversation would be about in plain prose.
+5. CLOSE warm and low-pressure. Name only as sign-off.
 - If a host LinkedIn profile is provided, weave their background into why the conversation would be compelling. Don't just mention LinkedIn. Use what you know about them.
 - Subject line under 50 chars, specific not clickbait. Reference the podcast name or a topic, not generic "guest inquiry."
 - 150-200 words body. Tight. Every sentence does work.
-- Do NOT format topics as a bulleted list in the email body. Weave them naturally into a sentence or two.
+- Do NOT format topics as a bulleted list in the email body. Do NOT use parallel fragment structures like "What X looks like. How Y works. Why Z matters." That's a listicle in disguise. Just write naturally.
 
 ${AI_WRITING_RULES}
 
@@ -268,7 +278,8 @@ Return ONLY the JSON object, no markdown fencing, no explanation.`;
 function buildUserPrompt(
   podcast: any,
   episodes: any[],
-  fitData: { fit_tier?: string; fit_score?: number; fit_rationale?: string; topic_match?: any; episode_hooks?: any }
+  fitData: { fit_tier?: string; fit_score?: number; fit_rationale?: string; topic_match?: any; episode_hooks?: any },
+  userNotes?: string | null
 ): string {
   const parts: string[] = [
     `PODCAST: ${podcast.title}`,
@@ -370,6 +381,10 @@ function buildUserPrompt(
     }
   }
 
+  if (userNotes && userNotes.trim()) {
+    parts.push(`\nUSER NOTES (from the person managing outreach — use these to personalize):\n${userNotes.trim()}`);
+  }
+
   parts.push('\nWrite the outreach email now. Remember: invitation, not pitch. Open with a specific episode reference. Keep it human.');
   return parts.join('\n');
 }
@@ -432,6 +447,21 @@ function auditPitch(pitch: { subject_line: string; pitch_body: string }, isSally
   // Check for greeting/sign-off violations
   if (body.startsWith('Dear ')) {
     issues.push('Uses "Dear" greeting');
+  }
+
+  // Check for disguised listicles: 3+ sentences starting with What/How/Why/When in sequence
+  const sentences = body.split(/[.!?]\s+/);
+  let questionWordStreak = 0;
+  for (const s of sentences) {
+    if (/^(What|How|Why|When|Where)\s/.test(s.trim())) {
+      questionWordStreak++;
+      if (questionWordStreak >= 3) {
+        issues.push('Disguised listicle: 3+ parallel What/How/Why fragments');
+        break;
+      }
+    } else {
+      questionWordStreak = 0;
+    }
   }
 
   return issues;
@@ -530,7 +560,7 @@ export async function POST(req: Request) {
     // Fetch pitch records with speaker and podcast data
     const { data: pitches, error: pitchError } = await supabase
       .from('podcast_pitches')
-      .select('id, podcast_target_id, speaker_profile_id, fit_tier, fit_score, fit_rationale, topic_match, episode_hooks, pitch_body')
+      .select('id, podcast_target_id, speaker_profile_id, fit_tier, fit_score, fit_rationale, topic_match, episode_hooks, pitch_body, user_notes')
       .in('id', pitchIds);
 
     if (pitchError || !pitches || pitches.length === 0) {
@@ -619,7 +649,7 @@ export async function POST(req: Request) {
           fit_rationale: p.fit_rationale,
           topic_match: p.topic_match,
           episode_hooks: p.episode_hooks,
-        });
+        }, p.user_notes);
 
         const response = await anthropic.messages.create({
           model: MODEL,
