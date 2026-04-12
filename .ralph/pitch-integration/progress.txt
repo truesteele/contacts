@@ -1,0 +1,28 @@
+# Ralph Progress Log
+Loop: pitch-integration
+Started: 2026-04-11
+---
+
+## Codebase Patterns
+- PodcastDetailPanel is at page.tsx:458-733, loads data from /api/podcast/detail
+- PitchCard component at page.tsx:1245+ has inline editing, status management, send dropdown
+- Pitches API (pitches/route.ts) has GET with filters + PATCH for subject/body/status
+- Generate API (generate/route.ts) uses Claude Sonnet 4.6 with abbreviated voice guides
+- Discover API (discover/route.ts) drives pagination from podcast_pitches when speaker selected
+- Detail API (detail/route.ts) selects * from podcast_pitches, so new columns auto-included
+- Supabase MCP server name for migrations: supabase-contacts
+
+---
+
+## Iteration Log
+
+### Iteration 1 — US-001: Database Migration (2026-04-11)
+**Story:** Add `is_bookmarked` and `user_notes` columns to `podcast_pitches` table
+**Status:** COMPLETE
+**What was done:**
+- Applied migration via `mcp__supabase-contacts__apply_migration`
+- Added `is_bookmarked` (boolean, default false) and `user_notes` (text, default '')
+- Verified both columns exist via information_schema query
+**Learnings:**
+- Used `ADD COLUMN IF NOT EXISTS` for idempotency
+- Detail API already selects `*` from podcast_pitches, so new columns auto-included in detail responses
