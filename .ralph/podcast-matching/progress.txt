@@ -204,3 +204,58 @@ Date: 2026-04-11
 
 **Cost:** ~$6.50 total (mostly GPT-5.4 mini scoring at ~$5.30, embeddings ~$0.002, expanded term generation ~$0.01)
 
+## US-007: UI — Discovery Method Badges + Signal Breakdown ✓
+Date: 2026-04-11
+
+**What was done:**
+- **API route (`discover/route.ts`):**
+  - Added `topic_match` to podcast_pitches select query (for signal breakdown data)
+  - Added `discovery_method` query parameter with `contains()` filter on `discovery_methods` array
+  - `discovery_methods` was already included via `select('*')` on podcast_targets
+
+- **TypeScript interfaces (`page.tsx`):**
+  - Added `CompositeSignals` and `TopicMatch` interfaces for typed signal data
+  - Added `topic_match` to `PodcastPitch` interface (supports both old array and new object format)
+  - Added `discovery_methods` to `Podcast` interface
+
+- **Discovery method filter:**
+  - New dropdown "Found via" with options: All methods, Keyword, Expanded, Similar Speaker
+  - Server-side filtering via Supabase `contains()` on the `discovery_methods` text[] column
+  - Filter resets pagination when changed
+
+- **Discovery method badges:**
+  - New "Found via" column in the results table between Activity and Fit
+  - Color-coded badges: Keyword (blue), Similar Speaker (purple), Expanded (orange), Embedding (cyan)
+  - Podcasts with multiple discovery methods show multiple badges
+
+- **Expandable signal breakdown:**
+  - Clicking any row expands to show composite score details
+  - 5 signal bars with labels, weights, and fill-level visualization:
+    - GPT Fit (35%) — blue
+    - Embedding Similarity (30%) — cyan
+    - Similar Speaker (15%) — purple
+    - Activity Recency (10%) — green
+    - Episode Count (10%) — orange
+  - Shows matching pillars when available
+  - Falls back to fit_rationale text for pre-composite scores
+  - `SignalBar` component with proportional fill bars
+
+- **Score display:**
+  - Score column now shows `composite_score` from topic_match when available (2 decimal places)
+  - Falls back to `fit_score` for pre-composite scores
+
+**Verified:**
+- TypeScript compiles: `npx tsc --noEmit` — no podcast-related errors ✓
+- Deployed to production: `steele-contacts.vercel.app` ✓
+- Discovery method badges render per podcast ✓
+- Clicking row expands to show signal breakdown ✓
+- Discovery method filter works (server-side via Supabase `contains`) ✓
+
+**Notes:**
+- `topic_match` column changed from `string[]` (old matching_pillars format) to `TopicMatch` object (new composite format) — TypeScript union type handles both
+- `React.Fragment` used for expandable rows (two `<tr>` elements per podcast)
+- Signal bars use Tailwind `bg-*` colors with percentage-width fill for visual clarity
+- Pre-existing TS error in `.next/types/validator.ts` for deleted uptogether page — not related to our changes
+
+## ALL STORIES COMPLETE
+

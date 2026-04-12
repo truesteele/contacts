@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -96,10 +96,26 @@ interface SpeakerProfile {
   past_appearances: PastAppearance[];
 }
 
+interface CompositeSignals {
+  gpt_fit_score: number;
+  embedding_similarity: number;
+  similar_speaker_boost: number;
+  activity_recency: number;
+  episode_count_signal: number;
+}
+
+interface TopicMatch {
+  composite_score?: number;
+  signals?: CompositeSignals;
+  matching_pillars?: string[];
+  discovery_methods?: string[];
+}
+
 interface PodcastPitch {
   fit_tier: string | null;
   fit_score: number | null;
   fit_rationale: string | null;
+  topic_match: TopicMatch | string[] | null;
   pitch_status: string;
   subject_line: string | null;
   pitch_body: string | null;
@@ -119,6 +135,7 @@ interface Podcast {
   last_episode_date: string | null;
   categories: string[] | null;
   email_verified: boolean | null;
+  discovery_methods: string[] | null;
   pitch: PodcastPitch | null;
 }
 
@@ -134,6 +151,13 @@ const ACTIVITY_STYLES: Record<string, string> = {
   slow: 'bg-yellow-100 text-yellow-800 border-yellow-200',
   podfaded: 'bg-red-100 text-red-800 border-red-200',
   unknown: 'bg-gray-100 text-gray-600 border-gray-200',
+};
+
+const DISCOVERY_METHOD_STYLES: Record<string, { label: string; className: string }> = {
+  keyword_search: { label: 'Keyword', className: 'border-blue-300 text-blue-700 bg-blue-50' },
+  similar_speaker: { label: 'Similar Speaker', className: 'border-purple-300 text-purple-700 bg-purple-50' },
+  expanded_keywords: { label: 'Expanded', className: 'border-orange-300 text-orange-700 bg-orange-50' },
+  embedding_match: { label: 'Embedding', className: 'border-cyan-300 text-cyan-700 bg-cyan-50' },
 };
 
 const PITCH_STATUS_STYLES: Record<string, string> = {
@@ -397,7 +421,22 @@ function SpeakerCard({ profile }: { profile: SpeakerProfile }) {
   );
 }
 
-// ── Placeholder Tab ────────────────────────────────────────────────────
+// ── Signal Bar ────────────────────────────────────────────────────────
+
+function SignalBar({ label, value, weight, color }: { label: string; value: number; weight: string; color: string }) {
+  const pct = Math.round(value * 100);
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between text-[10px]">
+        <span className="font-medium">{label} <span className="text-muted-foreground">({weight})</span></span>
+        <span className="font-mono">{value.toFixed(2)}</span>
+      </div>
+      <div className="h-1.5 w-full rounded-full bg-muted">
+        <div className={cn('h-full rounded-full', color)} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
 
 // ── Discovery Tab ─────────────────────────────────────────────────────
 
@@ -411,6 +450,10 @@ function DiscoveryTab() {
   const [speaker, setSpeaker] = useState('sally');
   const [fitTierFilter, setFitTierFilter] = useState('all');
   const [activityFilter, setActivityFilter] = useState('all');
+  const [discoveryMethodFilter, setDiscoveryMethodFilter] = useState('all');
+
+  // Expanded row for signal breakdown
+  const [expandedRow, setExpandedRow] = useState<number | null>(null);
 
   // Sorting
   const [sortField, setSortField] = useState<SortField>('fit_score');
@@ -440,6 +483,7 @@ function DiscoveryTab() {
       if (search) params.set('search', search);
       if (activityFilter !== 'all') params.set('status', activityFilter);
       if (fitTierFilter !== 'all') params.set('fit_tier', fitTierFilter);
+      if (discoveryMethodFilter !== 'all') params.set('discovery_method', discoveryMethodFilter);
 
       const res = await fetch(`/api/podcast/discover?${params}`);
       if (!res.ok) throw new Error('Failed to fetch podcasts');
@@ -452,7 +496,7 @@ function DiscoveryTab() {
     } finally {
       setLoading(false);
     }
-  }, [page, speaker, search, activityFilter, fitTierFilter]);
+  }, [page, speaker, search, activityFilter, fitTierFilter, discoveryMethodFilter]);
 
   useEffect(() => {
     fetchPodcasts();
@@ -462,7 +506,7 @@ function DiscoveryTab() {
   useEffect(() => {
     setPage(1);
     setSelected(new Set());
-  }, [search, speaker, fitTierFilter, activityFilter]);
+  }, [search, speaker, fitTierFilter, activityFilter, discoveryMethodFilter]);
 
   // Client-side sort
   const sorted = useMemo(() => {
@@ -601,6 +645,19 @@ function DiscoveryTab() {
             <SelectItem value="podfaded">Podfaded</SelectItem>
           </SelectContent>
         </Select>
+
+        {/* Discovery method filter */}
+        <Select value={discoveryMethodFilter} onValueChange={setDiscoveryMethodFilter}>
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="Found via" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All methods</SelectItem>
+            <SelectItem value="keyword_search">Keyword</SelectItem>
+            <SelectItem value="expanded_keywords">Expanded</SelectItem>
+            <SelectItem value="similar_speaker">Similar Speaker</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Bulk actions */}
@@ -688,6 +745,7 @@ function DiscoveryTab() {
                     </button>
                   </th>
                   <th className="w-24 px-3 py-2 text-left font-medium">Activity</th>
+                  <th className="px-3 py-2 text-left font-medium">Found via</th>
                   <th className="w-24 px-3 py-2 text-left font-medium">
                     <button onClick={() => toggleSort('fit_score')} className="inline-flex items-center gap-1 hover:text-foreground">
                       Fit
@@ -701,15 +759,22 @@ function DiscoveryTab() {
                 {sorted.map(podcast => {
                   const tier = podcast.pitch?.fit_tier || 'unscored';
                   const activity = podcast.activity_status || 'unknown';
+                  const methods = podcast.discovery_methods || [];
+                  const topicMatch = podcast.pitch?.topic_match;
+                  const signals = topicMatch && !Array.isArray(topicMatch) ? topicMatch.signals : null;
+                  const compositeScore = topicMatch && !Array.isArray(topicMatch) ? topicMatch.composite_score : null;
+                  const isExpanded = expandedRow === podcast.id;
                   return (
+                    <React.Fragment key={podcast.id}>
                     <tr
-                      key={podcast.id}
                       className={cn(
-                        'border-b hover:bg-muted/30 transition-colors',
-                        selected.has(podcast.id) && 'bg-blue-50/50'
+                        'border-b hover:bg-muted/30 transition-colors cursor-pointer',
+                        selected.has(podcast.id) && 'bg-blue-50/50',
+                        isExpanded && 'bg-muted/20'
                       )}
+                      onClick={() => setExpandedRow(isExpanded ? null : podcast.id)}
                     >
-                      <td className="px-3 py-2">
+                      <td className="px-3 py-2" onClick={e => e.stopPropagation()}>
                         <Checkbox
                           checked={selected.has(podcast.id)}
                           onCheckedChange={() => toggleSelect(podcast.id)}
@@ -748,14 +813,64 @@ function DiscoveryTab() {
                         </Badge>
                       </td>
                       <td className="px-3 py-2">
+                        <div className="flex flex-wrap gap-1">
+                          {methods.length > 0 ? methods.map(m => {
+                            const style = DISCOVERY_METHOD_STYLES[m];
+                            return style ? (
+                              <Badge key={m} variant="outline" className={cn('text-[9px] px-1.5 py-0', style.className)}>
+                                {style.label}
+                              </Badge>
+                            ) : null;
+                          }) : (
+                            <span className="text-xs text-muted-foreground">-</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-3 py-2">
                         <Badge variant="outline" className={cn('text-[10px] capitalize', FIT_TIER_STYLES[tier])}>
                           {tier}
                         </Badge>
                       </td>
                       <td className="px-3 py-2 text-center font-mono text-xs">
-                        {podcast.pitch?.fit_score != null ? podcast.pitch.fit_score : '-'}
+                        {compositeScore != null ? compositeScore.toFixed(2) : (podcast.pitch?.fit_score != null ? podcast.pitch.fit_score : '-')}
                       </td>
                     </tr>
+                    {isExpanded && (
+                      <tr className="border-b bg-muted/10">
+                        <td colSpan={9} className="px-6 py-3">
+                          {signals ? (
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-3">
+                                <span className="text-sm font-semibold">
+                                  Composite: {compositeScore?.toFixed(2)}
+                                </span>
+                                <Badge variant="outline" className={cn('text-[10px] capitalize', FIT_TIER_STYLES[tier])}>
+                                  {tier}
+                                </Badge>
+                              </div>
+                              <div className="grid grid-cols-5 gap-3">
+                                <SignalBar label="GPT Fit" value={signals.gpt_fit_score} weight="35%" color="bg-blue-500" />
+                                <SignalBar label="Embedding" value={signals.embedding_similarity} weight="30%" color="bg-cyan-500" />
+                                <SignalBar label="Speaker" value={signals.similar_speaker_boost} weight="15%" color="bg-purple-500" />
+                                <SignalBar label="Recency" value={signals.activity_recency} weight="10%" color="bg-green-500" />
+                                <SignalBar label="Episodes" value={signals.episode_count_signal} weight="10%" color="bg-orange-500" />
+                              </div>
+                              {topicMatch && !Array.isArray(topicMatch) && topicMatch.matching_pillars && topicMatch.matching_pillars.length > 0 && (
+                                <div className="text-xs text-muted-foreground">
+                                  <span className="font-medium">Matching pillars:</span>{' '}
+                                  {topicMatch.matching_pillars.join(', ')}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="text-xs text-muted-foreground">
+                              {podcast.pitch?.fit_rationale || 'No composite scoring data available. Score this podcast to see signal breakdown.'}
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                    </React.Fragment>
                   );
                 })}
               </tbody>

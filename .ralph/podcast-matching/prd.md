@@ -416,7 +416,7 @@ Pipeline:
 
 ---
 
-### [ ] US-007: UI — Discovery Method Badges + Signal Breakdown
+### [x] US-007: UI — Discovery Method Badges + Signal Breakdown
 
 **Goal:** Update the Discovery tab to show how each podcast was found and the composite score breakdown.
 

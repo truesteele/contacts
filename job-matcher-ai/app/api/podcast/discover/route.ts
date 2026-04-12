@@ -7,6 +7,7 @@ export async function GET(req: NextRequest) {
     const speaker = params.get('speaker') || '';
     const status = params.get('status') || '';
     const fitTier = params.get('fit_tier') || '';
+    const discoveryMethod = params.get('discovery_method') || '';
     const search = params.get('search') || '';
     const page = Math.max(1, parseInt(params.get('page') || '1', 10));
     const limit = Math.min(100, Math.max(1, parseInt(params.get('limit') || '25', 10)));
@@ -20,6 +21,11 @@ export async function GET(req: NextRequest) {
     // Filter by activity status
     if (status) {
       query = query.eq('activity_status', status);
+    }
+
+    // Filter by discovery method
+    if (discoveryMethod) {
+      query = query.contains('discovery_methods', [discoveryMethod]);
     }
 
     // Text search on title, author, description
@@ -61,7 +67,7 @@ export async function GET(req: NextRequest) {
         const podcastIds = podcastsWithScores.map((p: any) => p.id);
         const { data: pitches } = await supabase
           .from('podcast_pitches')
-          .select('podcast_target_id, fit_tier, fit_score, fit_rationale, pitch_status, subject_line, pitch_body')
+          .select('podcast_target_id, fit_tier, fit_score, fit_rationale, topic_match, pitch_status, subject_line, pitch_body')
           .eq('speaker_profile_id', speakerProfile.id)
           .in('podcast_target_id', podcastIds);
 
