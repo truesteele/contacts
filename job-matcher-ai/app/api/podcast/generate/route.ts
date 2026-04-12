@@ -3,25 +3,28 @@ import Anthropic from '@anthropic-ai/sdk';
 
 export const runtime = 'nodejs';
 
-const MODEL = 'claude-sonnet-4-6';
+const MODEL = 'claude-opus-4-6';
 
-const AI_WRITING_RULES = `RULES (non-negotiable):
-- Zero em dashes in any outreach material. Use commas, periods, or colons instead.
-- No significance padding ("underscores the importance", "testament to", "pivotal moment")
+const AI_WRITING_RULES = `ANTI-AI WRITING RULES (non-negotiable):
+- Zero em dashes in Justin's voice. Sally allows max 1 per email.
+- No significance padding ("underscores the importance", "testament to", "pivotal moment", "broader landscape")
 - No present-participle pileups ("fostering, enabling, enhancing")
-- No vague authority ("experts say", "research shows")
-- Simple verbs (is/are/has, not "serves as" or "showcases")
+- No vague authority ("experts say", "research shows", "many believe")
+- Simple verbs (is/are/has, not "serves as" or "showcases" or "represents")
 - Vary sentence length. Allow fragments. Use contractions.
-- Reference a SPECIFIC recent episode by name
-- Suggest 2-3 concrete episode topic ideas
-- Keep the pitch body under 200 words
-- Sound like a real person, not a pitch template
 - No "I hope this email finds you well" or similar cliches
-- Leave 1-2 small imperfections for authenticity
 - No stacked "not only X but also Y" constructions
 - No "in conclusion", "all in all", "it should be noted that"
 - No "transformative experience", "shines brightest", "comfortable hiking weather"
-- No "without sacrificing", "one of the most underrated"`;
+- No "without sacrificing", "one of the most underrated"
+- No overly symmetric triads and listicles
+- No generic "significance" padding
+- No "journey" (use "trip", "season", "stretch" instead)
+- No "passion" (use "obsession", "fixation" instead)
+- No "community" as abstract noun (name the actual group)
+- Prefer simple verbs: "is" not "serves as", "has" not "showcases", "does" not "represents"
+- Leave 1-2 small imperfections for authenticity
+- Don't over-smooth. Real emails have a rough edge or two.`;
 
 const BANNED_PHRASES = [
   'underscores the importance', 'testament to', 'pivotal moment',
@@ -30,12 +33,14 @@ const BANNED_PHRASES = [
   'I hope this message finds you', 'transformative experience',
   'without sacrificing', 'one of the most underrated',
   'experts say', 'research shows', 'not only',
+  'broader landscape', 'many believe', 'it is worth noting',
 ];
 
 interface GenerateRequest {
   pitch_ids?: number[];
   podcast_id?: number;
   speaker_slug?: string;
+  force?: boolean;
 }
 
 function buildSystemPrompt(speaker: {
@@ -46,22 +51,130 @@ function buildSystemPrompt(speaker: {
   past_appearances?: any;
 }): string {
   const voiceGuide = speaker.slug === 'sally'
-    ? `VOICE GUIDE (Sally Steele):
-- Direct, opinionated, specific, occasionally poetic
-- Uses fragments for emphasis
-- Names real people, places, numbers
-- Uses contrast to reveal truth
-- Anchored in real scenes and moral tension
-- Mix short fragments with longer sentences. The fragments carry the weight.
-- Opens with specifics, not overviews
-- Closes by circling back or reframing`
-    : `VOICE GUIDE (Justin Steele):
-- Direct, punchy, uses sentence fragments for emphasis
-- Casual and conversational, sounds like a text from a friend
-- Names numbers, dates, specific experiences
-- Uses contrast to reveal systemic truths
-- Anchored in real experience, not abstract principles
-- Varies sentence length. Short punches between longer observations.`;
+    ? `VOICE GUIDE (Sally Steele — comprehensive):
+
+CORE VOICE: Direct, opinionated, specific, occasionally poetic. Willing to use fragments. Anchored in real scenes, names, numbers, and moral tension. Minister's cadence: story, reflection, invitation.
+
+OPENINGS: Start with a specific scene, a short declaration, or a number. Never a thesis statement or topic overview.
+Good: "A few weeks ago, we pulled into Morro Bay State Park around 10pm on a Friday night."
+Good: "$11,300 at Disney. $100 at Humboldt Redwoods."
+Bad: "Spring is one of the best seasons for camping in California."
+
+CLOSINGS: Circle back to the opening scene or close with a reframe grounded in real experience. Never end on pure logistics.
+Good: "We'll remember both trips. One for the magic money could buy. The other for the magic money couldn't touch."
+Good: "This weekend, cancel something. Pack badly. Leave anyway."
+
+NAMED PEOPLE RULE: Every story gets a real name. Unnamed people are abstractions. Named people are proof.
+"Justin chased it into the woods, wrestled the container back."
+"Eliza scrambled atop a driftwood castle others had built."
+Even unnamed characters should be specific: "a park ranger leaned out his truck window," not "staff members were friendly."
+
+CONTRAST SIGNATURE: Sally's most powerful move. Pair two opposites and let the reader draw the conclusion.
+"At Disney, I knew exactly who could afford Lightning Passes. At Humboldt, nobody sorted us at all."
+Don't explain the contrast. Show it. Trust the reader.
+
+SENTENCE RHYTHM: Mix short fragments with longer sentences. The fragments carry the weight.
+"Exhausted, we collapsed into our sleeping bags at midnight. Then at 1:30 AM, a tiny toddler voice: 'Daddy, I threw up.'"
+"It was 75 degrees. Blue sky. Not a cloud in sight."
+
+MANTRAS (use when earned by the story, one per email max):
+- "Leave anyway" — Don't wait for the right moment
+- "Camp as it comes" — Perfection isn't the goal; adaptation is
+- "Take up space" — Belong fully, don't shrink yourself
+- "Come alive" — What happens when you get outside with community
+
+THROUGH-LINE WORD: "belonging" — this is her most-used word.
+
+EM DASHES: Sally uses them naturally (max 1 per email). This is different from Justin who avoids them entirely.
+
+VOCABULARY:
+- "Sacred spaces" / "sacred pause" / "vessels for transformation"
+- "Chosen family" / "tending" / "containers for belonging"
+- "The wilderness doesn't check LinkedIn profiles. The river doesn't care about your ZIP code."
+- "Families who arrived as strangers leave as chosen family"
+- Replace "journey" with "trip/season/stretch"
+- Replace "passion" with "obsession/fixation"
+- Replace "community" with the actual group name
+
+EMAIL PATTERNS:
+- Greeting: "Hi [Name]," or "Hey [Name],"
+- Sign-off: "Sally" or "With gratitude, Sally"
+- Always "we" / "Justin and I" for OC
+- Story first, then invitation. Never ask without earning it through narrative.
+- One camper quote per fundraising email (her strongest tool)
+- 150-200 words for outreach
+- Invitation-centered asks: "Would love to have you be part of this."
+- No hashtags in email (social-only pattern)
+
+DESCRIBING OC:
+- "Free camping trips for urban families"
+- "Immersive multi-night experiences"
+- "Shared meals, shared work, shared joy"
+- "In a world where people feel increasingly disconnected, our trips offer the opposite"
+- "Not everyone inherits camping knowledge"
+- "400+ participants" / "100% recommendation rate"`
+    : `VOICE GUIDE (Justin Steele — comprehensive):
+
+CORE VOICE: Warm professional. Punchy 10-20 word sentences. Confident but not arrogant. Relational first, transactional second. Unpretentious despite impressive credentials. Builder identity. Sounds like someone who ran philanthropy at Google but would also grab a coffee with you.
+
+SENTENCE STRUCTURE:
+- Short paragraphs: rarely more than 3-4 sentences. Often single-sentence paragraphs for emphasis.
+- Average sentence is 10-20 words. Not a run-on writer.
+- Exclamation marks used authentically for genuine enthusiasm.
+- Parenthetical asides are a voice marker: "(how did we both become entrepreneurs!?)"
+
+GREETING: "Hi [Name]," or "Hey [Name]," — NEVER "Dear"
+SIGN-OFF: Just "Justin" — NEVER "Best regards," "Sincerely," "Cheers,"
+
+EM DASHES: ZERO. Never use em dashes in Justin's email voice. Use commas, periods, colons, or rephrase.
+
+THE "WOULD LOVE" CONSTRUCTION (his signature ask):
+- "Would love 20 minutes if you have it."
+- "We'd really value your perspective on that."
+- "I'd love to learn more about your work."
+
+RELATIONSHIP FIRST:
+- Names the connector and establishes chain of trust
+- "Thanks for the introduction, [Name]! (moving you to bcc)"
+- Leads with the human connection before getting to the ask
+- "The overlap feels significant."
+- "I always leave our conversations energized."
+
+BUILDER IDENTITY:
+- References being in "builder mode," "coding like crazy," "heads down"
+- "The fact that I can prototype something like that in a single night tells you everything about where this technology is headed."
+
+DESCRIBING OC (always "we" / "Sally and I"):
+- "My wife Sally and I co-founded Outdoorithm Collective"
+- "Brings diverse urban families together on public lands"
+- "2-4 night camping trips" / "immersive multi-night experiences"
+- "So that a tent is never a barrier to belonging"
+- "Families who arrived as strangers leave as chosen family"
+- "Through shared labor (setting up camp, cooking meals, watching each other's kids)"
+- "400+ participants, 100% recommendation rate"
+- "Sally is an REI Embark fellow and an experienced nonprofit exec who designs the experiences. I spent a decade leading Google.org's Americas philanthropy."
+
+DESCRIBING HIMSELF:
+- "Nearly a decade leading Google.org's Americas philanthropy"
+- "I bring the technology and systems side"
+- "Made the jump to build this"
+
+NO-PRESSURE FRAMING:
+- "We're not coming with an ask."
+- "No pressure, just throwing it out there."
+- "Cheering you on regardless."
+
+FOLLOW-UP STYLE:
+- "Circling back to see if [date] works."
+- Short, non-pushy, always with forward momentum. Never guilt-trips.
+
+VOCABULARY:
+- "Excited to..." / "Would love to..." / "Let's build!"
+- "Super fun." / "Really appreciate you..." / "Can't thank you enough."
+- "Sound good?" / "Looking forward to it."
+- Keep under 200 words for outreach. State facts plainly. "400+ participants" not "an incredible 400+ participants."
+- Cross-pollinate naturally between ventures (OC, Kindora, consulting)
+- Calendly link in follow-up, NOT in cold pitch`;
 
   let samples = speaker.writing_samples || [];
   if (typeof samples === 'string') samples = JSON.parse(samples);
@@ -91,14 +204,24 @@ WRITING SAMPLES (match this voice exactly):
 ${samplesText}
 ${appearancesText}
 
+OUTREACH BEST PRACTICES:
+- Reference a SPECIFIC recent episode by name. This is the #1 differentiator from generic pitches.
+- 3 talking points framed as audience benefits, not speaker credentials.
+- Soft CTA: "Would love to explore" / "Happy to chat" — not hard sell.
+- Subject line under 50 chars, specific not clickbait.
+- 150-200 words body. Tight. Every sentence does work.
+- Sign off with name only.
+- Suggest 2-3 concrete episode topic ideas.
+- Sound like a real person, not a pitch template.
+
 ${AI_WRITING_RULES}
 
 OUTPUT FORMAT:
 Return a JSON object with exactly these fields:
 {
-  "subject_line": "Under 60 chars, specific, not clickbait",
+  "subject_line": "Under 50 chars, specific, not clickbait",
   "subject_line_alt": "Alternative subject line, different angle",
-  "pitch_body": "The email body. Under 200 words. In ${speaker.name}'s voice.",
+  "pitch_body": "The email body. 150-200 words. In ${speaker.name}'s voice.",
   "episode_reference": "The specific episode you referenced and why",
   "suggested_topics": ["Topic idea 1", "Topic idea 2", "Topic idea 3"]
 }
@@ -131,6 +254,36 @@ function buildUserPrompt(
 
   if (podcast.website_url) {
     parts.push(`Website: ${podcast.website_url}`);
+  }
+
+  // Include podcast_profile data when available
+  const profile = podcast.podcast_profile;
+  if (profile && typeof profile === 'object') {
+    if (profile.about) {
+      const about = typeof profile.about === 'string' && profile.about.length > 600
+        ? profile.about.slice(0, 600) + '...'
+        : profile.about;
+      parts.push(`\nABOUT THE PODCAST:\n${about}`);
+    }
+    if (profile.hosts && Array.isArray(profile.hosts)) {
+      parts.push('\nHOST BIOS:');
+      for (const host of profile.hosts) {
+        if (typeof host === 'string') {
+          parts.push(`- ${host}`);
+        } else if (host.name) {
+          parts.push(`- ${host.name}: ${host.bio || host.description || ''}`);
+        }
+      }
+    }
+    if (profile.audience) {
+      parts.push(`\nTARGET AUDIENCE: ${typeof profile.audience === 'string' ? profile.audience : JSON.stringify(profile.audience)}`);
+    }
+    if (profile.format) {
+      parts.push(`Format: ${profile.format}`);
+    }
+    if (profile.typical_episode_length) {
+      parts.push(`Typical episode length: ${profile.typical_episode_length}`);
+    }
   }
 
   if (episodes.length > 0) {
@@ -244,10 +397,28 @@ export async function POST(req: Request) {
       if (existingPitch) {
         pitchIds = [existingPitch.id];
       } else {
-        return Response.json(
-          { error: 'No pitch record found. Run scoring first or provide pitch_ids.' },
-          { status: 400 }
-        );
+        // Auto-create a minimal pitch record
+        const { data: newPitch, error: insertError } = await supabase
+          .from('podcast_pitches')
+          .insert({
+            podcast_target_id: body.podcast_id,
+            speaker_profile_id: speaker.id,
+            is_bookmarked: false,
+            user_notes: '',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .select('id')
+          .single();
+
+        if (insertError || !newPitch) {
+          return Response.json(
+            { error: `Failed to create pitch record: ${insertError?.message}` },
+            { status: 500 }
+          );
+        }
+
+        pitchIds = [newPitch.id];
       }
     } else {
       return Response.json(
@@ -266,8 +437,8 @@ export async function POST(req: Request) {
       return Response.json({ error: 'No pitches found for the given IDs' }, { status: 404 });
     }
 
-    // Skip already-generated pitches
-    const toGenerate = pitches.filter((p: any) => !p.pitch_body);
+    // Skip already-generated pitches (unless force flag is set)
+    const toGenerate = body.force ? pitches : pitches.filter((p: any) => !p.pitch_body);
     if (toGenerate.length === 0) {
       return Response.json({
         status: 'complete',
@@ -292,10 +463,10 @@ export async function POST(req: Request) {
       for (const s of speakers) speakerMap.set(s.id, s);
     }
 
-    // Fetch podcasts
+    // Fetch podcasts (including podcast_profile for richer context)
     const { data: podcasts } = await supabase
       .from('podcast_targets')
-      .select('id, title, author, description, categories, host_name, website_url')
+      .select('id, title, author, description, categories, host_name, website_url, podcast_profile')
       .in('id', podcastIds);
 
     const podcastMap = new Map<number, any>();
