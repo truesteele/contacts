@@ -41,7 +41,7 @@ Add `is_bookmarked` and `user_notes` columns to `podcast_pitches` table.
 
 ### US-002: Pitches API — PATCH for bookmark/notes + POST for pitch creation
 **Priority:** 2
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Extend the pitches API to support bookmarking, notes, and creating new pitch records.
@@ -58,7 +58,7 @@ Extend the pitches API to support bookmarking, notes, and creating new pitch rec
 
 ### US-003: Discover API — Return bookmark/notes + bookmarked filter
 **Priority:** 3
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Update the discover API to include bookmark/notes data in pitch results and support filtering by bookmarked.
@@ -75,7 +75,7 @@ Update the discover API to include bookmark/notes data in pitch results and supp
 
 ### US-004: Generate API — Upgrade to Opus 4.6 with full voice guides
 **Priority:** 4
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Upgrade the pitch generation API from Sonnet 4.6 to Opus 4.6, embed comprehensive voice guides, add force flag for regeneration, and auto-create pitch records.
@@ -136,7 +136,7 @@ Upgrade the pitch generation API from Sonnet 4.6 to Opus 4.6, embed comprehensiv
 
 ### US-005: TypeScript types + PodcastDetailPanel — Pitch section with bookmark, notes, generate
 **Priority:** 5
-**Status:** [ ] Incomplete
+**Status:** [x] Complete
 
 **Description:**
 Update TypeScript interfaces and add a Pitch & Outreach section to the PodcastDetailPanel in the Discovery tab.

@@ -31,6 +31,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Copy,
   Edit3,
   Lightbulb,
   Loader2,
@@ -42,6 +43,7 @@ import {
   Radio,
   Search,
   Send,
+  Star,
   StickyNote,
   User,
   ExternalLink,
@@ -131,12 +133,22 @@ interface PodcastDetailData {
   podcast: Podcast & { podcast_profile: PodcastProfile | null; researched_at: string | null };
   episodes: PodcastEpisode[];
   pitch: {
+    id: number;
     fit_tier: string | null;
     fit_score: number | null;
     fit_rationale: string | null;
     topic_match: TopicMatch | string[] | null;
     episode_hooks: { episode_title: string; angle: string }[] | null;
     suggested_topics: { title: string; description: string }[] | null;
+    pitch_status: string;
+    subject_line: string | null;
+    subject_line_alt: string | null;
+    pitch_body: string | null;
+    episode_reference: string | null;
+    generated_at: string | null;
+    model_used: string | null;
+    is_bookmarked: boolean;
+    user_notes: string;
   } | null;
 }
 
@@ -148,6 +160,8 @@ interface PodcastPitch {
   pitch_status: string;
   subject_line: string | null;
   pitch_body: string | null;
+  is_bookmarked: boolean | null;
+  user_notes: string | null;
 }
 
 interface Podcast {
@@ -461,6 +475,17 @@ function PodcastDetailPanel({ podcastId, speaker }: { podcastId: number; speaker
   const [researching, setResearching] = useState(false);
   const [researchError, setResearchError] = useState<string | null>(null);
 
+  // Pitch & Outreach state
+  const [bookmarked, setBookmarked] = useState(false);
+  const [notes, setNotes] = useState('');
+  const [editSubject, setEditSubject] = useState('');
+  const [editBody, setEditBody] = useState('');
+  const [editingPitch, setEditingPitch] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [savingPitch, setSavingPitch] = useState(false);
+  const [pitchFeedback, setPitchFeedback] = useState<string | null>(null);
+  const [sendingPitch, setSendingPitch] = useState(false);
+
   const fetchDetail = useCallback(async () => {
     setLoading(true);
     try {
@@ -476,6 +501,153 @@ function PodcastDetailPanel({ podcastId, speaker }: { podcastId: number; speaker
   }, [podcastId, speaker]);
 
   useEffect(() => { fetchDetail(); }, [fetchDetail]);
+
+  // Sync local state when detail loads
+  useEffect(() => {
+    if (detail?.pitch) {
+      setBookmarked(detail.pitch.is_bookmarked ?? false);
+      setNotes(detail.pitch.user_notes ?? '');
+      setEditSubject(detail.pitch.subject_line ?? '');
+      setEditBody(detail.pitch.pitch_body ?? '');
+    } else {
+      setBookmarked(false);
+      setNotes('');
+      setEditSubject('');
+      setEditBody('');
+    }
+  }, [detail]);
+
+  // Ensure a pitch record exists, creating one if needed. Returns pitch ID.
+  const ensurePitchRecord = async (): Promise<number | null> => {
+    if (detail?.pitch?.id) return detail.pitch.id;
+    try {
+      const res = await fetch('/api/podcast/pitches', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ podcast_target_id: podcastId, speaker_slug: speaker }),
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data.id ?? data.pitch_id ?? null;
+    } catch {
+      return null;
+    }
+  };
+
+  const handleBookmarkToggle = async () => {
+    const newVal = !bookmarked;
+    setBookmarked(newVal);
+    const pitchId = await ensurePitchRecord();
+    if (!pitchId) return;
+    await fetch('/api/podcast/pitches', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pitch_id: pitchId, is_bookmarked: newVal }),
+    });
+    fetchDetail();
+  };
+
+  const handleNotesSave = async () => {
+    const pitchId = await ensurePitchRecord();
+    if (!pitchId) return;
+    await fetch('/api/podcast/pitches', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pitch_id: pitchId, user_notes: notes }),
+    });
+    fetchDetail();
+  };
+
+  const handleGeneratePitch = async (force = false) => {
+    setGenerating(true);
+    setPitchFeedback(null);
+    try {
+      const res = await fetch('/api/podcast/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ podcast_id: podcastId, speaker_slug: speaker, force }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Generation failed');
+      const result = data.results?.[0];
+      if (result?.status === 'failed') throw new Error(result.error || 'Generation failed');
+      setPitchFeedback('Pitch generated');
+      fetchDetail();
+    } catch (err: unknown) {
+      setPitchFeedback(err instanceof Error ? err.message : 'Generation failed');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleSavePitchEdit = async () => {
+    if (!detail?.pitch?.id) return;
+    setSavingPitch(true);
+    setPitchFeedback(null);
+    try {
+      const res = await fetch('/api/podcast/pitches', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pitch_id: detail.pitch.id, subject_line: editSubject, pitch_body: editBody }),
+      });
+      if (!res.ok) throw new Error('Save failed');
+      setEditingPitch(false);
+      setPitchFeedback('Saved');
+      fetchDetail();
+    } catch (err: unknown) {
+      setPitchFeedback(err instanceof Error ? err.message : 'Save failed');
+    } finally {
+      setSavingPitch(false);
+    }
+  };
+
+  const handlePitchStatus = async (newStatus: string) => {
+    if (!detail?.pitch?.id) return;
+    setSavingPitch(true);
+    setPitchFeedback(null);
+    try {
+      const res = await fetch('/api/podcast/pitches', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pitch_id: detail.pitch.id, pitch_status: newStatus }),
+      });
+      if (!res.ok) throw new Error('Update failed');
+      setPitchFeedback(newStatus === 'approved' ? 'Approved' : 'Rejected');
+      fetchDetail();
+    } catch (err: unknown) {
+      setPitchFeedback(err instanceof Error ? err.message : 'Update failed');
+    } finally {
+      setSavingPitch(false);
+    }
+  };
+
+  const handlePitchSend = async (method: string) => {
+    if (!detail?.pitch?.id) return;
+    setSendingPitch(true);
+    setPitchFeedback(null);
+    try {
+      const res = await fetch('/api/podcast/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pitch_id: detail.pitch.id, method }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Send failed');
+      setPitchFeedback(method === 'gmail_draft' ? 'Draft created' : 'Sent');
+      fetchDetail();
+    } catch (err: unknown) {
+      setPitchFeedback(err instanceof Error ? err.message : 'Send failed');
+    } finally {
+      setSendingPitch(false);
+    }
+  };
+
+  const handleCopyToClipboard = async () => {
+    if (!detail?.pitch) return;
+    const text = `Subject: ${detail.pitch.subject_line || ''}\n\n${detail.pitch.pitch_body || ''}`;
+    await navigator.clipboard.writeText(text);
+    setPitchFeedback('Copied to clipboard');
+  };
 
   const handleResearch = async () => {
     setResearching(true);
@@ -727,6 +899,226 @@ function PodcastDetailPanel({ podcastId, speaker }: { podcastId: number; speaker
             </div>
           )}
         </div>
+      </div>
+
+      {/* ── Pitch & Outreach Section ──────────────────���───────────── */}
+      <div className="space-y-3 border-t pt-4">
+        <div className="flex items-center justify-between">
+          <h4 className="text-xs font-semibold uppercase text-muted-foreground">Pitch & Outreach</h4>
+          <div className="flex items-center gap-2">
+            {/* Bookmark toggle */}
+            <button
+              onClick={handleBookmarkToggle}
+              className={cn(
+                'inline-flex items-center gap-1 rounded border px-2 py-1 text-xs transition-colors',
+                bookmarked ? 'border-amber-300 bg-amber-50 text-amber-700' : 'hover:bg-muted'
+              )}
+              title={bookmarked ? 'Remove bookmark' : 'Bookmark this podcast'}
+            >
+              <Star className={cn('h-3.5 w-3.5', bookmarked && 'fill-amber-500 text-amber-500')} />
+              {bookmarked ? 'Bookmarked' : 'Bookmark'}
+            </button>
+            {/* Status badge */}
+            {pitch?.pitch_status && pitch.pitch_status !== 'unscored' && (
+              <Badge variant="outline" className={cn('text-[10px] capitalize', PITCH_STATUS_STYLES[pitch.pitch_status] || '')}>
+                {pitch.pitch_status}
+              </Badge>
+            )}
+          </div>
+        </div>
+
+        {/* Notes */}
+        <div>
+          <label className="text-[10px] font-medium text-muted-foreground">Notes</label>
+          <Textarea
+            value={notes}
+            onChange={e => setNotes(e.target.value)}
+            onBlur={handleNotesSave}
+            placeholder="Add notes about this podcast..."
+            rows={2}
+            className="mt-1 text-xs"
+          />
+        </div>
+
+        {/* Outreach Email */}
+        {pitch?.pitch_body && !editingPitch ? (
+          <div className="space-y-2">
+            {/* Subject line */}
+            <div className="flex items-center gap-2">
+              <Mail className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <span className="text-sm font-medium truncate flex-1">{pitch.subject_line}</span>
+              <button
+                onClick={() => {
+                  setEditSubject(pitch.subject_line || '');
+                  setEditBody(pitch.pitch_body || '');
+                  setEditingPitch(true);
+                }}
+                className="shrink-0 text-muted-foreground hover:text-foreground"
+                title="Edit pitch"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">
+              {pitch.pitch_body}
+            </p>
+
+            {/* Alt subject line */}
+            {pitch.subject_line_alt && (
+              <div className="text-[10px] text-muted-foreground">
+                <span className="font-medium">Alt subject:</span> {pitch.subject_line_alt}
+              </div>
+            )}
+
+            {/* Episode reference */}
+            {pitch.episode_reference && (
+              <div className="rounded-md border bg-muted/30 px-3 py-2">
+                <div className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground mb-1">
+                  <Edit3 className="h-3 w-3" /> Episode Reference
+                </div>
+                <p className="text-xs">{pitch.episode_reference}</p>
+              </div>
+            )}
+
+            {/* Suggested topics */}
+            {pitch.suggested_topics && pitch.suggested_topics.length > 0 && (
+              <div>
+                <div className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground mb-1.5">
+                  <Lightbulb className="h-3 w-3" /> Suggested Topics
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {pitch.suggested_topics.map((t, i) => (
+                    <Badge key={i} variant="secondary" className="text-[10px]">
+                      {typeof t === 'string' ? t : t.title || String(t)}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Action buttons */}
+            <div className="flex items-center gap-2 pt-2 border-t">
+              {pitch.pitch_status !== 'approved' && pitch.pitch_status !== 'sent' && pitch.pitch_status !== 'booked' && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handlePitchStatus('approved')}
+                  disabled={savingPitch}
+                  className="text-green-700 border-green-200 hover:bg-green-50"
+                >
+                  <Check className="mr-1 h-3 w-3" /> Approve
+                </Button>
+              )}
+              {pitch.pitch_status !== 'rejected' && pitch.pitch_status !== 'sent' && pitch.pitch_status !== 'booked' && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handlePitchStatus('rejected')}
+                  disabled={savingPitch}
+                  className="text-red-700 border-red-200 hover:bg-red-50"
+                >
+                  <X className="mr-1 h-3 w-3" /> Reject
+                </Button>
+              )}
+              {pitch.pitch_status !== 'sent' && pitch.pitch_status !== 'booked' && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleGeneratePitch(true)}
+                  disabled={generating}
+                >
+                  {generating ? (
+                    <><Loader2 className="mr-1 h-3 w-3 animate-spin" /> Regenerating...</>
+                  ) : (
+                    <><Zap className="mr-1 h-3 w-3" /> Regenerate</>
+                  )}
+                </Button>
+              )}
+              {(pitch.pitch_status === 'draft' || pitch.pitch_status === 'approved') && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="sm" disabled={sendingPitch}>
+                      {sendingPitch ? (
+                        <><Loader2 className="mr-1 h-3 w-3 animate-spin" /> Sending...</>
+                      ) : (
+                        <><Send className="mr-1 h-3 w-3" /> Send</>
+                      )}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handlePitchSend('gmail_draft')}>
+                      <Mail className="mr-2 h-3 w-3" /> Create Gmail Draft
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleCopyToClipboard}>
+                      <Copy className="mr-2 h-3 w-3" /> Copy to Clipboard
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
+          </div>
+        ) : editingPitch ? (
+          /* Edit mode */
+          <div className="space-y-2">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Subject Line</label>
+              <Input
+                value={editSubject}
+                onChange={e => setEditSubject(e.target.value)}
+                className="mt-1 text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Pitch Body</label>
+              <Textarea
+                value={editBody}
+                onChange={e => setEditBody(e.target.value)}
+                rows={8}
+                className="mt-1 text-xs leading-relaxed"
+              />
+              <div className="mt-1 text-[10px] text-muted-foreground">
+                {editBody.split(/\s+/).filter(Boolean).length} words
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={handleSavePitchEdit} disabled={savingPitch}>
+                {savingPitch ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Check className="mr-1 h-3 w-3" />}
+                Save
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setEditingPitch(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : (
+          /* No pitch yet */
+          <div className="rounded-md border border-dashed p-4 text-center">
+            <p className="text-xs text-muted-foreground mb-2">No pitch generated yet</p>
+            <Button
+              size="sm"
+              onClick={() => handleGeneratePitch(false)}
+              disabled={generating}
+            >
+              {generating ? (
+                <><Loader2 className="mr-1 h-3 w-3 animate-spin" /> Generating with Opus 4.6...</>
+              ) : (
+                <><Zap className="mr-1 h-3 w-3" /> Generate Pitch</>
+              )}
+            </Button>
+          </div>
+        )}
+
+        {/* Pitch feedback */}
+        {pitchFeedback && (
+          <div className="rounded-md bg-blue-50 px-3 py-1.5 text-xs text-blue-800">
+            {pitchFeedback}
+            <button onClick={() => setPitchFeedback(null)} className="ml-2 font-medium underline">
+              Dismiss
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

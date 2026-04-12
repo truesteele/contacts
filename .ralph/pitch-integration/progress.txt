@@ -26,3 +26,75 @@ Started: 2026-04-11
 **Learnings:**
 - Used `ADD COLUMN IF NOT EXISTS` for idempotency
 - Detail API already selects `*` from podcast_pitches, so new columns auto-included in detail responses
+
+### Iteration 2 — US-002: Pitches API — PATCH + POST (2026-04-11)
+**Story:** Extend pitches API with bookmark/notes in PATCH and new POST for pitch creation
+**Status:** COMPLETE
+**What was done:**
+- PATCH handler: added `is_bookmarked` (boolean) and `user_notes` (string) to accepted fields
+- POST handler: accepts `podcast_target_id` + `speaker_slug`, resolves speaker_profile_id from slug
+- POST upserts: checks for existing pitch by podcast+speaker combo, returns existing ID if found
+- Creates minimal pitch record (no fit data) with timestamps
+- Typecheck passes clean
+**Learnings:**
+- Speaker profiles use `slug` field for lookup, id is internal
+- Supabase `.single()` returns error when no rows found — use that for existence check
+- POST returns `{ id, pitch_id }` for consistency with PATCH responses
+
+### Iteration 3 — US-003: Discover API — Bookmark/notes + filter (2026-04-11)
+**Story:** Return bookmark/notes in pitch data and support bookmarked filter
+**Status:** COMPLETE
+**What was done:**
+- Added `is_bookmarked, user_notes` to pitch select fields in speaker-driven path
+- Updated `allPitches` type to include the new fields
+- Added `bookmarked` query param: when `bookmarked=true`, filters pitches to `is_bookmarked = true`
+- Typecheck passes clean
+**Learnings:**
+- Bookmarked filter applies at pitch query level (before podcast-side filters), so it's efficient
+- The `bookmarked` filter only applies in the speaker-driven path since pitches are per-speaker
+
+### Iteration 4 — US-004: Generate API — Opus 4.6 with full voice guides (2026-04-11)
+**Story:** Upgrade pitch generation to Opus 4.6, embed comprehensive voice guides, add force/auto-create
+**Status:** COMPLETE
+**What was done:**
+- Changed MODEL from `claude-sonnet-4-6` to `claude-opus-4-6`
+- Replaced abbreviated voice guides (~8 lines each) with comprehensive versions (~50+ lines each):
+  - Sally: scene-first openings, named people rule, contrast signature, mantras, minister's cadence, em dash policy (max 1), vocabulary, email patterns, OC descriptions
+  - Justin: punchy 10-20 word sentences, "would love" construction, builder identity, no em dashes ever, relationship-first approach, no-pressure framing, vocabulary
+- Expanded AI_WRITING_RULES with additional banned patterns from Signs of AI Writing doc
+- Added `force?: boolean` to GenerateRequest — when true, skips `!p.pitch_body` filter to allow regeneration
+- Auto-create pitch record: when `podcast_id` + `speaker_slug` provided and no pitch exists, inserts minimal row before generating
+- Added `podcast_profile` to podcast_targets select — user prompt now includes about, hosts, audience, format when available
+- Subject line target tightened from 60 to 50 chars per outreach best practices
+- Typecheck passes clean
+**Learnings:**
+- `podcast_profile` is a JSONB column on `podcast_targets` — structure varies but commonly has about, hosts, audience fields
+- The detail API already selects `*`, so podcast_profile was already available there — just needed adding to generate route's select
+- Force flag applies at the toGenerate filter step, keeping the rest of the generation pipeline unchanged
+- Auto-create mirrors the pattern from the pitches POST handler (US-002)
+
+### Iteration 5 — US-005: TypeScript types + PodcastDetailPanel pitch section (2026-04-11)
+**Story:** Update TypeScript interfaces and add Pitch & Outreach section to PodcastDetailPanel
+**Status:** COMPLETE
+**What was done:**
+- Updated `PodcastDetailData.pitch` interface: added `id`, `pitch_status`, `subject_line`, `subject_line_alt`, `pitch_body`, `episode_reference`, `generated_at`, `model_used`, `is_bookmarked`, `user_notes`
+- Updated `PodcastPitch` interface (discover): added `is_bookmarked`, `user_notes`
+- Added lucide icons: `Star`, `Copy`
+- Added state vars to PodcastDetailPanel: bookmark, notes, editSubject, editBody, editingPitch, generating, savingPitch, pitchFeedback, sendingPitch
+- Added `ensurePitchRecord()` helper — creates pitch via POST if none exists (for bookmark/notes on unscored podcasts)
+- Added `useEffect` to sync local state when detail loads
+- Built full Pitch & Outreach section below existing grid:
+  1. Header row with bookmark toggle (star icon, amber when active) + pitch status badge
+  2. Notes textarea with auto-save on blur
+  3. Three-way conditional for pitch content:
+     - Has pitch + not editing: read-only subject/body display, alt subject, episode reference, suggested topics, action buttons (Approve/Reject/Regenerate/Send dropdown)
+     - Editing mode: subject Input + body Textarea + word count + Save/Cancel
+     - No pitch: "Generate Pitch" button calling Opus 4.6
+  4. Send dropdown: "Create Gmail Draft" + "Copy to Clipboard"
+  5. Feedback bar for all operations
+- Typecheck passes clean
+**Learnings:**
+- Detail API selects `*` from podcast_pitches, so all new DB columns (US-001) are auto-available — no API changes needed
+- `ensurePitchRecord()` pattern critical for bookmark/notes on podcasts that haven't been scored yet
+- PitchCard patterns (inline edit, status buttons, send dropdown) map directly to the detail panel — same API calls, different layout
+- Generate API auto-create (US-004) means we can call generate directly from detail panel even when no pitch record exists
