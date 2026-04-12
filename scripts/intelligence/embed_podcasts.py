@@ -267,24 +267,44 @@ class PodcastEmbedder:
         """Load top 3 recent episodes per podcast."""
         episodes_map: dict[int, list[dict]] = {pid: [] for pid in podcast_ids}
 
-        # Batch load — get all episodes for these podcasts, sorted by published_at desc
-        # Process in chunks to avoid query size limits
-        chunk_size = 100
+        if not podcast_ids:
+            return episodes_map
+
+        # Use a window function so we reliably get the 3 most recent episodes
+        # for every podcast. A global LIMIT can starve quieter feeds entirely.
+        chunk_size = 200
         for i in range(0, len(podcast_ids), chunk_size):
             chunk = podcast_ids[i:i + chunk_size]
-            result = (
-                self.sb.table("podcast_episodes")
-                .select("podcast_target_id, title, published_at")
-                .in_("podcast_target_id", chunk)
-                .order("published_at", desc=True)
-                .limit(chunk_size * 5)  # generous limit
-                .execute()
-            )
+            with self.pg_conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT podcast_target_id, title, published_at
+                    FROM (
+                        SELECT
+                            podcast_target_id,
+                            title,
+                            published_at,
+                            ROW_NUMBER() OVER (
+                                PARTITION BY podcast_target_id
+                                ORDER BY published_at DESC NULLS LAST, id DESC
+                            ) AS rn
+                        FROM podcast_episodes
+                        WHERE podcast_target_id = ANY(%s)
+                    ) ranked
+                    WHERE rn <= 3
+                    ORDER BY podcast_target_id, published_at DESC NULLS LAST, title
+                    """,
+                    (chunk,),
+                )
 
-            for ep in result.data:
-                pid = ep["podcast_target_id"]
-                if pid in episodes_map and len(episodes_map[pid]) < 3:
-                    episodes_map[pid].append(ep)
+                for pid, title, published_at in cur.fetchall():
+                    episodes_map[pid].append(
+                        {
+                            "podcast_target_id": pid,
+                            "title": title,
+                            "published_at": published_at.isoformat() if published_at else None,
+                        }
+                    )
 
         return episodes_map
 

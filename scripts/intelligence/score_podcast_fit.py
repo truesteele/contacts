@@ -169,18 +169,40 @@ def load_podcast_discovery_methods(conn, podcast_ids: list[int]) -> dict[int, li
         return result
 
 
+def load_existing_pitches(sb: Client, speaker_id: int) -> dict[int, dict]:
+    """Load existing pitch rows keyed by podcast_target_id for a speaker."""
+    result = (
+        sb.table("podcast_pitches")
+        .select("id, podcast_target_id, fit_score, pitch_status")
+        .eq("speaker_profile_id", speaker_id)
+        .execute()
+    )
+    return {
+        row["podcast_target_id"]: row
+        for row in (result.data or [])
+        if row.get("podcast_target_id") is not None
+    }
+
+
 def _parse_pg_vector(vec_str: str) -> list[float]:
     """Parse pgvector text representation '[0.1,0.2,...]' into list of floats."""
     return [float(x) for x in vec_str.strip("[]").split(",")]
 
 
-def load_unscored_podcasts(sb: Client, speaker_id: int, limit: int, min_episodes: int) -> list[dict]:
+def load_unscored_podcasts(
+    sb: Client,
+    speaker_id: int,
+    limit: int,
+    min_episodes: int,
+    existing_pitches: dict[int, dict] | None = None,
+) -> list[dict]:
     """Load podcasts that haven't been scored for this speaker yet."""
-    scored = sb.table("podcast_pitches") \
-        .select("podcast_target_id") \
-        .eq("speaker_profile_id", speaker_id) \
-        .execute()
-    scored_ids = [r["podcast_target_id"] for r in scored.data]
+    pitch_rows = existing_pitches or load_existing_pitches(sb, speaker_id)
+    scored_ids = [
+        podcast_id
+        for podcast_id, row in pitch_rows.items()
+        if row.get("fit_score") is not None
+    ]
 
     query = sb.table("podcast_targets") \
         .select("*") \
@@ -345,16 +367,21 @@ def compute_composite_score(
     episode_count_signal: float,
 ) -> tuple[float, str]:
     """
-    Compute composite score from 5 signals.
-    Returns (composite_score, tier).
+    Compute composite score from 4 base signals + similar-speaker bonus.
+
+    Base score uses 4 signals normalized to sum to 1.0:
+      GPT fit (0.41) + Embedding (0.35) + Recency (0.12) + Episodes (0.12)
+    Similar-speaker is a bonus (0.10) added on top, capped at 1.0.
+    This prevents non-similar-speaker podcasts from being penalized.
     """
-    composite = (
-        0.35 * gpt_fit_score
-        + 0.30 * embedding_similarity
-        + 0.15 * similar_speaker_boost
-        + 0.10 * activity_recency
-        + 0.10 * episode_count_signal
+    base = (
+        0.41 * gpt_fit_score
+        + 0.35 * embedding_similarity
+        + 0.12 * activity_recency
+        + 0.12 * episode_count_signal
     )
+    bonus = 0.10 if similar_speaker_boost > 0 else 0.0
+    composite = min(1.0, base + bonus)
 
     if composite >= 0.70:
         tier = "strong"
@@ -414,11 +441,16 @@ def score_podcast(oai: OpenAI, speaker_context: str, podcast: dict, episodes: li
 
 # -- Save --------------------------------------------------------------------
 
-def save_score(sb: Client, podcast_id: int, speaker_id: int, score: dict) -> bool:
+def save_score(
+    sb: Client,
+    podcast_id: int,
+    speaker_id: int,
+    score: dict,
+    existing_pitch_id: int | None = None,
+) -> bool:
     """Save fit score to podcast_pitches table."""
-    row = {
-        "podcast_target_id": podcast_id,
-        "speaker_profile_id": speaker_id,
+    timestamp = datetime.now(timezone.utc).isoformat()
+    fit_fields = {
         "fit_tier": score["fit_tier"],
         "fit_score": score["fit_score"],
         "fit_rationale": score["fit_rationale"],
@@ -426,12 +458,21 @@ def save_score(sb: Client, podcast_id: int, speaker_id: int, score: dict) -> boo
         "episode_hooks": score.get("episode_hooks", []),
         "suggested_topics": score.get("suggested_episode_ideas", []),
         "model_used": MODEL,
-        "pitch_status": "unscored",  # fit scored, no pitch yet
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": timestamp,
     }
 
     try:
-        sb.table("podcast_pitches").insert(row).execute()
+        if existing_pitch_id:
+            sb.table("podcast_pitches").update(fit_fields).eq("id", existing_pitch_id).execute()
+        else:
+            row = {
+                "podcast_target_id": podcast_id,
+                "speaker_profile_id": speaker_id,
+                "pitch_status": "unscored",
+                "generated_at": timestamp,
+                **fit_fields,
+            }
+            sb.table("podcast_pitches").insert(row).execute()
         return True
     except Exception as e:
         print(f"    DB error saving score for podcast {podcast_id}: {e}")
@@ -472,6 +513,11 @@ def main():
     print(f"Speaker: {speaker['name']} (id={speaker['id']})")
     print(f"Topic pillars: {len(speaker.get('topic_pillars') or [])}")
 
+    existing_pitches = load_existing_pitches(sb, speaker["id"])
+    existing_pending = sum(1 for row in existing_pitches.values() if row.get("fit_score") is None)
+    existing_scored = len(existing_pitches) - existing_pending
+    print(f"Existing pitch rows: {len(existing_pitches)} ({existing_scored} scored, {existing_pending} pending)")
+
     # Load speaker embedding for composite scoring
     speaker_embedding = None
     if use_composite:
@@ -483,7 +529,13 @@ def main():
             print(f"Speaker embedding: not found (will use neutral default 0.3)")
 
     # Load unscored podcasts
-    podcasts = load_unscored_podcasts(sb, speaker["id"], args.limit, args.min_episodes)
+    podcasts = load_unscored_podcasts(
+        sb,
+        speaker["id"],
+        args.limit,
+        args.min_episodes,
+        existing_pitches=existing_pitches,
+    )
     print(f"Podcasts to score: {len(podcasts)}")
 
     if not podcasts:
@@ -537,7 +589,7 @@ def main():
             speaker_embedding, podcast_embeddings.get(podcast["id"])
         )
         disc_methods = discovery_methods_map.get(podcast["id"], [])
-        ss_boost = 0.15 if "similar_speaker" in disc_methods else 0.0
+        ss_boost = 1.0 if "similar_speaker" in disc_methods else 0.0
         recency = compute_activity_recency(podcast.get("last_episode_date"))
         ep_count = compute_episode_count_signal(podcast.get("episode_count"))
 
@@ -601,7 +653,14 @@ def main():
                 for idea in score.get("suggested_episode_ideas", [])[:2]:
                     print(f"           Idea: {idea['title']}")
             else:
-                if save_score(sb, podcast["id"], speaker["id"], score):
+                existing_pitch_id = existing_pitches.get(podcast["id"], {}).get("id")
+                if save_score(
+                    sb,
+                    podcast["id"],
+                    speaker["id"],
+                    score,
+                    existing_pitch_id=existing_pitch_id,
+                ):
                     stats["saved"] += 1
 
             results.append((podcast, score))

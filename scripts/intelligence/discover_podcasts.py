@@ -246,6 +246,140 @@ def dedup_with_gpt(podcasts: list[dict], oai: OpenAI, workers: int = 20) -> list
 
 # ── Save to Database ───────────────────────────────────────────────────
 
+PODCAST_TARGET_SELECT = (
+    "id, podcast_index_id, itunes_id, title, author, description, categories, "
+    "language, episode_count, last_episode_date, website_url, rss_url, image_url, "
+    "activity_status, discovery_methods"
+)
+
+
+def _parse_categories(value) -> list[str]:
+    if not value:
+        return []
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except (json.JSONDecodeError, ValueError):
+            return [value]
+    if isinstance(value, list):
+        return [str(v) for v in value if str(v).strip()]
+    return []
+
+
+def _merge_categories(new_value, existing_value) -> list[str]:
+    seen = set()
+    merged = []
+    for item in _parse_categories(existing_value) + _parse_categories(new_value):
+        key = item.lower()
+        if key not in seen:
+            seen.add(key)
+            merged.append(item)
+    return merged
+
+
+def _pick_non_empty(new_value, existing_value):
+    if new_value is None:
+        return existing_value
+    if isinstance(new_value, str):
+        return new_value if new_value.strip() else existing_value
+    return new_value if new_value else existing_value
+
+
+def _merge_last_episode_date(new_value, existing_value) -> str | None:
+    candidates = []
+    for value in (existing_value, new_value):
+        if not value:
+            continue
+        try:
+            candidates.append(datetime.fromisoformat(str(value).replace("Z", "+00:00")))
+        except ValueError:
+            continue
+    if not candidates:
+        return existing_value or new_value or None
+    return max(candidates).isoformat()
+
+
+def _merge_activity_status(new_value: str | None, existing_value: str | None) -> str:
+    priority = {
+        "unknown": 0,
+        "inactive": 1,
+        "podfaded": 2,
+        "slow": 3,
+        "active": 4,
+    }
+    new_status = (new_value or "unknown").lower()
+    existing_status = (existing_value or "unknown").lower()
+    return (
+        new_status
+        if priority.get(new_status, 0) >= priority.get(existing_status, 0)
+        else existing_status
+    )
+
+
+def _find_existing_podcast(sb: Client, pi_id: int | None, it_id: int | None, title: str) -> dict | None:
+    for column, value in (("podcast_index_id", pi_id), ("itunes_id", it_id), ("title", title)):
+        if value in (None, ""):
+            continue
+        result = (
+            sb.table("podcast_targets")
+            .select(PODCAST_TARGET_SELECT)
+            .eq(column, value)
+            .limit(1)
+            .execute()
+        )
+        if result.data:
+            return result.data[0]
+    return None
+
+
+def _build_merged_row(podcast: dict, existing_row: dict | None) -> dict:
+    discovery_method = podcast.get("_discovery_method", "keyword_search")
+    existing_methods = (existing_row or {}).get("discovery_methods") or []
+    if discovery_method not in existing_methods:
+        existing_methods.append(discovery_method)
+
+    row = {
+        "podcast_index_id": podcast.get("podcast_index_id") or (existing_row or {}).get("podcast_index_id"),
+        "itunes_id": podcast.get("itunes_id") or (existing_row or {}).get("itunes_id"),
+        "title": _pick_non_empty(podcast.get("title"), (existing_row or {}).get("title")),
+        "author": _pick_non_empty(podcast.get("author", ""), (existing_row or {}).get("author", "")),
+        "description": _pick_non_empty(
+            podcast.get("description", ""), (existing_row or {}).get("description", "")
+        ),
+        "categories": _merge_categories(
+            podcast.get("categories", []), (existing_row or {}).get("categories", [])
+        ),
+        "language": _pick_non_empty(
+            podcast.get("language", "en") or "en", (existing_row or {}).get("language", "en")
+        ) or "en",
+        "episode_count": max(
+            int(podcast.get("episode_count") or 0),
+            int((existing_row or {}).get("episode_count") or 0),
+        ),
+        "website_url": _pick_non_empty(
+            podcast.get("website_url", ""), (existing_row or {}).get("website_url", "")
+        ),
+        "rss_url": _pick_non_empty(
+            podcast.get("rss_url", ""), (existing_row or {}).get("rss_url", "")
+        ),
+        "image_url": _pick_non_empty(
+            podcast.get("image_url", ""), (existing_row or {}).get("image_url", "")
+        ),
+        "activity_status": _merge_activity_status(
+            podcast.get("activity_status"), (existing_row or {}).get("activity_status")
+        ),
+        "discovery_methods": existing_methods,
+    }
+
+    merged_last_episode = _merge_last_episode_date(
+        podcast.get("last_episode_date"), (existing_row or {}).get("last_episode_date")
+    )
+    if merged_last_episode:
+        row["last_episode_date"] = merged_last_episode
+
+    return row
+
+
 def save_podcasts(podcasts: list[dict], sb: Client) -> int:
     """Upsert podcasts to podcast_targets. Returns count saved.
 
@@ -256,7 +390,11 @@ def save_podcasts(podcasts: list[dict], sb: Client) -> int:
     for p in podcasts:
         discovery_method = p.get("_discovery_method", "keyword_search")
 
-        row = {
+        pi_id = p.get("podcast_index_id")
+        it_id = p.get("itunes_id")
+        podcast_for_row = {
+            "podcast_index_id": pi_id,
+            "itunes_id": it_id,
             "title": p["title"],
             "author": p.get("author", ""),
             "description": p.get("description", ""),
@@ -266,78 +404,30 @@ def save_podcasts(podcasts: list[dict], sb: Client) -> int:
             "website_url": p.get("website_url", ""),
             "rss_url": p.get("rss_url", ""),
             "image_url": p.get("image_url", ""),
+            "_discovery_method": discovery_method,
         }
 
-        # Set last_episode_date from epoch timestamp
         last_update = p.get("last_update_time", 0)
         if last_update and last_update > 0:
-            row["last_episode_date"] = datetime.fromtimestamp(last_update, tz=timezone.utc).isoformat()
-
-        # Set activity status
-        if last_update and last_update > 0:
-            row["activity_status"] = "active" if last_update >= ACTIVITY_CUTOFF_EPOCH else "inactive"
+            podcast_for_row["last_episode_date"] = datetime.fromtimestamp(
+                last_update, tz=timezone.utc
+            ).isoformat()
+            podcast_for_row["activity_status"] = (
+                "active" if last_update >= ACTIVITY_CUTOFF_EPOCH else "inactive"
+            )
         else:
-            row["activity_status"] = "unknown"
+            podcast_for_row["activity_status"] = "unknown"
 
-        # Use podcast_index_id or itunes_id for upsert key
-        pi_id = p.get("podcast_index_id")
-        it_id = p.get("itunes_id")
-
-        def _merge_discovery_methods(existing_row: dict | None) -> list[str]:
-            """Merge new discovery method into existing methods array."""
-            existing_methods = []
+        try:
+            existing_row = _find_existing_podcast(sb, pi_id, it_id, p["title"])
+            row = _build_merged_row(podcast_for_row, existing_row)
             if existing_row:
-                existing_methods = existing_row.get("discovery_methods") or []
-            if discovery_method not in existing_methods:
-                existing_methods.append(discovery_method)
-            return existing_methods
-
-        if pi_id:
-            row["podcast_index_id"] = pi_id
-            if it_id:
-                row["itunes_id"] = it_id
-            try:
-                # Check if exists to merge discovery_methods
-                existing = sb.table("podcast_targets").select("id, discovery_methods").eq(
-                    "podcast_index_id", pi_id
-                ).execute()
-                row["discovery_methods"] = _merge_discovery_methods(
-                    existing.data[0] if existing.data else None
-                )
-                sb.table("podcast_targets").upsert(row, on_conflict="podcast_index_id").execute()
-                saved += 1
-            except Exception as e:
-                print(f"    Save error ({p['title'][:40]}): {e}")
-        elif it_id:
-            # iTunes-only podcast: check if already exists by title
-            row["itunes_id"] = it_id
-            existing = sb.table("podcast_targets").select("id, discovery_methods").eq(
-                "title", p["title"]
-            ).execute()
-            if existing.data:
-                row["discovery_methods"] = _merge_discovery_methods(existing.data[0])
-                sb.table("podcast_targets").update(row).eq("id", existing.data[0]["id"]).execute()
+                sb.table("podcast_targets").update(row).eq("id", existing_row["id"]).execute()
             else:
-                row["discovery_methods"] = [discovery_method]
                 sb.table("podcast_targets").insert(row).execute()
             saved += 1
-        else:
-            # No ID, insert by title match
-            existing = sb.table("podcast_targets").select("id, discovery_methods").eq(
-                "title", p["title"]
-            ).execute()
-            if existing.data:
-                # Exists — update discovery_methods
-                row["discovery_methods"] = _merge_discovery_methods(existing.data[0])
-                sb.table("podcast_targets").update(row).eq("id", existing.data[0]["id"]).execute()
-                saved += 1
-            else:
-                row["discovery_methods"] = [discovery_method]
-                try:
-                    sb.table("podcast_targets").insert(row).execute()
-                    saved += 1
-                except Exception as e:
-                    print(f"    Save error ({p['title'][:40]}): {e}")
+        except Exception as e:
+            print(f"    Save error ({p['title'][:40]}): {e}")
 
     return saved
 

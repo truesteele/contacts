@@ -153,6 +153,9 @@ function buildUserPrompt(
 
   let matching = fitData.topic_match || [];
   if (typeof matching === 'string') matching = JSON.parse(matching);
+  if (!Array.isArray(matching) && matching && typeof matching === 'object') {
+    matching = Array.isArray(matching.matching_pillars) ? matching.matching_pillars : [];
+  }
   if (Array.isArray(matching) && matching.length > 0) {
     parts.push(`Matching pillars: ${matching.join(', ')}`);
   }
@@ -165,7 +168,7 @@ function buildUserPrompt(
       if (typeof h === 'string') {
         parts.push(`- ${h}`);
       } else if (h.episode_title) {
-        parts.push(`- ${h.episode_title}: ${h.hook || ''}`);
+        parts.push(`- ${h.episode_title}: ${h.angle || h.hook || h.description || ''}`);
       }
     }
   }

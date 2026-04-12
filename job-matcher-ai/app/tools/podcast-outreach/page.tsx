@@ -672,12 +672,12 @@ function DiscoveryTab() {
             {scoring ? (
               <>
                 <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                Scoring...
+                Preparing...
               </>
             ) : (
               <>
                 <Zap className="mr-1 h-3 w-3" />
-                Score Selected
+                Prepare Selected
               </>
             )}
           </Button>
@@ -849,11 +849,11 @@ function DiscoveryTab() {
                                 </Badge>
                               </div>
                               <div className="grid grid-cols-5 gap-3">
-                                <SignalBar label="GPT Fit" value={signals.gpt_fit_score} weight="35%" color="bg-blue-500" />
-                                <SignalBar label="Embedding" value={signals.embedding_similarity} weight="30%" color="bg-cyan-500" />
-                                <SignalBar label="Speaker" value={signals.similar_speaker_boost} weight="15%" color="bg-purple-500" />
-                                <SignalBar label="Recency" value={signals.activity_recency} weight="10%" color="bg-green-500" />
-                                <SignalBar label="Episodes" value={signals.episode_count_signal} weight="10%" color="bg-orange-500" />
+                                <SignalBar label="GPT Fit" value={signals.gpt_fit_score} weight="41%" color="bg-blue-500" />
+                                <SignalBar label="Embedding" value={signals.embedding_similarity} weight="35%" color="bg-cyan-500" />
+                                <SignalBar label="Speaker" value={signals.similar_speaker_boost} weight="bonus" color="bg-purple-500" />
+                                <SignalBar label="Recency" value={signals.activity_recency} weight="12%" color="bg-green-500" />
+                                <SignalBar label="Episodes" value={signals.episode_count_signal} weight="12%" color="bg-orange-500" />
                               </div>
                               {topicMatch && !Array.isArray(topicMatch) && topicMatch.matching_pillars && topicMatch.matching_pillars.length > 0 && (
                                 <div className="text-xs text-muted-foreground">

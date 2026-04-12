@@ -18,7 +18,7 @@ export async function POST(req: Request) {
 
     if (!body.speaker_slug) {
       return Response.json(
-        { error: 'speaker_slug is required (e.g., "sally-steele" or "justin-steele")' },
+        { error: 'speaker_slug is required (e.g., "sally" or "justin")' },
         { status: 400 }
       );
     }
@@ -37,61 +37,31 @@ export async function POST(req: Request) {
       );
     }
 
-    // Check which podcasts already have scores for this speaker
+    // Check which podcasts already have pitch rows for this speaker.
+    // Rows with null fit_score are pending placeholders created by this route.
     const { data: existingPitches } = await supabase
       .from('podcast_pitches')
-      .select('podcast_target_id')
+      .select('podcast_target_id, fit_score')
       .eq('speaker_profile_id', speaker.id)
       .in('podcast_target_id', body.podcast_ids);
 
-    const alreadyScored = new Set(
+    const alreadyPrepared = new Set(
       (existingPitches || []).map((p: any) => p.podcast_target_id)
     );
-    const toScore = body.podcast_ids.filter((id) => !alreadyScored.has(id));
+    const toScore = body.podcast_ids.filter((id) => !alreadyPrepared.has(id));
 
     if (toScore.length === 0) {
       return Response.json({
-        status: 'complete',
-        message: 'All selected podcasts already scored for this speaker',
-        already_scored: body.podcast_ids.length,
-        newly_scored: 0,
+        status: 'prepared',
+        message: 'All selected podcasts already have pitch rows for this speaker',
+        already_prepared: body.podcast_ids.length,
+        newly_prepared: 0,
       });
     }
 
-    // Fetch podcast data + episodes for scoring
-    const { data: podcasts, error: podcastError } = await supabase
-      .from('podcast_targets')
-      .select('id, title, author, description, categories, activity_status, host_name')
-      .in('id', toScore);
-
-    if (podcastError || !podcasts) {
-      return Response.json(
-        { error: `Failed to fetch podcasts: ${podcastError?.message}` },
-        { status: 500 }
-      );
-    }
-
-    // Fetch episodes for all podcasts in one query
-    const { data: allEpisodes } = await supabase
-      .from('podcast_episodes')
-      .select('podcast_target_id, title, description')
-      .in('podcast_target_id', toScore)
-      .order('published_at', { ascending: false });
-
-    // Group episodes by podcast
-    const episodeMap = new Map<number, any[]>();
-    if (allEpisodes) {
-      for (const ep of allEpisodes) {
-        const list = episodeMap.get(ep.podcast_target_id) || [];
-        list.push(ep);
-        episodeMap.set(ep.podcast_target_id, list);
-      }
-    }
-
-    // Create placeholder pitch rows (unscored) so the UI can track progress
-    // The actual scoring is done by the Python script: score_podcast_fit.py
-    const pitchRows = podcasts.map((p: any) => ({
-      podcast_target_id: p.id,
+    // Create placeholder pitch rows so the scorer can update them later.
+    const pitchRows = toScore.map((podcastId) => ({
+      podcast_target_id: podcastId,
       speaker_profile_id: speaker.id,
       fit_tier: null,
       fit_score: null,
@@ -110,10 +80,10 @@ export async function POST(req: Request) {
     }
 
     return Response.json({
-      status: 'started',
+      status: 'prepared',
       count: toScore.length,
-      already_scored: alreadyScored.size,
-      message: `Created ${toScore.length} pitch records. Run score_podcast_fit.py --speaker ${body.speaker_slug.split('-')[0]} to score them.`,
+      already_prepared: alreadyPrepared.size,
+      message: `Prepared ${toScore.length} podcasts for scoring. Run score_podcast_fit.py --speaker ${body.speaker_slug} to score them.`,
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to score podcasts';
