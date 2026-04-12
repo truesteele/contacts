@@ -10,6 +10,7 @@ export async function GET(req: NextRequest) {
     const discoveryMethod = params.get('discovery_method') || '';
     const category = params.get('category') || '';
     const activeIn2026 = params.get('active_2026') === 'true';
+    const bookmarked = params.get('bookmarked') === 'true';
     const search = params.get('search') || '';
     const page = Math.max(1, parseInt(params.get('page') || '1', 10));
     const limit = Math.min(100, Math.max(1, parseInt(params.get('limit') || '25', 10)));
@@ -47,6 +48,8 @@ export async function GET(req: NextRequest) {
         pitch_status: string | null;
         subject_line: string | null;
         pitch_body: string | null;
+        is_bookmarked: boolean;
+        user_notes: string;
       }> = [];
 
       // Paginate pitch loading (Supabase caps at 1000)
@@ -55,10 +58,14 @@ export async function GET(req: NextRequest) {
       while (true) {
         let pitchQuery = supabase
           .from('podcast_pitches')
-          .select('podcast_target_id, fit_tier, fit_score, fit_rationale, topic_match, pitch_status, subject_line, pitch_body')
+          .select('podcast_target_id, fit_tier, fit_score, fit_rationale, topic_match, pitch_status, subject_line, pitch_body, is_bookmarked, user_notes')
           .eq('speaker_profile_id', speakerProfileId)
           .order('fit_score', { ascending: false, nullsFirst: false })
           .range(pitchOffset, pitchOffset + pitchPageSize - 1);
+
+        if (bookmarked) {
+          pitchQuery = pitchQuery.eq('is_bookmarked', true);
+        }
 
         if (fitTier) {
           pitchQuery = pitchQuery.eq('fit_tier', fitTier);
