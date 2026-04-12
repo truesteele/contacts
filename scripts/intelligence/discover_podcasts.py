@@ -2,15 +2,22 @@
 """
 Podcast Discovery — Search, Deduplicate, and Save Podcast Targets
 
-Searches Podcast Index and iTunes for podcasts matching Sally and Justin's
-topics, deduplicates results using GPT-5 mini, filters out inactive shows,
+Searches Podcast Index and iTunes for podcasts matching speaker topics,
+deduplicates results using GPT-5.4 mini, filters out inactive shows,
 and saves to podcast_targets.
+
+Discovery methods:
+  keyword    — search hardcoded terms (default)
+  expanded   — keyword + AI-generated expanded terms from speaker profile
+  all        — all discovery methods
 
 Usage:
   python scripts/intelligence/discover_podcasts.py --speaker sally --test --limit 10
   python scripts/intelligence/discover_podcasts.py --speaker justin --limit 200
   python scripts/intelligence/discover_podcasts.py --speaker both
   python scripts/intelligence/discover_podcasts.py --speaker sally --search-terms "camping,outdoor family"
+  python scripts/intelligence/discover_podcasts.py --speaker sally --method expanded --limit 100
+  python scripts/intelligence/discover_podcasts.py --speaker sally --method all
 """
 
 import os
@@ -61,7 +68,7 @@ def get_openai() -> OpenAI:
     return OpenAI(api_key=os.environ["OPENAI_APIKEY"])
 
 
-MODEL = "gpt-5-mini"
+MODEL = "gpt-5.4-mini"
 
 # 90 days ago threshold for activity filtering
 ACTIVITY_CUTOFF = datetime.now(timezone.utc) - timedelta(days=90)
@@ -70,7 +77,8 @@ ACTIVITY_CUTOFF_EPOCH = int(ACTIVITY_CUTOFF.timestamp())
 
 # ── Search ─────────────────────────────────────────────────────────────
 
-def search_all(terms: list[str], limit_per_term: int, pi_client: PodcastIndexClient | None) -> list[dict]:
+def search_all(terms: list[str], limit_per_term: int, pi_client: PodcastIndexClient | None,
+               discovery_method: str = "keyword_search") -> list[dict]:
     """Search both Podcast Index and iTunes for all terms. Returns raw results."""
     all_results = []
     seen_titles_lower = set()  # quick pre-dedup by exact lowercase title
@@ -88,6 +96,7 @@ def search_all(terms: list[str], limit_per_term: int, pi_client: PodcastIndexCli
                         seen_titles_lower.add(key)
                         p["_source"] = "podcast_index"
                         p["_search_term"] = term
+                        p["_discovery_method"] = discovery_method
                         all_results.append(p)
             except Exception as e:
                 print(f"    Podcast Index error for '{term}': {e}")
@@ -101,6 +110,7 @@ def search_all(terms: list[str], limit_per_term: int, pi_client: PodcastIndexCli
                     seen_titles_lower.add(key)
                     p["_source"] = "itunes"
                     p["_search_term"] = term
+                    p["_discovery_method"] = discovery_method
                     all_results.append(p)
         except Exception as e:
             print(f"    iTunes error for '{term}': {e}")
@@ -234,9 +244,15 @@ def dedup_with_gpt(podcasts: list[dict], oai: OpenAI, workers: int = 20) -> list
 # ── Save to Database ───────────────────────────────────────────────────
 
 def save_podcasts(podcasts: list[dict], sb: Client) -> int:
-    """Upsert podcasts to podcast_targets. Returns count saved."""
+    """Upsert podcasts to podcast_targets. Returns count saved.
+
+    Handles discovery_methods: appends new methods to existing arrays
+    without overwriting (so a podcast found by multiple methods accumulates tags).
+    """
     saved = 0
     for p in podcasts:
+        discovery_method = p.get("_discovery_method", "keyword_search")
+
         row = {
             "title": p["title"],
             "author": p.get("author", ""),
@@ -264,33 +280,56 @@ def save_podcasts(podcasts: list[dict], sb: Client) -> int:
         pi_id = p.get("podcast_index_id")
         it_id = p.get("itunes_id")
 
+        def _merge_discovery_methods(existing_row: dict | None) -> list[str]:
+            """Merge new discovery method into existing methods array."""
+            existing_methods = []
+            if existing_row:
+                existing_methods = existing_row.get("discovery_methods") or []
+            if discovery_method not in existing_methods:
+                existing_methods.append(discovery_method)
+            return existing_methods
+
         if pi_id:
             row["podcast_index_id"] = pi_id
             if it_id:
                 row["itunes_id"] = it_id
             try:
+                # Check if exists to merge discovery_methods
+                existing = sb.table("podcast_targets").select("id, discovery_methods").eq(
+                    "podcast_index_id", pi_id
+                ).execute()
+                row["discovery_methods"] = _merge_discovery_methods(
+                    existing.data[0] if existing.data else None
+                )
                 sb.table("podcast_targets").upsert(row, on_conflict="podcast_index_id").execute()
                 saved += 1
             except Exception as e:
                 print(f"    Save error ({p['title'][:40]}): {e}")
         elif it_id:
-            # iTunes-only podcast: check if already exists by title+author
+            # iTunes-only podcast: check if already exists by title
             row["itunes_id"] = it_id
-            existing = sb.table("podcast_targets").select("id").eq(
+            existing = sb.table("podcast_targets").select("id, discovery_methods").eq(
                 "title", p["title"]
             ).execute()
             if existing.data:
-                # Update existing
+                row["discovery_methods"] = _merge_discovery_methods(existing.data[0])
                 sb.table("podcast_targets").update(row).eq("id", existing.data[0]["id"]).execute()
             else:
+                row["discovery_methods"] = [discovery_method]
                 sb.table("podcast_targets").insert(row).execute()
             saved += 1
         else:
             # No ID, insert by title match
-            existing = sb.table("podcast_targets").select("id").eq(
+            existing = sb.table("podcast_targets").select("id, discovery_methods").eq(
                 "title", p["title"]
             ).execute()
-            if not existing.data:
+            if existing.data:
+                # Exists — update discovery_methods
+                row["discovery_methods"] = _merge_discovery_methods(existing.data[0])
+                sb.table("podcast_targets").update(row).eq("id", existing.data[0]["id"]).execute()
+                saved += 1
+            else:
+                row["discovery_methods"] = [discovery_method]
                 try:
                     sb.table("podcast_targets").insert(row).execute()
                     saved += 1
@@ -298,6 +337,68 @@ def save_podcasts(podcasts: list[dict], sb: Client) -> int:
                     print(f"    Save error ({p['title'][:40]}): {e}")
 
     return saved
+
+
+# ── Speaker Profile Loading ───────────────────────────────────────────
+
+def load_speaker(sb: Client, slug: str) -> dict:
+    """Load a speaker profile by slug from speaker_profiles table."""
+    result = sb.table("speaker_profiles").select("*").eq("slug", slug).execute()
+    if not result.data:
+        print(f"ERROR: No speaker profile found for slug '{slug}'")
+        sys.exit(1)
+    speaker = result.data[0]
+    # Parse topic_pillars if stored as JSON string
+    if isinstance(speaker.get("topic_pillars"), str):
+        speaker["topic_pillars"] = json.loads(speaker["topic_pillars"])
+    return speaker
+
+
+# ── Expanded Keyword Generation ──────────────────────────────────────
+
+def generate_expanded_terms(speaker: dict, oai: OpenAI, existing_terms: list[str]) -> list[str]:
+    """Use GPT-5.4 mini to generate additional search terms from speaker's topic pillars."""
+    pillars = speaker.get("topic_pillars") or []
+    pillars_text = "\n".join(
+        f"- {p['name']}: {p['description']}"
+        for p in pillars
+    )
+
+    prompt = f"""Generate 25 additional podcast search terms for this speaker.
+
+Speaker: {speaker['name']}
+Headline: {speaker['headline']}
+Topic Pillars:
+{pillars_text}
+
+Already searching for: {', '.join(existing_terms)}
+
+Generate terms that:
+- Cover adjacent topics a podcast booking agent would search
+- Include niche audience-specific phrases
+- Include common podcast category names that match
+- Avoid duplicating the existing terms
+
+Return a JSON object with key "terms" containing an array of strings."""
+
+    try:
+        resp = oai.chat.completions.create(
+            model=MODEL,
+            messages=[
+                {"role": "system", "content": "You are a podcast booking expert generating search terms to find relevant podcasts for a speaker."},
+                {"role": "user", "content": prompt},
+            ],
+            response_format={"type": "json_object"},
+        )
+        result = json.loads(resp.choices[0].message.content)
+        terms = result.get("terms", [])
+        # Filter out any that duplicate existing terms (case-insensitive)
+        existing_lower = {t.lower() for t in existing_terms}
+        new_terms = [t for t in terms if t.lower() not in existing_lower]
+        return new_terms
+    except Exception as e:
+        print(f"  ERROR generating expanded terms: {e}")
+        return []
 
 
 # ── Main ───────────────────────────────────────────────────────────────
@@ -314,7 +415,20 @@ def main():
                         help="Dry run: print results without saving")
     parser.add_argument("--workers", type=int, default=20,
                         help="Concurrent GPT workers for dedup (default: 20)")
+    parser.add_argument("--method", type=str, default="keyword",
+                        choices=["keyword", "expanded", "all"],
+                        help="Discovery method: keyword (default), expanded (keyword + AI terms), all")
     args = parser.parse_args()
+
+    # Init clients
+    oai = get_openai()
+    sb = get_supabase()
+
+    pi_key = os.environ.get("PODCAST_INDEX_API_KEY")
+    pi_secret = os.environ.get("PODCAST_INDEX_API_SECRET")
+    pi_client = PodcastIndexClient(pi_key, pi_secret) if pi_key and pi_secret else None
+    if not pi_client:
+        print("  WARNING: PODCAST_INDEX_API_KEY/SECRET not set, using iTunes only\n")
 
     # Build search terms
     if args.search_terms:
@@ -328,62 +442,98 @@ def main():
 
     print(f"=== Podcast Discovery ===")
     print(f"Speaker: {args.speaker}")
-    print(f"Search terms: {len(terms)}")
+    print(f"Method: {args.method}")
+    print(f"Base search terms: {len(terms)}")
     print(f"Limit per term: {args.limit}")
     print(f"Mode: {'TEST (dry run)' if args.test else 'LIVE (will save)'}")
     print()
 
-    # Init clients
-    oai = get_openai()
+    all_results = []
 
-    pi_key = os.environ.get("PODCAST_INDEX_API_KEY")
-    pi_secret = os.environ.get("PODCAST_INDEX_API_SECRET")
-    pi_client = PodcastIndexClient(pi_key, pi_secret) if pi_key and pi_secret else None
-    if not pi_client:
-        print("  WARNING: PODCAST_INDEX_API_KEY/SECRET not set, using iTunes only\n")
+    # ── Keyword search (always runs for keyword/expanded/all) ──
+    print("Step 1: Keyword search...")
+    keyword_results = search_all(terms, args.limit, pi_client, discovery_method="keyword_search")
+    all_results.extend(keyword_results)
 
-    # 1. Search
-    print("Step 1: Searching APIs...")
-    results = search_all(terms, args.limit, pi_client)
-    if not results:
+    # ── Expanded keyword search ──
+    if args.method in ("expanded", "all"):
+        print("\nStep 1b: Generating expanded search terms...")
+        # Load speaker profile for expanded terms
+        speakers_to_expand = []
+        if args.speaker in ("sally", "both"):
+            speakers_to_expand.append("sally")
+        if args.speaker in ("justin", "both"):
+            speakers_to_expand.append("justin")
+
+        for slug in speakers_to_expand:
+            speaker = load_speaker(sb, slug)
+            print(f"  Speaker: {speaker['name']}")
+            expanded = generate_expanded_terms(speaker, oai, terms)
+            print(f"  Generated {len(expanded)} expanded terms")
+            if expanded:
+                for t in expanded[:10]:
+                    print(f"    - {t}")
+                if len(expanded) > 10:
+                    print(f"    ... and {len(expanded) - 10} more")
+
+                print(f"\n  Searching expanded terms...")
+                # Track seen titles from keyword results to avoid redundant searching
+                seen_titles = {r["title"].lower().strip() for r in all_results}
+                expanded_results = search_all(expanded, args.limit, pi_client,
+                                              discovery_method="expanded_keywords")
+                # Filter out titles already found in keyword search
+                new_expanded = [r for r in expanded_results
+                                if r["title"].lower().strip() not in seen_titles]
+                print(f"  New podcasts from expanded terms: {len(new_expanded)}")
+                all_results.extend(new_expanded)
+
+    if not all_results:
         print("No results found. Exiting.")
         return
 
-    # 2. Filter language
+    # Filter and dedup
+    print(f"\nTotal raw results: {len(all_results)}")
+
     print("\nStep 2: Filtering non-English...")
-    results = filter_language(results)
+    all_results = filter_language(all_results)
 
-    # 3. Filter inactive
     print("\nStep 3: Filtering inactive shows...")
-    results = filter_inactive(results)
+    all_results = filter_inactive(all_results)
 
-    # 4. GPT deduplication
     print("\nStep 4: GPT-powered deduplication...")
-    results = dedup_with_gpt(results, oai, workers=args.workers)
+    all_results = dedup_with_gpt(all_results, oai, workers=args.workers)
 
-    # 5. Summary
+    # Summary
     print(f"\n{'='*60}")
-    print(f"Final results: {len(results)} podcasts")
+    print(f"Final results: {len(all_results)} podcasts")
+
+    # Count by discovery method
+    method_counts = {}
+    for r in all_results:
+        m = r.get("_discovery_method", "keyword_search")
+        method_counts[m] = method_counts.get(m, 0) + 1
+    for m, c in sorted(method_counts.items()):
+        print(f"  {m}: {c}")
     print(f"{'='*60}")
 
     if args.test:
         # Print top results
-        for i, p in enumerate(results[:30]):
+        for i, p in enumerate(all_results[:30]):
             src = p.get("_source", "?")
             eps = p.get("episode_count", 0)
             term = p.get("_search_term", "?")
-            print(f"  {i+1}. [{src}] {p['title']}")
+            method = p.get("_discovery_method", "?")
+            print(f"  {i+1}. [{src}|{method}] {p['title']}")
             print(f"     by {p.get('author', '?')} | {eps} eps | term: '{term}'")
 
-        if len(results) > 30:
-            print(f"  ... and {len(results) - 30} more")
+        if len(all_results) > 30:
+            print(f"  ... and {len(all_results) - 30} more")
         print(f"\nDRY RUN -- no database changes made")
     else:
         # Save
         print("\nStep 5: Saving to database...")
-        sb = get_supabase()
-        saved = save_podcasts(results, sb)
-        print(f"\nSaved {saved}/{len(results)} podcasts to podcast_targets")
+        saved = save_podcasts(all_results, sb)
+        print(f"\nSaved {saved}/{len(all_results)} podcasts to podcast_targets")
 
     print("\nDone.")
 

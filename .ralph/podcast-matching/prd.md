@@ -139,7 +139,7 @@ Keywords: {keyword1}, {keyword2}, ...
 
 ---
 
-### [ ] US-003: Enhanced Discovery — Podcast Index + Expanded Keywords
+### [x] US-003: Enhanced Discovery — Podcast Index + Expanded Keywords
 
 **Goal:** Upgrade discover_podcasts.py to use Podcast Index API (now configured) and add AI-generated expanded search terms.
 
