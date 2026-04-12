@@ -1,0 +1,56 @@
+# Ralph Progress Log
+Loop: podcast-matching
+Started: 2026-04-11
+---
+
+## US-001: Database Migration — Embedding Columns ✓
+Date: 2026-04-11
+Commit: 6be57fc
+
+**What was done:**
+- Created migration: `supabase/migrations/20260414_add_podcast_embeddings.sql`
+- Added `description_embedding vector(768)` on `podcast_targets`
+- Added `discovery_methods text[]` on `podcast_targets` (default '{}')
+- Added `profile_embedding vector(768)` on `speaker_profiles`
+- Created IVFFlat index `idx_podcast_targets_embedding` (lists=20)
+- Applied via `mcp__supabase-contacts__apply_migration`
+
+**Verified:**
+- All 3 columns confirmed in information_schema
+- Index confirmed in pg_indexes
+
+**Notes:**
+- IVFFlat lists=20 is good for ~400 rows (sqrt heuristic)
+- May need to rebuild index with more lists if podcast count grows significantly past 1000
+
+## US-002: Embed Podcasts and Speaker Profiles ✓
+Date: 2026-04-11
+
+**What was done:**
+- Created `scripts/intelligence/embed_podcasts.py` — batch embedding script
+- Follows same patterns as `generate_embeddings.py`: OpenAI batch API, retry logic, psycopg2 for vector saves
+- Podcast text format: title | author + description + categories + recent episode titles
+- Speaker text format: name | headline + bio + topic pillars + keywords
+- Loads top 3 recent episodes per podcast from `podcast_episodes` table
+- CLI flags: `--test` (5 podcasts), `--force`, `--limit N`, `--speakers-only`
+
+**Full run results:**
+- 383/383 podcasts embedded (768-dim vectors)
+- 2/2 speaker profiles embedded (Sally + Justin)
+- Total tokens: ~26,277 across 3 API calls
+- Total cost: ~$0.0005
+- Time: ~11s total (test + full run)
+
+**Verified:**
+- `description_embedding IS NOT NULL` count = 383
+- `profile_embedding IS NOT NULL` count = 2
+- `vector_dims(description_embedding)` = 768
+- Test mode correctly limits to 5 podcasts + all speakers
+- Skips already-embedded items unless `--force` is used
+
+**Notes:**
+- Supabase client `.is_("description_embedding", "null")` works for filtering un-embedded rows
+- Episode data available for 372/383 podcasts (5 enriched episodes each)
+- psycopg2 with `%s::vector` cast works correctly for saving embeddings
+- BATCH_SIZE=500 handles all 383 in a single API call
+
