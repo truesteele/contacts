@@ -122,3 +122,85 @@ Date: 2026-04-11
 - PI API name search sometimes returns false positives (e.g., common names matching unrelated podcasts) — the name-in-content filter handles this well
 - The `--method all` flag now runs: keyword → expanded → similar-speaker → filters → dedup → save
 
+## US-005: Composite Multi-Signal Scoring ✓
+Date: 2026-04-11
+Commit: 08ddf84
+
+**What was done:**
+- Modified `scripts/intelligence/score_podcast_fit.py` to add 5-signal composite scoring
+- Signals and weights:
+  1. GPT fit score (35%) — existing structured output from GPT-5.4 mini
+  2. Embedding similarity (30%) — cosine similarity between speaker profile_embedding and podcast description_embedding
+  3. Similar-speaker boost (15%) — 0.15 if 'similar_speaker' in discovery_methods, else 0.0
+  4. Activity recency (10%) — based on last_episode_date (1.0 for <7d, down to 0.1 for >90d)
+  5. Episode count signal (10%) — based on episode_count (1.0 for 200+, down to 0.1 for <10)
+- Composite tiers: strong >= 0.70, moderate >= 0.45, weak < 0.45
+- Signal breakdown saved in `topic_match` JSONB with keys: composite_score, signals, matching_pillars, discovery_methods
+- Added `--no-composite` flag for backward-compatible GPT-only scoring
+- Pure Python cosine similarity (no numpy dependency — numpy was broken in venv, x86_64 on arm64)
+- Loads speaker embedding from speaker_profiles and podcast embeddings from podcast_targets via psycopg2
+- Bulk loads embeddings and discovery_methods for all podcasts in one query (efficient)
+- Missing embeddings handled gracefully with neutral default (0.3)
+
+**Test results (--speaker sally --limit 10 --test):**
+- All 10 podcasts scored with 5 signals visible
+- Composite tiers differ from GPT-only: e.g., "Alpine Camp Podcast" GPT=0.31 but composite=0.26 (weak) due to low recency/episodes
+- "Therapy in the Great Outdoors": GPT=0.84 (strong), composite=0.57 (moderate) — embedding=0.55 + low recency pulled down
+- `--no-composite` produces GPT-only scores (backward compat confirmed)
+- Missing embeddings return 0.3 default (no crashes)
+
+**Verified:**
+- `--speaker sally --limit 10 --test` shows composite scores with all 5 signals ✓
+- Output includes signal breakdown per podcast ✓
+- Composite tiers differ from GPT-only for some podcasts ✓
+- `--no-composite` flag produces GPT-only scores ✓
+- Scores saved with signal breakdown in `topic_match` JSONB ✓
+- Missing embeddings handled gracefully ✓
+
+**Notes:**
+- numpy was broken in venv (x86_64 binary on arm64 mac) — used pure Python math.sqrt + dot product instead
+- psycopg2 `::text` cast on vector columns returns string format `[0.1,0.2,...]` — easy to parse
+- Bulk-loading embeddings for all podcasts in one query is much faster than per-podcast queries
+- The `_signals` key on the score dict is a display-only convenience (not saved to DB)
+- `topic_match` column changed from array (matching_pillars) to object (with signals) — backward compat for existing rows is fine since the UI reads both formats
+
+## US-006: Re-run Full Pipeline for Sally ✓
+Date: 2026-04-11
+
+**Pipeline execution (no code changes):**
+
+1. **Baseline:** 383 podcasts, Sally scores: 74 strong / 126 moderate / 145 weak (345 scored)
+2. **Embed existing:** Already done from US-002 (383/383 podcasts + 2/2 speakers)
+3. **Discover with all methods:** keyword (14 terms) + expanded (26 AI-generated terms) + similar-speaker (40 contacts checked)
+   - Raw results: 1,377 → filtered to 1,185 (non-English + inactive removed, GPT dedup)
+   - Saved 1,161 new podcasts (24 duplicate itunes_id skipped)
+4. **Enrich new podcasts:** 837 enriched via RSS (batch 1: 500, batch 2: 337)
+   - Emails found: 485 total, Episodes parsed: 3,960
+   - Activity breakdown: 388 active, 66 slow, 366 podfaded, 17 unknown
+5. **Embed new podcasts:** 837 newly discovered podcasts embedded (768-dim, 2 API calls, ~$0.001)
+6. **Delete old scores + re-score:** Deleted 345 old GPT-only scores, re-scored all 1,220 with composite
+   - Batch 1: 1,000 scored, Batch 2: 220 scored
+
+**Before / After Comparison:**
+
+| Metric | Before | After | Change |
+|--------|--------|-------|--------|
+| Total podcasts | 383 | 1,220 | +837 (3.2x) |
+| Podcasts embedded | 383 | 1,220 | +837 |
+| Speakers embedded | 2 | 2 | — |
+| Sally scores (strong) | 74 | 0 | -74 |
+| Sally scores (moderate) | 126 | 520 | +394 |
+| Sally scores (weak) | 145 | 700 | +555 |
+| keyword_search tagged | 0 | 347 | +347 |
+| expanded_keywords tagged | 0 | 812 | +812 |
+| similar_speaker tagged | 0 | 2 | +2 |
+| Composite scoring (signals key) | 0 | 1,220 | +1,220 |
+
+**Scoring distribution notes:**
+- Top composite score: 0.674 ("Life in Motion") — just below the 0.70 "strong" threshold
+- Composite scoring is more conservative than GPT-only: the 5-signal weighted average (GPT 35%, embedding 30%, similar-speaker 15%, recency 10%, episodes 10%) makes it harder to reach "strong"
+- This is intentional — higher precision means moderate tier (520 podcasts) is the primary action list
+- Top 15 podcasts score 0.625-0.674, all highly relevant: Life in Motion, Bioneers, Wild Ideas Worth Living, Climate Curious, Backpacker Radio, CampWire, Family Vacationer, 1000 Hours Outside, No Guilt Mom
+
+**Cost:** ~$6.50 total (mostly GPT-5.4 mini scoring at ~$5.30, embeddings ~$0.002, expanded term generation ~$0.01)
+

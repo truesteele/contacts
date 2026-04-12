@@ -253,7 +253,7 @@ Pipeline:
 
 ---
 
-### [ ] US-005: Composite Multi-Signal Scoring
+### [x] US-005: Composite Multi-Signal Scoring
 
 **Goal:** Replace single-signal GPT scoring with a 5-signal composite score.
 
@@ -353,7 +353,7 @@ Pipeline:
 
 ---
 
-### [ ] US-006: Re-run Full Pipeline for Sally
+### [x] US-006: Re-run Full Pipeline for Sally
 
 **Goal:** Execute the complete upgraded pipeline for Sally, documenting before/after counts.
 
