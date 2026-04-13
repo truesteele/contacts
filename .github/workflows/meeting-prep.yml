@@ -1,0 +1,102 @@
+# Daily Meeting Prep — Automated memo generation
+# Fetches calendar events, researches attendees, generates prep memos,
+# creates Google Doc, attaches to calendar events.
+# Runs daily at 7am PT.
+
+name: Daily Meeting Prep
+
+on:
+  schedule:
+    - cron: '0 14 * * *'  # 14:00 UTC = 7am PDT / 6am PST
+
+  workflow_dispatch:
+    inputs:
+      date:
+        description: 'Date to prep for (YYYY-MM-DD, default: today)'
+        required: false
+        type: string
+      dry_run:
+        description: 'Preview only — no Google Doc or calendar attachment'
+        required: false
+        default: 'false'
+        type: boolean
+      days_ahead:
+        description: 'Days ahead to prep (default: 0 = today)'
+        required: false
+        type: string
+
+jobs:
+  prep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install psycopg2-binary requests anthropic python-dotenv \
+            google-api-python-client google-auth google-auth-oauthlib
+
+      - name: Validate secrets
+        env:
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PERPLEXITY_APIKEY: ${{ secrets.PERPLEXITY_APIKEY }}
+          GOOGLE_ACCOUNTS_CREDS: ${{ secrets.GOOGLE_ACCOUNTS_CREDS }}
+        run: |
+          missing=""
+          [ -z "$SUPABASE_DB_PASSWORD" ] && missing="$missing SUPABASE_DB_PASSWORD"
+          [ -z "$ANTHROPIC_API_KEY" ] && missing="$missing ANTHROPIC_API_KEY"
+          [ -z "$PERPLEXITY_APIKEY" ] && missing="$missing PERPLEXITY_APIKEY"
+          [ -z "$GOOGLE_ACCOUNTS_CREDS" ] && missing="$missing GOOGLE_ACCOUNTS_CREDS"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing secrets:$missing"
+            exit 1
+          fi
+          echo "All secrets configured"
+
+      - name: Write Google credentials
+        env:
+          GOOGLE_ACCOUNTS_CREDS: ${{ secrets.GOOGLE_ACCOUNTS_CREDS }}
+        run: |
+          mkdir -p ~/.google_workspace_mcp/credentials
+          python3 -c "
+          import json, os
+          creds = json.loads(os.environ['GOOGLE_ACCOUNTS_CREDS'])
+          out_dir = os.path.expanduser('~/.google_workspace_mcp/credentials')
+          for email, data in creds.items():
+              path = os.path.join(out_dir, f'{email}.json')
+              with open(path, 'w') as f:
+                  json.dump(data, f)
+              print(f'Wrote credentials for {email}')
+          "
+
+      - name: Create output directory
+        run: mkdir -p docs/meeting_memos
+
+      - name: Run meeting prep
+        env:
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PERPLEXITY_APIKEY: ${{ secrets.PERPLEXITY_APIKEY }}
+          TARGET_DATE: ${{ inputs.date }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          DAYS_AHEAD: ${{ inputs.days_ahead }}
+        run: |
+          ARGS=""
+          [ -n "$TARGET_DATE" ] && ARGS="$ARGS --date $TARGET_DATE"
+          [ "$DRY_RUN" = "true" ] && ARGS="$ARGS --dry-run"
+          [ -n "$DAYS_AHEAD" ] && ARGS="$ARGS --days-ahead $DAYS_AHEAD"
+          cd scripts/intelligence
+          python -u daily_meeting_prep.py $ARGS
+
+      - name: Report failure
+        if: failure()
+        run: echo "::error::Meeting prep failed — check logs above"
