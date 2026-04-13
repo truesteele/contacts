@@ -1,0 +1,91 @@
+# College Tour Registration Scanner
+# Checks 6 school portals daily for June 2026 tour availability
+# Emails justinrsteele@gmail.com when target dates become bookable
+# Self-expires after June 7, 2026
+
+name: Tour Registration Scanner
+
+on:
+  schedule:
+    - cron: '0 17 * * *'  # 17:00 UTC = 10am PDT / 9am PST
+
+  workflow_dispatch:
+    inputs:
+      test_email:
+        description: 'Send a test email instead of scanning'
+        required: false
+        default: 'false'
+        type: boolean
+      reset_state:
+        description: 'Clear state and re-scan (will re-alert if dates are open)'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install playwright google-api-python-client google-auth
+          playwright install chromium --with-deps
+
+      - name: Validate secrets
+        env:
+          GMAIL_CREDS: ${{ secrets.GMAIL_CREDENTIALS_JSON }}
+        run: |
+          if [ -z "$GMAIL_CREDS" ]; then
+            echo "::error::GMAIL_CREDENTIALS_JSON secret is not configured"
+            echo "Set it to the contents of ~/.google_workspace_mcp/credentials/justinrsteele@gmail.com.json"
+            exit 1
+          fi
+          echo "Gmail credentials configured"
+
+      - name: Restore scan state
+        uses: actions/cache/restore@v4
+        with:
+          path: scripts/intelligence/.tour_scan_state.json
+          key: tour-scan-state
+
+      - name: Write Gmail credentials
+        env:
+          GMAIL_CREDS: ${{ secrets.GMAIL_CREDENTIALS_JSON }}
+        run: |
+          mkdir -p ~/.google_workspace_mcp/credentials
+          printf '%s' "$GMAIL_CREDS" > ~/.google_workspace_mcp/credentials/justinrsteele@gmail.com.json
+
+      - name: Run tour scanner
+        working-directory: scripts/intelligence
+        env:
+          TEST_EMAIL: ${{ github.event.inputs.test_email }}
+          RESET_STATE: ${{ github.event.inputs.reset_state }}
+        run: |
+          if [ "$TEST_EMAIL" = "true" ]; then
+            python -u scan_tour_registration.py --test
+          elif [ "$RESET_STATE" = "true" ]; then
+            python -u scan_tour_registration.py --reset
+          else
+            python -u scan_tour_registration.py
+          fi
+
+      - name: Save scan state
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: scripts/intelligence/.tour_scan_state.json
+          key: tour-scan-state-${{ github.run_number }}
+
+      - name: Report failure
+        if: failure()
+        run: |
+          echo "::error::Tour scanner failed — check logs above"
