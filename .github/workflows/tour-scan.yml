@@ -7,7 +7,7 @@ name: Tour Registration Scanner
 
 on:
   schedule:
-    - cron: '0 17 * * *'  # 17:00 UTC = 10am PDT / 9am PST
+    - cron: '0 14 * * *'  # 14:00 UTC = 7am PDT / 6am PST
 
   workflow_dispatch:
     inputs:
