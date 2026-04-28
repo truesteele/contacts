@@ -1,6 +1,6 @@
 # Steele Family — Summer 2026 East Coast Trip
 
-**Last updated:** April 28, 2026 (NYU tour registered)
+**Last updated:** April 28, 2026 (NYU tour registered; Columbia plan locked to Wed Jun 3)
 
 ## Family
 
@@ -134,10 +134,12 @@ Sally joins NYC for one night (Thu Jun 4) for Stranger Things, then everyone reu
 - Chelsea Market: 15 min walk south
 - Request high floors (26+) for Empire State Building views
 
-**College tours (Thu Jun 4):**
-- ✅ **NYU — REGISTERED** — Thu Jun 4, 11:00 AM — NYU Bonomi Family Admissions Center (NYU Visit: In-Person Tours)
-- Columbia University — register at https://undergrad.admissions.columbia.edu/visit/campus (still open)
-- Walk-ons not guaranteed for Columbia
+**College tours:**
+- ✅ **NYU (Thu Jun 4) — REGISTERED** — 11:00 AM, NYU Bonomi Family Admissions Center
+- ⏳ **Columbia (Wed Jun 3) — WAITING FOR PORTAL** — June dates not yet released as of Apr 28; tour scanner is monitoring
+  - Target 2:00 PM (or 3:00 PM) tour after Acela arrival at Penn 12:51 PM — 1-train uptown to 116th St
+  - Standard slots: 12pm, 2pm, 3pm campus + 1pm engineering
+  - Register at https://apply.college.columbia.edu/portal/campus_visit when it opens
 
 **Broadway:**
 
