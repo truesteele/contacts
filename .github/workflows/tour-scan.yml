@@ -69,6 +69,9 @@ jobs:
         env:
           TEST_EMAIL: ${{ github.event.inputs.test_email }}
           RESET_STATE: ${{ github.event.inputs.reset_state }}
+          TWILIO_SID: ${{ secrets.TWILIO_SID }}
+          TWILIO_TOKEN: ${{ secrets.TWILIO_TOKEN }}
+          TWILIO_NUMBER: ${{ secrets.TWILIO_NUMBER }}
         run: |
           if [ "$TEST_EMAIL" = "true" ]; then
             python -u scan_tour_registration.py --test

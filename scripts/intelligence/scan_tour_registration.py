@@ -27,6 +27,7 @@ from googleapiclient.discovery import build
 
 CREDENTIALS_DIR = os.path.expanduser("~/.google_workspace_mcp/credentials")
 NOTIFY_EMAIL = "justinrsteele@gmail.com"
+NOTIFY_SMS = "+14158440345"  # Twilio destination — see TWILIO_* env vars
 STATE_FILE = Path(__file__).parent / ".tour_scan_state.json"
 EXPIRY_DATE = date(2026, 6, 7)  # Stop scanning after all tour dates pass
 
@@ -65,7 +66,7 @@ SCHOOLS = [
     },
     {
         "name": "Howard University",
-        "date": "Thu, Jun 5",
+        "date": "Fri, Jun 5",
         "target_day": 5,
         "url": "https://applyhu.howard.edu/portal/campusvisit",
         "register_url": "https://applyhu.howard.edu/portal/campusvisit",
@@ -243,6 +244,55 @@ def save_state(state: dict):
     STATE_FILE.write_text(json.dumps(state, indent=2))
 
 
+# ── SMS ──────────────────────────────────────────────────────────────
+
+def send_alert_sms(newly_available: list[dict]) -> bool:
+    """Send SMS via Twilio. Returns True on success, False if creds missing/failed."""
+    sid = os.environ.get("TWILIO_SID")
+    token = os.environ.get("TWILIO_TOKEN")
+    from_number = os.environ.get("TWILIO_NUMBER")
+    if not (sid and token and from_number):
+        print("  SMS skipped: TWILIO_SID/TWILIO_TOKEN/TWILIO_NUMBER not set")
+        return False
+
+    # Compact message — SMS character limits matter
+    parts = ["Tour open:"]
+    for s in newly_available:
+        line = f" {s['name'].split()[0]} {s['date']}"
+        if s.get("events"):
+            # Pull first time slot if we have it
+            import re
+            for ev in s["events"]:
+                m = re.search(r"\d{1,2}:\d{2}\s*(?:AM|PM)", ev, re.IGNORECASE)
+                if m:
+                    line += f" ({m.group(0)})"
+                    break
+        parts.append(line)
+    body = "".join(parts)[:300]
+    body += f" — {newly_available[0]['register_url'][:80]}"
+
+    import urllib.request, urllib.parse, base64
+    url = f"https://api.twilio.com/2010-04-01/Accounts/{sid}/Messages.json"
+    data = urllib.parse.urlencode({
+        "To": NOTIFY_SMS,
+        "From": from_number,
+        "Body": body,
+    }).encode()
+    auth = base64.b64encode(f"{sid}:{token}".encode()).decode()
+    req = urllib.request.Request(url, data=data, headers={
+        "Authorization": f"Basic {auth}",
+        "Content-Type": "application/x-www-form-urlencoded",
+    })
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            resp_body = resp.read().decode()
+            print(f"  SMS sent to {NOTIFY_SMS} (HTTP {resp.status})")
+            return True
+    except Exception as e:
+        print(f"  SMS failed: {e}")
+        return False
+
+
 # ── Email ────────────────────────────────────────────────────────────
 
 def send_alert_email(newly_available: list[dict], still_waiting: list[str]):
@@ -314,12 +364,12 @@ def main():
         print("State cleared.")
 
     if args.test:
+        sample = [{"name": "TEST University", "date": "Test Date",
+                   "register_url": "https://example.com", "events": ["Test Event 10:00 AM"]}]
         print("Sending test email...")
-        send_alert_email(
-            [{"name": "TEST University", "date": "Test Date",
-              "register_url": "https://example.com", "events": ["Test Event 10:00 AM"]}],
-            ["Other School"],
-        )
+        send_alert_email(sample, ["Other School"])
+        print("Sending test SMS...")
+        send_alert_sms(sample)
         return
 
     state = load_state()
@@ -373,6 +423,11 @@ def main():
                 }
         except Exception as e:
             print(f"ERROR sending email: {e}")
+        # SMS is best-effort and independent of email
+        try:
+            send_alert_sms(newly_available)
+        except Exception as e:
+            print(f"ERROR sending SMS: {e}")
     else:
         print("\nNo new availability detected.")
 
