@@ -1,6 +1,6 @@
 # Steele Family — Summer 2026 East Coast Trip
 
-**Last updated:** April 27, 2026 (Stranger Things + Avis rentals + NOLA hotel via Camelback + full family NYC→DC train + Trecolori dinner)
+**Last updated:** April 28, 2026 (NYU tour registered)
 
 ## Family
 
@@ -135,9 +135,9 @@ Sally joins NYC for one night (Thu Jun 4) for Stranger Things, then everyone reu
 - Request high floors (26+) for Empire State Building views
 
 **College tours (Thu Jun 4):**
-- Columbia University — register at https://undergrad.admissions.columbia.edu/visit/campus
-- NYU — register at https://connect.nyu.edu/portal/nyuvisit_tours
-- Register in advance; walk-ons not guaranteed
+- ✅ **NYU — REGISTERED** — Thu Jun 4, 11:00 AM — NYU Bonomi Family Admissions Center (NYU Visit: In-Person Tours)
+- Columbia University — register at https://undergrad.admissions.columbia.edu/visit/campus (still open)
+- Walk-ons not guaranteed for Columbia
 
 **Broadway:**
 
