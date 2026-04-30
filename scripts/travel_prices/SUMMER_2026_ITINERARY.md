@@ -1,6 +1,6 @@
 # Steele Family — Summer 2026 East Coast Trip
 
-**Last updated:** April 28, 2026 (NYU tour registered; Columbia plan locked to Wed Jun 3)
+**Last updated:** April 29, 2026 (NYU moved to 3pm; bbdevdays session noted; Guardian Summit agenda added)
 
 ## Family
 
@@ -135,11 +135,22 @@ Sally joins NYC for one night (Thu Jun 4) for Stranger Things, then everyone reu
 - Request high floors (26+) for Empire State Building views
 
 **College tours:**
-- ✅ **NYU (Thu Jun 4) — REGISTERED** — 11:00 AM, NYU Bonomi Family Admissions Center
+- ✅ **NYU (Thu Jun 4) — REGISTERED** — **3:00 PM** at NYU Bonomi Family Admissions Center, 383 Lafayette St
+  - Moved from 11am to 3pm to avoid conflict with Justin's 12pm ET bbdevdays session
 - ⏳ **Columbia (Wed Jun 3) — WAITING FOR PORTAL** — June dates not yet released as of Apr 28; tour scanner is monitoring
   - Target 2:00 PM (or 3:00 PM) tour after Acela arrival at Penn 12:51 PM — 1-train uptown to 116th St
   - Standard slots: 12pm, 2pm, 3pm campus + 1pm engineering
   - Register at https://apply.college.columbia.edu/portal/campus_visit when it opens
+
+**Justin work commitment (Thu Jun 4):**
+- 🎤 **bbdevdays speaker session — 12:00 PM ET (virtual, present from hotel)**
+  - Title: "Shipping at Speed: How AI Tools are Reshaping Software Development"
+  - Co-presenter: Brent Chudoba (former CRO SurveyMonkey, COO Calendly) on Grasshopper Signup
+  - Justin's portion: Kindora's Raiser's Edge NXT integration built with Claude Code in two evening sessions (25 features)
+  - Platform: Goldcast (virtual)
+  - Speaker training May 21, 1:00–1:30 PM ET
+  - Slides/video due to bbdevdays@blackbaud.com by **May 25**
+  - Branded deck template: https://assets.swoogo.com/uploads/6700740-69bab5c30d855.pptx
 
 **Broadway:**
 
@@ -268,13 +279,40 @@ Sally joins NYC for one night (Thu Jun 4) for Stranger Things, then everyone reu
 
 ### Mon Jun 8 – Thu Jun 11 — NEW ORLEANS (Camelback Guardian Summit)
 
-**Hotel: Four Seasons Hotel New Orleans (covered by Camelback)**
-- Camelback Ventures Guardian Summit 2026 — Jun 9–11
-- Cohort 15/16 alumni: Camelback covers registration, room accommodations, and travel stipend
-- Justin RSVP'd Apr 12 (with Sally as additional attendee)
-- ⚠️ Pre-conference is "evening of Jun 8" — confirm whether Camelback also covers Mon Jun 8 night
-- ⚠️ Confirm Sally's room/cost is covered (Camelback offer was for cohort members)
-- No formal reservation confirmation received yet — Camelback handles booking
+**Hotel: Four Seasons Hotel New Orleans (booked by Camelback)** ✅
+- Per Elaine Atherton's email Apr 29: hotel rooms booked automatically based on attendance form responses
+- Travel stipend processing now (7–9 business days), since traveling from outside New Orleans
+- All summit events at the Four Seasons
+
+**Agenda — all times CT, all events at Four Seasons unless noted**
+
+*Mon Jun 8 — Day 1*
+- Arrive before 3:30 PM
+- 4:30 PM — Fireside chat: Shawna Young (Camelback CEO) + Aaron Walker (Ruthless for Good VC fund founder)
+- 6:00–8:30 PM — Cohort 15 & 16 dinner and networking
+
+*Tue Jun 9 — Day 2*
+- 8:00 AM – 4:00 PM — Office Hours (with blackout times)
+- 10:30 AM – 12:30 PM — Alumni and Fellows brunch
+- 1:00 – 4:00 PM — Blueprint pitch competition
+- 7:00 – 10:00 PM — Welcome Reception and Dinner, River Ballroom
+
+*Wed Jun 10 — Day 3*
+- 8:00 – 10:00 AM — Networking Breakfast
+- 8:30 – 11:30 AM — Founder Workshop Series (panels on fundraising, family foundations, ESO leaders)
+- 12:00 PM — Opening Plenary + Lunch: "Guardians of Talent: Unlocking the Founders Poised to Transform the Economy"
+- 1:30 – 3:30 PM — Afternoon Workshops (topics TBA)
+- 5:00 – 8:45 PM — Networking Reception + Awards Gala (Ruthless for Good awards + Pitch Competition awards)
+- 9:00 – 10:00 PM — After party w/ DJ
+
+*Thu Jun 11 — Day 4*
+- 8:00 AM – 3:00 PM — Office Hours (blackouts 9–10:30 AM)
+- 8:00 – 9:00 AM — Networking Breakfast (food until 10 AM)
+- 9:00 – 11:00 AM — Morning Plenary + sessions: State of Camelback / Vision; Guardians of Wellness ("Returning to the Well: Water Birthing Your Legacy"); Guardians of Venture Philanthropy (New Funding Vehicles for Innovation)
+- 11:30 AM – 12:30 PM — Concurrent Block 1: Guardians of Higher Ed (Entrepreneurship at HBCUs); Building Innovation Ecosystems; Start-up to Exit (Venture-Backed Company in 2026)
+- 12:30 – 2:30 PM — Lunch + Keynote
+- 3:00 – 4:00 PM — Block 2: Guardians of Partnerships (Wireless + Education); Building NOLA's Black Entrepreneurial Backbone; Future of Learning (Kids in the Age of AI)
+- 4:00 – 5:30 PM — Closing Reception
 
 ### Wed Jun 11 – Fri Jun 13 — Return to DC
 - Stay at Sally's parents
