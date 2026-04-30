@@ -174,7 +174,7 @@ Sally joins NYC for one night (Thu Jun 4) for Stranger Things, then everyone reu
 - **Plan: Becco** — 355 W 46th St, same block as theatre, (212) 397-7597
   - 4.6 OpenTable / 29,099 diners; pasta tasting menu ($36.95 unlimited)
   - OpenTable window is too short (~30 days); call directly — they book by phone 6 weeks out
-  - Target 5:00 or 5:15 PM
+  - Target 5:00 or 5:30 PM
 - **Backup: Joe Allen** (326 W 46th St, same block, TripAdvisor top 4%) — bookable on OpenTable now
 
 *Thu Jun 4 — Stranger Things: The First Shadow — BOOKED*
@@ -201,7 +201,7 @@ Sally joins NYC for one night (Thu Jun 4) for Stranger Things, then everyone reu
 | Address | 254 W 47th St (1 block north of Marquis) |
 | Phone | (212) 997-4540 |
 | Date | Thursday, June 4, 2026 |
-| Time | 5:15 PM |
+| Time | 5:30 PM |
 | Party size | 5 (Standard seating) |
 | Reserved by | Justin (OpenTable) |
 | Note | 15-min grace period — call if running late
